@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+# Network Proxy certificates must never be committed
+**/assets/raw/*.pem
+**/proxy-config.json
+*.p12
+*.pem
+.env*
