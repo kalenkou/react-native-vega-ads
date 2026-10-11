@@ -4,7 +4,7 @@ import {VideoPlayer} from '@amazon-devices/react-native-w3cmedia';
 import {AdOverlay, DualSurfaceView, useVegaAds} from '@vega-ads/vega';
 import {VMAP_OPTIMIZED_POD_TAG} from './spike/ads';
 import {log, subscribe} from './spike/log';
-import {APP_HANDLES_PLAYPAUSE} from './spikeConfig';
+import {APP_HANDLES_PLAYPAUSE, DEMO_MEDIA_BASE} from './spikeConfig';
 
 // Kepler's react-native exports useTVEventHandler; the RN 0.72 typings do not.
 const {useTVEventHandler} = require('react-native') as {
@@ -13,13 +13,18 @@ const {useTVEventHandler} = require('react-native') as {
   ) => void;
 };
 
-const CONTENT_URL =
-  'https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4';
+const CONTENT_URL = DEMO_MEDIA_BASE
+  ? `${DEMO_MEDIA_BASE}tears_of_steel_720p.mp4`
+  : 'https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4';
 
 /** The library as an app uses it: one hook, two components. */
 export const HookDemo = () => {
   const [player, setPlayer] = useState<VideoPlayer | null>(null);
-  const [vmapUrl] = useState(() => `${VMAP_OPTIMIZED_POD_TAG}${Date.now()}`);
+  const [vmapUrl] = useState(() =>
+    DEMO_MEDIA_BASE
+      ? `${DEMO_MEDIA_BASE}vmap/movie.xml`
+      : `${VMAP_OPTIMIZED_POD_TAG}${Date.now()}`,
+  );
   const [lines, setLines] = useState<string[]>([]);
   useEffect(() => subscribe((all) => setLines(all.slice(0, 8))), []);
 

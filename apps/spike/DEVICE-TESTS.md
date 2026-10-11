@@ -127,3 +127,15 @@ After the minor fixes (b0f5611), same sample: 4 runs.
 `inputd-cli button_press KEY_HOME` reaches the app as a key but does not bring the launcher to the foreground; use `vlcm launch-app orpheus://com.amazon.smplighthouse.launcher.main` to test Home.
 
 Open: post-roll on this sample (the titles are long), display off during an ad, captions above ads, standby decoder on 4K titles.
+
+## Own demo ads and Tears of Steel, cold start fix (11.10.2026)
+
+Hook demo, debug build, SDK 0.24. Content: Tears of Steel 720p (CC BY, Blender Foundation) remuxed to MP4/AAC. Ads: the three creatives from `tools/demo-ads` (Kettlo 10 s, Brewnord 15 s, Voltaro 12 s), VAST and VMAP from `tools/demo-ads/serve.mjs` on the local network: pre-roll, mid-roll pod of 3 at 2:00, mid-roll at 6:00, post-roll.
+
+| Check | Result |
+|---|---|
+| Media over plain `http://` on the LAN | w3cmedia refuses it: `MediaUrlSourceImpl.cpp(58) createSourceElement Invalid or insecure URI scheme`; the ad fails with VAST 400, the content stays black. `fetch` of VMAP/VAST over the same host works. With `[network-traffic-policy.cleartext] allowed-domains = ["<LAN IP>"]` in the manifest the media plays (an IP address is accepted, no port needed) |
+| Cold launch, before the fix: native `playing` of the ad → JS impression | 2.4 s (first launch after install), 0.5 s (next launch). The log shows `setMediaControlFocus`, called right after `play()`, blocking the JS thread for ~1.2–2.4 s, so the `playing` event waited; `firstQuartile` came 0.3 s after `start`. This also explains the earlier cold launch without a pre-roll (first-frame watchdog) |
+| Same, after the fix (media controls focus taken after the first frame is tracked, once per ad) | 143 ms on the first launch after install; `start` right after the impression; quartiles every 2.5 s for the 10 s ad → PASS |
+| Mid-roll pod of 3 own ads at 2:00 | pixels for all three ads (impression, start, quartiles every 3.75 / 3 / 2.5 s, complete); the next ad's impression ~0.2 s before the previous `complete` (early hand-over); content resumes at 2:00 → PASS |
+| Phone video of the whole run (179 s), frame by frame, plus per-frame brightness | content → Brewnord → Voltaro → Kettlo → content: no black frame and no content frame between ads; one blended camera frame at each switch → PASS |
