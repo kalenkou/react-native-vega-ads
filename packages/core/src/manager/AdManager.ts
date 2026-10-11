@@ -3,6 +3,7 @@ import { AdBreakSession, SessionSnapshot } from '../machine/AdBreakSession';
 import { BreakMark, BreakScheduler, Decision } from '../schedule/BreakScheduler';
 import type { PlayerPort } from '../ports';
 import { RepeatGuard, RepeatOptions } from '../pod/RepeatGuard';
+import { PauseAdController, PauseAdView } from '../pause/PauseAdController';
 import { PreloadedAds, resolveSchedule, scheduleKey } from './preloadAds';
 
 /** Where the breaks come from: a VMAP document, or a list of VAST tags with their times. */
@@ -42,6 +43,15 @@ export interface AdManagerDeps {
    * ad server as `[BREAKMAXDURATION]` (VAST 4.2). Ads left out send their `notUsed` pixels.
    */
   maxBreakSeconds?: number;
+  /**
+   * VAST tag of a pause ad (IAB CTV Ad Portfolio): a `<NonLinear>` image shown when the viewer
+   * pauses the content, never when a break pauses it. Requested ahead of time.
+   */
+  pauseAdUrl?: string;
+  /** How long the content stays paused before the pause ad shows. Default 1500 ms. */
+  pauseAdDelayMs?: number;
+  /** The pause ad to draw, or null to remove it. */
+  onPauseAd?: (view: PauseAdView | null) => void;
 }
 
 const positive = (value: number | undefined): number | undefined =>
@@ -103,6 +113,8 @@ export class AdManager {
   /** A break whose start the background cut off before it was shown; wake() starts the content instead. */
   private cutOff: string | null = null;
   private contentStarted = false;
+  private contentEnded = false;
+  private pauseAds: PauseAdController | null = null;
   private impressed = false;
   private disposed = false;
   private durationKnown = false;
@@ -171,6 +183,7 @@ export class AdManager {
     if (resumeAt !== undefined) {
       scheduler.resumeAt(resumeAt);
     }
+    this.startPauseAds();
     this.reportTimeline(scheduler, null);
     const first = scheduler.begin();
     if (!first.some((d) => d.type === 'start')) {
@@ -197,6 +210,11 @@ export class AdManager {
     return this.active?.togglePause() ?? false;
   }
 
+  /** Viewer pressed Back while a pause ad shows: it goes away. False when none was on screen. */
+  closePauseAd(): boolean {
+    return this.pauseAds?.close() ?? false;
+  }
+
   /** Viewer pressed Back during an ad: back to the content (R23). */
   async back(): Promise<void> {
     if (this.active?.state === 'playing') {
@@ -211,6 +229,7 @@ export class AdManager {
   async dispose(): Promise<void> {
     this.disposed = true;
     this.offs.splice(0).forEach((off) => off());
+    this.pauseAds?.dispose();
     const wasPlaying = this.active?.state === 'playing';
     const sessions = [...this.prepared.values()].map((p) => p.session);
     this.prepared.clear();
@@ -230,6 +249,7 @@ export class AdManager {
    */
   async suspend(): Promise<void> {
     this.background = true;
+    this.pauseAds?.hide();
     const active = this.active;
     const activeId = this.activeId;
     this.active = null;
@@ -268,6 +288,27 @@ export class AdManager {
     this.deps.onChange?.(IDLE_SNAPSHOT);
   }
 
+  private startPauseAds(): void {
+    const { pauseAdUrl, onPauseAd } = this.deps;
+    if (!pauseAdUrl || !onPauseAd) {
+      return;
+    }
+    this.pauseAds = new PauseAdController({
+      http: this.deps.http,
+      clock: this.deps.clock,
+      content: this.deps.content,
+      source: pauseAdUrl,
+      macros: this.macros,
+      delayMs: this.deps.pauseAdDelayMs,
+      // Only a pause by the viewer: not while a break plays, not before or after the content
+      // (a break waits for its ads only before the content started).
+      canShow: () => this.contentStarted && !this.contentEnded && !this.active && !this.background,
+      onChange: onPauseAd,
+      onEvent: (name) => this.deps.onEvent?.(name),
+    });
+    this.pauseAds.start();
+  }
+
   private async resolve(schedule: AdSchedule): Promise<ScheduledBreak[]> {
     const { breaks, errorCode } = await resolveSchedule(schedule, { http: this.deps.http, clock: this.deps.clock });
     if (errorCode !== undefined) {
@@ -289,6 +330,7 @@ export class AdManager {
   }
 
   private onContentEnded(scheduler: BreakScheduler): void {
+    this.contentEnded = true;
     const decisions = scheduler.onEnded();
     if (!decisions.some((d) => d.type === 'start')) {
       this.deps.onEvent?.('content:ended');

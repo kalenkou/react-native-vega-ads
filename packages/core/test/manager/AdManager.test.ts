@@ -27,7 +27,7 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 30; i++) await Promise.resolve();
 }
 
-function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats' | 'maxBreakAds' | 'maxBreakSeconds'> = {}) {
+function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats' | 'maxBreakAds' | 'maxBreakSeconds' | 'pauseAdUrl' | 'onPauseAd'> = {}) {
   const http = new FakeHttp();
   Object.entries(routes).forEach(([url, body]) => http.on(url, { body }));
   const clock = new FakeClock(1_000_000);
@@ -236,6 +236,111 @@ describe('AdManager', () => {
     await settle();
     await ctx.lastAdPlayer().flush();
     expect(ctx.last()).toMatchObject({ position: 1, total: 2 });
+  });
+
+  describe('pause ads', () => {
+    const PAUSE = 'https://ads.test/pause.xml';
+    const MID = 'https://ads.test/mid.xml';
+
+    async function started(views: unknown[]) {
+      const ctx = setup(
+        { [PAUSE]: fixture('vast/pause.xml'), [MID]: fixture('vast/inline.xml') },
+        { pauseAdUrl: PAUSE, onPauseAd: (view) => views.push(view) },
+      );
+      await ctx.manager.start(manual([{ offset: 30, vastUrl: MID }]));
+      await ctx.content.flush();
+      await settle();
+      return ctx;
+    }
+
+    it('shows the pause ad when the viewer pauses the content, and hides it when it plays', async () => {
+      const views: unknown[] = [];
+      const ctx = await started(views);
+      ctx.content.emitTime(5);
+      ctx.content.emitPause();
+      ctx.clock.advance(1_500);
+      expect(views).toEqual([expect.objectContaining({ imageUrl: 'https://cdn.test/pause.png' })]);
+      expect(ctx.events).toContain('pauseAd:impression');
+      await ctx.content.play();
+      await ctx.content.flush();
+      expect(views[views.length - 1]).toBeNull();
+    });
+
+    it('shows no pause ad when the content pauses for a break', async () => {
+      const views: unknown[] = [];
+      const ctx = await started(views);
+      ctx.content.emitTime(15);
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await settle();
+      ctx.content.emitTime(30);
+      await settle();
+      await ctx.content.flush(); // the break's pause()
+      ctx.clock.advance(1_500);
+      expect(ctx.content.paused).toBe(true);
+      expect(views).toEqual([]);
+    });
+
+    it('lets the app close it with Back, and hides it when the app goes to the background', async () => {
+      const views: unknown[] = [];
+      const ctx = await started(views);
+      expect(ctx.manager.closePauseAd()).toBe(false);
+      ctx.content.emitPause();
+      ctx.clock.advance(1_500);
+      expect(ctx.manager.closePauseAd()).toBe(true);
+      expect(ctx.events).toContain('pauseAd:close');
+      expect(views[views.length - 1]).toBeNull();
+
+      await ctx.content.play();
+      await ctx.content.flush();
+      await settle();
+      ctx.content.emitPause();
+      ctx.clock.advance(1_500);
+      expect(views[views.length - 1]).not.toBeNull();
+      await ctx.manager.suspend();
+      expect(views[views.length - 1]).toBeNull();
+    });
+
+    it('shows no pause ad while the pre-roll loads, before the content ever played', async () => {
+      const views: unknown[] = [];
+      const ctx = setup(
+        { [PAUSE]: fixture('vast/pause.xml'), 'https://ads.test/pre.xml': fixture('vast/inline.xml') },
+        { pauseAdUrl: PAUSE, onPauseAd: (view) => views.push(view) },
+      );
+      void ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+      await settle();
+      ctx.content.emitPause();
+      ctx.clock.advance(1_500);
+      expect(views).toEqual([]);
+    });
+
+    it('shows no pause ad in the background, and none after dispose (and takes a shown one away)', async () => {
+      const views: unknown[] = [];
+      const ctx = await started(views);
+      await ctx.manager.suspend();
+      ctx.content.emitPause();
+      ctx.clock.advance(1_500);
+      expect(views).toEqual([]);
+      await ctx.manager.wake();
+      await ctx.content.play();
+      await ctx.content.flush();
+      await settle();
+      ctx.content.emitPause();
+      ctx.clock.advance(1_500);
+      expect(views[views.length - 1]).not.toBeNull();
+      await ctx.manager.dispose();
+      expect(views[views.length - 1]).toBeNull();
+    });
+
+    it('shows no pause ad after the content ended', async () => {
+      const views: unknown[] = [];
+      const ctx = await started(views);
+      ctx.content.emitEnded();
+      await settle();
+      ctx.content.emitPause();
+      ctx.clock.advance(1_500);
+      expect(views).toEqual([]);
+    });
   });
 
   it('does not show the viewer a creative again in the next break, and reports it', async () => {

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="4.2">
+  <Ad id="pause-1"><InLine><AdSystem>fx</AdSystem><AdTitle>pause</AdTitle>
+    <Impression><![CDATA[https://t.test/imp-pause?ifa=[IFA]]]></Impression>
+    <Error><![CDATA[https://t.test/err-pause?code=[ERRORCODE]]]></Error>
+    <Creatives><Creative id="pause-c">
+      <UniversalAdId idRegistry="unknown">unknown</UniversalAdId>
+      <NonLinearAds>
+        <TrackingEvents>
+          <Tracking event="creativeView"><![CDATA[https://t.test/pause-view]]></Tracking>
+          <Tracking event="overlayViewDuration"><![CDATA[https://t.test/pause-duration?d=[ADPLAYHEAD]]]></Tracking>
+          <Tracking event="close"><![CDATA[https://t.test/pause-close]]></Tracking>
+        </TrackingEvents>
+        <NonLinear width="600" height="600" minSuggestedDuration="00:00:10">
+          <StaticResource creativeType="image/png"><![CDATA[https://cdn.test/pause.png]]></StaticResource>
+          <NonLinearClickThrough><![CDATA[https://brand.test/try]]></NonLinearClickThrough>
+        </NonLinear>
+      </NonLinearAds>
+      <CreativeExtensions>
+        <CreativeExtension type="tl_qrcode">
+          <QrCodeScanUrl><![CDATA[https://brand.test/qr]]></QrCodeScanUrl>
+          <QrCodeImageUrl><![CDATA[https://cdn.test/qr.png]]></QrCodeImageUrl>
+        </CreativeExtension>
+      </CreativeExtensions>
+    </Creative></Creatives>
+  </InLine></Ad>
+</VAST>

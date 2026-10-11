@@ -38,7 +38,7 @@ export interface VastRequestDeps {
 }
 
 const XML_PARSING_ERROR = 100;
-const TRAFFICKING_ERROR = 200;
+export const TRAFFICKING_ERROR = 200;
 
 /**
  * Fills the macros of an ad request URL: the app's own, [TIMESTAMP] and [CACHEBUSTING].
@@ -91,7 +91,22 @@ function withEmbedded(xml: string, network: UrlHandler, parse: XmlParser): UrlHa
   };
 }
 
-export async function requestVast(source: string | AdSourceRef, deps: VastRequestDeps): Promise<VastResult> {
+export interface LoadedVast {
+  client: VASTClient;
+  ads: VastAd[];
+  errorCodes: number[];
+  /** Sends the Error URLs of an ad with this code and the app macros. */
+  trackError(ad: VastAd, code: number): void;
+}
+
+/**
+ * Requests and parses a VAST document with the app macros, following wrappers. Shared by the
+ * break ads (linear) and the pause ad (NonLinear).
+ */
+export async function loadVast(
+  source: string | AdSourceRef,
+  deps: VastRequestDeps,
+): Promise<LoadedVast | Extract<VastResult, { status: 'failed' }>> {
   const ref: AdSourceRef = typeof source === 'string' ? { kind: 'url', url: source } : source;
   const network = withMacros(createUrlHandler(deps), deps);
   const urlHandler = ref.kind === 'xml' ? withEmbedded(ref.xml, network, deps.parseXml ?? parseXml) : network;
@@ -126,13 +141,28 @@ export async function requestVast(source: string | AdSourceRef, deps: VastReques
     }
     return { status: 'failed', errorCode: null, failure };
   }
+  return {
+    client,
+    ads: response.ads,
+    errorCodes,
+    trackError(ad, code) {
+      parser.trackVastError(ad.errorURLTemplates, { ERRORCODE: code });
+      errorCodes.push(code);
+    },
+  };
+}
 
+export async function requestVast(source: string | AdSourceRef, deps: VastRequestDeps): Promise<VastResult> {
+  const loaded = await loadVast(source, deps);
+  if ('status' in loaded) {
+    return loaded;
+  }
+  const { client, errorCodes } = loaded;
   const ads: LinearAd[] = [];
-  for (const ad of response.ads) {
+  for (const ad of loaded.ads) {
     const creative = ad.creatives.find(isLinear);
     if (!creative) {
-      parser.trackVastError(ad.errorURLTemplates, { ERRORCODE: TRAFFICKING_ERROR });
-      errorCodes.push(TRAFFICKING_ERROR);
+      loaded.trackError(ad, TRAFFICKING_ERROR);
       continue;
     }
     ads.push({ ad, creative, sequence: toSequence(ad.sequence), skipAfter: toSkipAfter(creative.skipDelay), client });
