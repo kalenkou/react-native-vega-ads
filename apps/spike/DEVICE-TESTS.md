@@ -117,6 +117,13 @@ Regression after the review fixes (stall watchdog, late/duplicate event guards, 
 | Pre-roll → content → mid-roll pod "Ad 1..3 of 3" at 0:15 → content | PASS. The pod plays in `sequence` order; Google's sample returns its creatives in a different order on each request |
 | Remote pause of the pre-roll for 16 s (longer than the 10 s stall watchdog), then resume | the ad stays paused on the same frame, resumes from it, ends, content starts → PASS (a paused ad is not taken for a stalled one) |
 
+After the minor fixes (b0f5611), same sample: 4 runs.
+
+| Run | Result |
+|---|---|
+| 3 runs (2 of them cold launches) | pre-roll → content → mid-roll pod 1..3 → content → PASS |
+| 1 cold launch | the overlay showed "Ad · 0:00" over black for at least 6 s, then the content started without the pre-roll. This matches the 5 s first-frame watchdog (VAST 405, then content), so the viewer was not stuck. The log was not captured, so the cause (slow network or decoder start on the first launch) is not confirmed. Open: watch for it; if it repeats, measure the time from `play()` to the first frame on a cold launch before changing the 5 s default |
+
 `inputd-cli button_press KEY_HOME` reaches the app as a key but does not bring the launcher to the foreground; use `vlcm launch-app orpheus://com.amazon.smplighthouse.launcher.main` to test Home.
 
 Open: post-roll on this sample (the titles are long), display off during an ad, captions above ads, standby decoder on 4K titles.
