@@ -263,6 +263,32 @@ describe('AdManager', () => {
     expect(ctx.manager.togglePause()).toBe(false);
   });
 
+  it('after the post-roll the content is not played again from the start (C2-5)', async () => {
+    const ctx = setup({ 'https://ads.test/post.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 'end', vastUrl: 'https://ads.test/post.xml' }]));
+    ctx.content.emitTime(590);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    ctx.content.emitTime(600);
+    ctx.content.emitEnded();
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    const playsBefore = ctx.content.calls.filter((c) => c === 'play').length;
+    await playAdToEnd(ctx);
+    expect(ctx.content.calls.filter((c) => c === 'play')).toHaveLength(playsBefore);
+    expect(ctx.content.hasMediaControlFocus).toBe(true);
+    expect(ctx.events).toContain('content:ended');
+  });
+
+  it('reports content:ended at once when there is no post-roll', async () => {
+    const ctx = setup({});
+    await ctx.manager.start(manual([]));
+    ctx.content.emitEnded();
+    await settle();
+    expect(ctx.events).toContain('content:ended');
+  });
+
   it('skip() passes to the active break and is false without one', async () => {
     const ctx = setup({});
     await ctx.manager.start(manual([]));

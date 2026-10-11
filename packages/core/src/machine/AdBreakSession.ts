@@ -102,6 +102,7 @@ export class AdBreakSession {
   private releasing: Promise<void> = Promise.resolve();
   private current: Current | null = null;
   private savedContentTime = 0;
+  private resumeContentAfter = true;
   private startedAt = 0;
   private impressed = false;
   /** The active player reported an error before the break started. */
@@ -143,11 +144,15 @@ export class AdBreakSession {
     return 'empty';
   }
 
-  /** Pauses content and shows the prebuffered ad. */
-  async start(): Promise<void> {
+  /**
+   * Pauses content and shows the prebuffered ad.
+   * `resumeContent: false` (post-roll): the content has ended, so it is not played again.
+   */
+  async start(options: { resumeContent?: boolean } = {}): Promise<void> {
     if (this.state !== 'ready' || !this.player) {
       throw new Error('ad break not ready');
     }
+    this.resumeContentAfter = options.resumeContent ?? true;
     const { content } = this.deps;
     this.startedAt = this.deps.clock.now();
     this.savedContentTime = content.getCurrentTime();
@@ -516,8 +521,10 @@ export class AdBreakSession {
     const { content } = this.deps;
     this.current = null;
     this.setState('resuming');
-    content.setCurrentTime(this.savedContentTime);
-    await content.play();
+    if (this.resumeContentAfter) {
+      content.setCurrentTime(this.savedContentTime);
+      await content.play();
+    }
     await content.takeMediaControlFocus();
     this.setState('finished');
     this.deps.onEvent?.('breakEnd');

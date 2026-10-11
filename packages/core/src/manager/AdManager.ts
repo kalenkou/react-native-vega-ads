@@ -91,7 +91,7 @@ export class AdManager {
     const { content } = this.deps;
     this.offs.push(
       content.on('timeupdate', () => this.onContentTime()),
-      content.on('ended', () => this.apply(scheduler.onEnded())),
+      content.on('ended', () => this.onContentEnded(scheduler)),
     );
     if (resumeAt !== undefined) {
       scheduler.resumeAt(resumeAt);
@@ -193,6 +193,18 @@ export class AdManager {
     return vmap.breaks;
   }
 
+  private onContentEnded(scheduler: BreakScheduler): void {
+    const decisions = scheduler.onEnded();
+    if (!decisions.some((d) => d.type === 'start')) {
+      this.deps.onEvent?.('content:ended');
+    }
+    void this.apply(decisions);
+  }
+
+  private isPostRoll(id: string): boolean {
+    return this.breaks.get(id)?.offset.kind === 'end';
+  }
+
   private onContentTime(): void {
     const scheduler = this.scheduler;
     if (!scheduler || this.disposed || this.active) {
@@ -261,6 +273,9 @@ export class AdManager {
       this.prepared.delete(id);
       this.deps.onEvent?.(`break:${id}:late`);
       void entry.loading.then(() => entry.session.interrupt());
+      if (this.isPostRoll(id)) {
+        this.deps.onEvent?.('content:ended');
+      }
       return;
     }
     const result = await entry.loading;
@@ -269,14 +284,16 @@ export class AdManager {
     }
     if (result !== 'ready') {
       this.prepared.delete(id);
-      if (!this.contentStarted) {
+      if (this.isPostRoll(id)) {
+        this.deps.onEvent?.('content:ended');
+      } else if (!this.contentStarted) {
         await this.playContent();
       }
       return;
     }
     this.active = entry.session;
     this.activeId = id;
-    await entry.session.start();
+    await entry.session.start({ resumeContent: !this.isPostRoll(id) });
   }
 
   private onSessionChange(id: string, session: AdBreakSession, snapshot: SessionSnapshot): void {
@@ -288,6 +305,9 @@ export class AdManager {
       this.contentStarted = true;
       this.prepared.delete(id);
       this.deps.onChange?.(IDLE_SNAPSHOT);
+      if (this.isPostRoll(id)) {
+        this.deps.onEvent?.('content:ended');
+      }
       return;
     }
     this.deps.onChange?.(snapshot);
