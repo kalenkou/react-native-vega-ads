@@ -309,6 +309,57 @@ describe('AdManager', () => {
     expect(ctx.content.calls.filter((c) => c === 'play')).toHaveLength(playsBefore);
   });
 
+  it('suspend() in the background releases the ad players; wake() returns to the content without repeating the break (R13)', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    const ad = ctx.lastAdPlayer();
+
+    await ctx.manager.suspend();
+    expect(ad.deinitialized).toBe(true);
+    expect(ctx.content.calls).not.toContain('play');
+
+    await ctx.manager.wake();
+    expect(ctx.content.calls.slice(-3)).toEqual(['seek:0', 'play', 'focus']);
+    expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
+    expect(ctx.events).toContain('break:break-1:interrupted');
+    expect(ctx.http.requests.filter((u) => u === 'https://ads.test/pre.xml')).toHaveLength(1);
+  });
+
+  it('suspend() releases a prefetched break, and it is prefetched again after wake()', async () => {
+    const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]));
+    ctx.content.emitTime(20);
+    await settle();
+    const prefetched = ctx.lastAdPlayer();
+    prefetched.emitCanPlay();
+    await settle();
+    await ctx.manager.suspend();
+    expect(prefetched.deinitialized).toBe(true);
+    await ctx.manager.wake();
+    ctx.content.emitTime(21);
+    await settle();
+    expect(ctx.http.requests.filter((u) => u === 'https://ads.test/mid.xml')).toHaveLength(2);
+  });
+
+  it('dispose() during an ad gives media controls back to the content without playing it', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    ctx.content.hasMediaControlFocus = false;
+    await ctx.manager.dispose();
+    expect(ctx.content.hasMediaControlFocus).toBe(true);
+    expect(ctx.content.calls).not.toContain('play');
+  });
+
   it('dispose() during the VMAP request starts nothing', async () => {
     const ctx = setup({});
     ctx.http.hang(VMAP);

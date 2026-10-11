@@ -59,6 +59,15 @@ describe('BreakScheduler (R10, R24)', () => {
     expect(scheduler.isDone('p')).toBe(true);
   });
 
+  it('forget() lets a prefetched, unplayed break be prefetched again', () => {
+    const scheduler = new BreakScheduler([{ id: 'a', offset: at(30) }]);
+    scheduler.begin();
+    expect(scheduler.onTime(20)).toEqual([{ type: 'prefetch', breakId: 'a' }]);
+    expect(scheduler.onTime(21)).toEqual([]);
+    scheduler.forget('a');
+    expect(scheduler.onTime(22)).toEqual([{ type: 'prefetch', breakId: 'a' }]);
+  });
+
   it('does nothing at begin without a pre-roll', () => {
     expect(new BreakScheduler([{ id: 'mid', offset: at(60) }]).begin()).toEqual([]);
   });

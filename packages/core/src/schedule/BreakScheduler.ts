@@ -124,6 +124,11 @@ export class BreakScheduler {
     return post ? this.startNow(post) : [];
   }
 
+  /** The prefetched ads of a break were released (for example in the background): fetch them again. */
+  forget(breakId: string): void {
+    this.entries.filter((e) => e.id === breakId && !e.done).forEach((e) => (e.prefetched = false));
+  }
+
   /** True when the break has started, was skipped, or does not exist. */
   isDone(breakId: string): boolean {
     return this.entries.filter((e) => e.id === breakId).every((e) => e.done);

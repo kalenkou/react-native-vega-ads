@@ -52,6 +52,9 @@ export class AdManager {
   private readonly breaks = new Map<string, ScheduledBreak>();
   private readonly prepared = new Map<string, Prepared>();
   private active: AdBreakSession | null = null;
+  private activeId: string | null = null;
+  /** A break interrupted by the app going to the background. */
+  private suspended: { id: string; session: AdBreakSession } | null = null;
   private contentStarted = false;
   private disposed = false;
   private durationKnown = false;
@@ -117,16 +120,59 @@ export class AdManager {
     }
   }
 
-  /** Releases every ad player and stops listening. Does not touch the content. */
+  /**
+   * Releases every ad player and stops listening. Does not play the content; if an ad was
+   * on screen, media controls go back to the content so the viewer can resume it.
+   */
   async dispose(): Promise<void> {
     this.disposed = true;
     this.offs.splice(0).forEach((off) => off());
+    const wasPlaying = this.active?.state === 'playing';
     const sessions = [...this.prepared.values()].map((p) => p.session);
     this.prepared.clear();
     this.active = null;
+    this.suspended = null;
     for (const session of sessions) {
       await session.interrupt();
     }
+    if (wasPlaying) {
+      await this.deps.content.takeMediaControlFocus().catch(() => undefined);
+    }
+  }
+
+  /**
+   * The app went to the background (R13; Amazon requires releasing media resources there):
+   * releases every ad player. The content stays paused until wake().
+   */
+  async suspend(): Promise<void> {
+    const active = this.active;
+    const activeId = this.activeId;
+    this.active = null;
+    for (const [id, entry] of [...this.prepared]) {
+      if (entry.session !== active) {
+        this.prepared.delete(id);
+        this.scheduler?.forget(id);
+        void entry.loading.then(() => entry.session.interrupt());
+      }
+    }
+    if (active && activeId) {
+      await active.interrupt();
+      this.suspended = { id: activeId, session: active };
+    }
+  }
+
+  /** Back from the background: the interrupted break is not shown again; the content continues. */
+  async wake(): Promise<void> {
+    const suspended = this.suspended;
+    if (!suspended || this.disposed) {
+      return;
+    }
+    this.suspended = null;
+    this.prepared.delete(suspended.id);
+    this.deps.onEvent?.(`break:${suspended.id}:interrupted`);
+    this.contentStarted = true;
+    await suspended.session.resumeContent();
+    this.deps.onChange?.(IDLE_SNAPSHOT);
   }
 
   private async resolve(schedule: AdSchedule): Promise<ScheduledBreak[]> {
@@ -229,6 +275,7 @@ export class AdManager {
       return;
     }
     this.active = entry.session;
+    this.activeId = id;
     await entry.session.start();
   }
 
