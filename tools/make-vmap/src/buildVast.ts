@@ -95,15 +95,19 @@ function inlineAd(input: VastAdInput, sequence: number | null): string {
   ].join('\n');
 }
 
-/** Writes a VAST 4.2 document: one InLine ad, or a pod (`sequence` 1..n) for several ads. */
-export function buildVast(ads: readonly VastAdInput[]): string {
+/**
+ * Writes a VAST 4.2 document: one InLine ad, or a pod (`sequence` 1..n) for several ads.
+ * `buffet`: the ads get no `sequence`; a player plays the first and keeps the others to
+ * replace it, for example when the viewer has just seen it.
+ */
+export function buildVast(ads: readonly VastAdInput[], options: { buffet?: boolean } = {}): string {
   if (ads.length === 0) {
     throw new RangeError('A VAST document needs at least one ad');
   }
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<VAST version="4.2" xmlns="http://www.iab.com/VAST">',
-    ...ads.map((ad, index) => inlineAd(ad, ads.length > 1 ? index + 1 : null)),
+    ...ads.map((ad, index) => inlineAd(ad, ads.length > 1 && !options.buffet ? index + 1 : null)),
     '</VAST>',
     '',
   ].join('\n');

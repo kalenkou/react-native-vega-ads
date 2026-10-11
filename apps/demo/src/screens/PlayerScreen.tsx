@@ -1,7 +1,8 @@
 import React, {useEffect} from 'react';
 import {BackHandler, StyleSheet} from 'react-native';
 import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
-import {VegaAdsPlayer} from 'react-native-vega-ads';
+import AsyncStorage from '@amazon-devices/react-native-async-storage__async-storage';
+import {VegaAdsPlayer, type RepeatOptions} from 'react-native-vega-ads';
 import type {Movie} from '../catalog';
 import {PlayerChrome} from '../components/PlayerChrome';
 
@@ -29,6 +30,18 @@ function useBackToClose(onClose: () => void): void {
   }, [onClose]);
 }
 
+/**
+ * The household sees a creative once in 30 minutes, in any title and after a relaunch:
+ * the creatives shown are kept on the device under one key.
+ */
+const SEEN_KEY = 'vega-ads.seen';
+const AVOID_REPEATS: RepeatOptions = {
+  memory: {
+    read: () => AsyncStorage.getItem(SEEN_KEY),
+    write: value => AsyncStorage.setItem(SEEN_KEY, value),
+  },
+};
+
 /** The whole integration: one component, the app's own controls as children. */
 export const PlayerScreen = ({movie, onClose, onEvent}: PlayerScreenProps) => {
   useBackToClose(onClose);
@@ -38,6 +51,7 @@ export const PlayerScreen = ({movie, onClose, onEvent}: PlayerScreenProps) => {
       ads={{vmapUrl: movie.vmapUrl}}
       pauseAdUrl={movie.pauseAdUrl}
       pauseAdStyle={styles.pauseAd}
+      avoidRepeats={AVOID_REPEATS}
       adId={AdIdRetriever}
       onEnd={onClose}
       onEvent={onEvent}>

@@ -55,7 +55,7 @@ node serve.mjs --dir media
 `media/` holds `ads/` and the content movie (default `tears_of_steel_720p.mp4`).
 The server prints its address and serves:
 
-- `vast/single.xml` – Kettlo, skippable after 5 s (the pre-roll);
+- `vast/single.xml` – Kettlo, skippable after 5 s (the pre-roll), with Ferntop standing by (a VAST buffet: no `sequence`). The demo app remembers shown creatives for 30 minutes across titles and launches, so a second launch within 30 minutes plays Ferntop;
 - `vast/pod.xml` – Brewnord, Voltaro, Kettlo as a pod. Kettlo comes again, as when two ad sources sell the same creative; the player leaves it out and sends its `notUsed` pixel;
 - `vast/ferntop.xml` – Ferntop, skippable after 5 s (the second mid-roll);
 - `vast/quillary.xml` – Quillary (the post-roll);

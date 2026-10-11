@@ -208,3 +208,14 @@ The content plays on for 0.1–0.2 s after `pause()` on this device, so the view
 | QR beside the card, `pauseAdStyle={{top: 100, bottom: 220}}` | PASS, same pixels; the card and QR code stay between the title and the controls |
 
 Not checked yet: the pause ad with VoiceView on (the announcement), and Back while the image is still loading.
+
+## Household memory: no repeat across launches (12.10.2026)
+
+`memory-run.sh` (kept outside the repo): launch 1 installs the demo with `vega run-app` and plays the pre-roll; launch 2 is a cold start of the same install with `vlcm launch-app`. The pre-roll VAST is a buffet: Kettlo, Ferntop standing by. The demo keeps shown creatives in `@amazon-devices/react-native-async-storage__async-storage` (`avoidRepeats.memory`).
+
+| Run | Launch 1 | Launch 2 |
+|---|---|---|
+| 1 | Kettlo: impression, complete | Kettlo `notUsed`, then Ferntop: impression, complete |
+| 2 (a minute later) | Kettlo again: impression, complete | the same as run 1 |
+
+So AsyncStorage works on Vega OS 1.2 from React Native, the memory survives a cold start, and `vega run-app` (a reinstall) clears it. Gate runs, which reinstall each time, stay alike.

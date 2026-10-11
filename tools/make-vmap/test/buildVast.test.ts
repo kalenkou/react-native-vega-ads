@@ -72,6 +72,14 @@ describe('buildVast', () => {
     ]);
   });
 
+  it('writes a buffet when asked: the first ad plays, the others stand by in order', async () => {
+    const parsed = await load(buildVast([ad('tos-a'), ad('tos-b')], { buffet: true }));
+    expect(parsed.map((p) => [p.ad.id, p.sequence])).toEqual([
+      ['tos-a', null],
+      ['tos-b', null],
+    ]);
+  });
+
   it('escapes the title and refuses bad input', () => {
     expect(buildVast([ad('tos-a', { title: 'Tom & Jerry <3' })])).toContain('<AdTitle>Tom &amp; Jerry &lt;3</AdTitle>');
     expect(() => buildVast([])).toThrow(RangeError);

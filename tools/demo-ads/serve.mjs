@@ -97,7 +97,9 @@ const vmap = (times) =>
   });
 
 const documents = {
-  'vast/single.xml': buildVast([ad('kettlo', 5)]),
+  // Kettlo, with Ferntop standing by: a household that saw Kettlo in the last 30 minutes, in any
+  // title, gets Ferntop instead.
+  'vast/single.xml': buildVast([ad('kettlo', 5), ad('ferntop', 5)], { buffet: true }),
   // Kettlo again, as when two ad sources sell the same creative: the player leaves it out.
   'vast/pod.xml': buildVast([ad('brewnord'), ad('voltaro', 5), ad('kettlo')]),
   'vast/ferntop.xml': buildVast([ad('ferntop', 5)]),
