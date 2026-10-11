@@ -415,4 +415,25 @@ describe('useVegaAds', () => {
     await settle();
     expect(ctx.http.requests.filter((url) => url === PRE)).toHaveLength(1);
   });
+
+  it('gives the breaks for the timeline and the countdown before a mid-roll that is ready', async () => {
+    const MID = 'https://ads.test/mid.xml';
+    const ctx = setup({ source: { breaks: [{ offset: 30, vastUrl: MID }] } });
+    ctx.http.on(MID, { body: inline });
+    await ctx.surfacesReady();
+    expect(ctx.ads().timeline).toEqual({ marks: [{ id: 'break-1', time: 30, done: false }], nextBreakIn: null });
+
+    const at = async (time: number): Promise<void> => {
+      act(() => {
+        ctx.content.currentTime = time;
+        ctx.content.emit('timeupdate');
+      });
+      await settle();
+    };
+    await at(15);
+    act(() => ctx.lastAd().emit('canplay'));
+    await settle();
+    await at(26);
+    expect(ctx.ads().timeline.nextBreakIn).toBe(4);
+  });
 });

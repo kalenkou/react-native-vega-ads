@@ -1,6 +1,7 @@
 import { type ReactElement, type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { adIdMacros, type AdSchedule, type Macros } from 'react-native-ads-core';
+import { AdCountdown } from './AdCountdown';
 import { AdOverlay } from './AdOverlay';
 import { AdSurfaceLayers } from './AdSurfaceLayers';
 import { DualSurfaceView } from './DualSurfaceView';
@@ -48,6 +49,11 @@ export interface VegaAdsPlayerProps extends Omit<UseVegaAdsOptions, 'source' | '
    * ads, or the remote moves focus to the screen behind the ad.
    */
   renderOverlay?: (ads: VegaAds) => ReactNode;
+  /**
+   * "Ad in 5" before each mid-roll whose ads are ready. false: draw your own from
+   * `ads.timeline.nextBreakIn`. Default true.
+   */
+  countdown?: boolean;
   /** w3cmedia scaling mode. Default 'fit'. */
   scalingMode?: string;
   style?: StyleProp<ViewStyle>;
@@ -73,6 +79,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
     children,
     contentSurface = true,
     renderOverlay,
+    countdown = true,
     scalingMode,
     style,
     macros,
@@ -110,6 +117,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
           <AdSurfaceLayers surfaces={ads.surfaces} scalingMode={scalingMode} />
         </>
       )}
+      {countdown && !ads.playing && <AdCountdown nextBreakIn={ads.timeline.nextBreakIn} strings={options.strings} />}
       {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} />}
     </View>
   );

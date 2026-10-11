@@ -140,4 +140,29 @@ describe('VegaAdsPlayer – customising', () => {
     expect(ctx.renderer.root.findAllByProps({ testID: 'my-overlay' }).length).toBeGreaterThan(0);
     expect(ctx.renderer.root.findAllByProps({ testID: 'vega-ads-focus' })).toHaveLength(0);
   });
+
+  it('shows "Ad in N" before a mid-roll; countdown={false} leaves it to the app', async () => {
+    const MID = 'https://ads.test/mid.xml';
+    const run = async (props: Partial<VegaAdsPlayerProps>): Promise<string[]> => {
+      const ctx = setup({ ads: { breaks: [{ offset: 30, vastUrl: MID }] }, ...props });
+      ctx.http.on(MID, { body: inline });
+      ctx.surfacesReady();
+      await settle();
+      const content = ctx.players[0] as FakeW3cPlayer;
+      const at = async (time: number): Promise<void> => {
+        act(() => {
+          content.currentTime = time;
+          content.emit('timeupdate');
+        });
+        await settle();
+      };
+      await at(15);
+      act(() => ctx.players[ctx.players.length - 1]?.emit('canplay'));
+      await settle();
+      await at(27);
+      return ctx.renderer.root.findAll((n) => (n.type as unknown) === 'Text').map((n) => String(n.props.children));
+    };
+    expect(await run({})).toContain('Ad in 3');
+    expect(await run({ countdown: false })).not.toContain('Ad in 3');
+  });
 });

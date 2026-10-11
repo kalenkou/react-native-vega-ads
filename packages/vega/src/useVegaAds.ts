@@ -5,6 +5,7 @@ import { VideoPlayer } from '@amazon-devices/react-native-w3cmedia';
 import {
   AdManager,
   AdSchedule,
+  AdTimeline,
   AdUiState,
   AdUiStrings,
   adUiState,
@@ -46,6 +47,8 @@ export interface UseVegaAdsOptions {
   macros?: Macros;
   /** How early a break is loaded and buffered. Default 15 s. */
   prefetchSeconds?: number;
+  /** How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. */
+  countdownSeconds?: number;
   mediaFile?: MediaFileOptions;
   /** Overlay texts; English by default. */
   strings?: Partial<AdUiStrings>;
@@ -78,6 +81,8 @@ export interface VegaAds {
   snapshot: SessionSnapshot;
   /** What AdOverlay shows. */
   ui: AdUiState;
+  /** Mid-rolls to mark on your timeline, and the countdown to the next one (AdCountdown). */
+  timeline: AdTimeline;
   surfaces: AdSurfaces;
   /** Viewer pressed Skip. False when skipping is not allowed yet. */
   skip: () => boolean;
@@ -90,6 +95,8 @@ export interface VegaAds {
   /** Leave the ad break and go back to the content. */
   back: () => Promise<void>;
 }
+
+const NO_TIMELINE: AdTimeline = Object.freeze({ marks: [], nextBreakIn: null });
 
 const newVideoPlayer = (): W3cVideoPlayer => new VideoPlayer() as unknown as W3cVideoPlayer;
 
@@ -114,6 +121,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   const [standbySurface, setStandbySurface] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<SessionSnapshot>(IDLE_SNAPSHOT);
   const [ended, setEnded] = useState(false);
+  const [timeline, setTimeline] = useState<AdTimeline>(NO_TIMELINE);
   const manager = useRef<AdManager | null>(null);
   /** Which source and player already started, so a restart (new surfaces) resumes instead of replaying. */
   const startedFor = useRef<{ key: string; player: W3cVideoPlayer | 'port'; manager: AdManager } | null>(null);
@@ -161,7 +169,9 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       macros: o.macros,
       mediaFile: o.mediaFile,
       prefetchSeconds: o.prefetchSeconds,
+      countdownSeconds: o.countdownSeconds,
       onChange: setSnapshot,
+      onTimeline: setTimeline,
       onEvent: (name) => {
         if (name === 'content:ended') {
           setEnded(true);
@@ -177,6 +187,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     return () => {
       manager.current = null;
       setSnapshot(IDLE_SNAPSHOT);
+      setTimeline(NO_TIMELINE);
       setEnded(false);
       void created.dispose();
     };
@@ -230,5 +241,5 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     [inAd, snapshot.adSurface],
   );
 
-  return { playing: inAd, ended, snapshot, ui, surfaces, skip, togglePause, back };
+  return { playing: inAd, ended, snapshot, ui, timeline, surfaces, skip, togglePause, back };
 }
