@@ -40,4 +40,14 @@ describe('AdSurfaceLayers (for apps that render their own content surface)', () 
     const layerA = renderer.root.find((n) => n.props.testID === 'vega-ads-ad-a' && (n.type as unknown) === 'View');
     expect(Object.assign({}, ...[layerA.props.style].flat(3).filter(Boolean)).left).toBe(0);
   });
+
+  it('sits above the content captions by default', () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<AdSurfaceLayers surfaces={surfaces()} />);
+    });
+    const root = renderer.root.findAll((n) => (n.type as unknown) === 'View')[0];
+    const style = Object.assign({}, ...[root?.props.style].flat(3).filter(Boolean));
+    expect(style.zIndex).toBeGreaterThan(2);
+  });
 });

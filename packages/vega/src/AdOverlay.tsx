@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { type ReactElement, useEffect, useRef } from 'react';
 import { AccessibilityInfo, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import type { AdUiState } from '@vega-ads/core';
 
@@ -17,7 +17,7 @@ function adName(label: string): string {
  * Ad label ("Ad 1 of 3 · 0:12") and a Skip button that takes D-pad focus.
  * Announces each ad once for VoiceView (R26).
  */
-export function AdOverlay({ ui, onSkip, style }: AdOverlayProps): JSX.Element | null {
+export function AdOverlay({ ui, onSkip, style }: AdOverlayProps): ReactElement | null {
   const announced = useRef<string | null>(null);
   const key = ui.visible ? adName(ui.label) : null;
 

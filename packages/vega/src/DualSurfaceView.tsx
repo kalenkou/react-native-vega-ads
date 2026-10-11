@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type ReactElement, useEffect, useState } from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { KeplerVideoSurfaceView } from '@amazon-devices/react-native-w3cmedia';
 import type { AdSurfaces } from './useVegaAds';
@@ -22,7 +22,7 @@ export interface DualSurfaceViewProps {
  * Three stacked video surfaces (R11): content, ad A above it, ad B above A.
  * For a screen that already renders its own content surface, use AdSurfaceLayers.
  */
-export function DualSurfaceView(props: DualSurfaceViewProps): JSX.Element {
+export function DualSurfaceView(props: DualSurfaceViewProps): ReactElement {
   const { surfaces, contentPlayer, scalingMode = 'fit' } = props;
   const [contentSurface, setContentSurface] = useState<string | null>(null);
   useEffect(() => {

@@ -319,6 +319,17 @@ describe('useVegaAds', () => {
     expect(ctx.content.calls).toContain('play');
   });
 
+  it('tells the app when the content and its post-roll are over', async () => {
+    const ctx = setup({ source: { breaks: [] } });
+    await ctx.surfacesReady();
+    expect(ctx.ads().ended).toBe(false);
+    act(() => {
+      ctx.content.emit('ended');
+    });
+    await settle();
+    expect(ctx.ads().ended).toBe(true);
+  });
+
   it('Back during an ad returns to the content and is consumed (R23)', async () => {
     const ctx = setup();
     const ad = await ctx.prerollPlaying();

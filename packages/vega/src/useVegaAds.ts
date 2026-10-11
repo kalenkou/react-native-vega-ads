@@ -71,8 +71,10 @@ export interface AdSurfaces {
 }
 
 export interface VegaAds {
-  /** True while an ad is on screen. Your own remote handler should leave play/pause to `togglePause` then. */
+  /** True while an ad is on screen. Hide your player UI then and leave the remote play/pause key alone. */
   playing: boolean;
+  /** The content has ended and its post-roll (if any) is over: safe to close the player screen. */
+  ended: boolean;
   snapshot: SessionSnapshot;
   /** What AdOverlay shows. */
   ui: AdUiState;
@@ -111,6 +113,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   const [adSurface, setAdSurface] = useState<string | null>(null);
   const [standbySurface, setStandbySurface] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<SessionSnapshot>(IDLE_SNAPSHOT);
+  const [ended, setEnded] = useState(false);
   const manager = useRef<AdManager | null>(null);
   /** Which source and player already started, so a restart (new surfaces) resumes instead of replaying. */
   const startedFor = useRef<{ key: string; player: W3cVideoPlayer | 'port' } | null>(null);
@@ -159,7 +162,12 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       mediaFile: o.mediaFile,
       prefetchSeconds: o.prefetchSeconds,
       onChange: setSnapshot,
-      onEvent: (name) => latest.current.onEvent?.(name),
+      onEvent: (name) => {
+        if (name === 'content:ended') {
+          setEnded(true);
+        }
+        latest.current.onEvent?.(name);
+      },
     });
     manager.current = created;
     const resumed = startedFor.current?.key === sourceKey && startedFor.current.player === contentKey;
@@ -168,6 +176,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     return () => {
       manager.current = null;
       setSnapshot(IDLE_SNAPSHOT);
+      setEnded(false);
       void created.dispose();
     };
     // sourceKey stands for `source`: a new object with the same content must not restart the ads.
@@ -220,5 +229,5 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     [inAd, snapshot.adSurface],
   );
 
-  return { playing: inAd, snapshot, ui, surfaces, skip, togglePause, back };
+  return { playing: inAd, ended, snapshot, ui, surfaces, skip, togglePause, back };
 }
