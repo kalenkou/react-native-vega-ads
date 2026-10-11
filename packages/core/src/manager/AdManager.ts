@@ -1,6 +1,6 @@
 import { ClockPort, HttpPort, Macros, MediaFileOptions, requestVmap, ScheduledBreak, VmapTrackingEvent } from '../vast';
 import { AdBreakSession, SessionSnapshot } from '../machine/AdBreakSession';
-import { BreakScheduler, Decision } from '../schedule/BreakScheduler';
+import { BreakMark, BreakScheduler, Decision } from '../schedule/BreakScheduler';
 import type { PlayerPort } from '../ports';
 
 /** Where the breaks come from: a VMAP document, or a list of VAST tags with their times. */
@@ -23,6 +23,20 @@ export interface AdManagerDeps {
   onChange?: (snapshot: SessionSnapshot) => void;
   /** Session events plus `vmap:error:<code>` and `break:<id>:late`. */
   onEvent?: (name: string) => void;
+  /** The breaks on the content timeline and the countdown to the next one; called on changes only. */
+  onTimeline?: (timeline: AdTimeline) => void;
+  /** How many seconds before a mid-roll the countdown starts. Default 5. */
+  countdownSeconds?: number;
+}
+
+/** What a player UI shows outside the breaks: marks on its timeline and «Ad in 5». */
+export interface AdTimeline {
+  marks: BreakMark[];
+  /**
+   * Whole seconds to the next mid-roll, only in the last `countdownSeconds` and only when its
+   * ads are loaded (a warning must not promise a break that will not come); otherwise null.
+   */
+  nextBreakIn: number | null;
 }
 
 export const IDLE_SNAPSHOT: SessionSnapshot = Object.freeze({
@@ -43,6 +57,7 @@ interface Prepared {
   session: AdBreakSession;
   loading: Promise<'ready' | 'empty'>;
   loaded: boolean;
+  ready: boolean;
 }
 
 /**
@@ -68,6 +83,7 @@ export class AdManager {
   private impressed = false;
   private disposed = false;
   private durationKnown = false;
+  private timeline = '';
   private readonly offs: Array<() => void> = [];
 
   constructor(deps: AdManagerDeps) {
@@ -106,6 +122,7 @@ export class AdManager {
     if (resumeAt !== undefined) {
       scheduler.resumeAt(resumeAt);
     }
+    this.reportTimeline(scheduler, null);
     const first = scheduler.begin();
     if (!first.some((d) => d.type === 'start')) {
       await this.playContent();
@@ -242,10 +259,28 @@ export class AdManager {
       this.durationKnown = true;
       scheduler.setDuration(content.getDuration());
     }
-    const decisions = scheduler.onTime(content.getCurrentTime());
+    const time = content.getCurrentTime();
+    const decisions = scheduler.onTime(time);
     const starting = new Set(decisions.filter((d) => d.type === 'start').map((d) => d.breakId));
     this.releasePassed(scheduler, starting);
+    this.reportTimeline(scheduler, time);
     void this.apply(decisions);
+  }
+
+  private reportTimeline(scheduler: BreakScheduler, time: number | null): void {
+    if (!this.deps.onTimeline) {
+      return;
+    }
+    const limit = this.deps.countdownSeconds ?? 5;
+    const next = time === null ? null : scheduler.nextIn(time);
+    const ready = next !== null && this.prepared.get(next.breakId)?.ready === true;
+    const nextBreakIn = ready && next.seconds > 0 && next.seconds <= limit ? Math.ceil(next.seconds) : null;
+    const timeline: AdTimeline = { marks: scheduler.marks(), nextBreakIn };
+    const key = JSON.stringify(timeline);
+    if (key !== this.timeline) {
+      this.timeline = key;
+      this.deps.onTimeline(timeline);
+    }
   }
 
   /** A prefetched break that a seek jumped over holds an ad player (a video decoder): free it. */
@@ -290,8 +325,16 @@ export class AdManager {
         this.deps.onEvent?.(name);
       },
     });
-    const entry: Prepared = { session, loading: session.load(adBreak.sources.map((s) => s.source)), loaded: false };
-    void entry.loading.then(() => (entry.loaded = true));
+    const entry: Prepared = {
+      session,
+      loading: session.load(adBreak.sources.map((s) => s.source)),
+      loaded: false,
+      ready: false,
+    };
+    void entry.loading.then((result) => {
+      entry.loaded = true;
+      entry.ready = result === 'ready';
+    });
     this.prepared.set(id, entry);
   }
 

@@ -7,6 +7,9 @@ export interface AdUiStrings {
   skipIn: (seconds: number) => string;
   seconds: (count: number) => string;
   announceSkipIn: (seconds: number) => string;
+  /** Before a break: "Ad in 5". */
+  adIn: (seconds: number) => string;
+  announceAdIn: (seconds: number) => string;
 }
 
 export const defaultAdUiStrings: AdUiStrings = {
@@ -16,6 +19,8 @@ export const defaultAdUiStrings: AdUiStrings = {
   skipIn: (seconds) => `Skip in ${seconds}`,
   seconds: (count) => `${count} seconds`,
   announceSkipIn: (seconds) => `you can skip in ${seconds} seconds`,
+  adIn: (seconds) => `Ad in ${seconds}`,
+  announceAdIn: (seconds) => `Ad break in ${seconds} seconds`,
 };
 
 export interface AdUiState {
@@ -53,4 +58,21 @@ export function adUiState(snapshot: SessionSnapshot, strings: Partial<AdUiString
   if (skippable && !snapshot.canSkip) parts.push(s.announceSkipIn(waitSeconds));
 
   return { visible, label, skip, announcement: parts.join(', ') };
+}
+
+export interface AdCountdownState {
+  visible: boolean;
+  /** "Ad in 5" */
+  label: string;
+  /** Text for the screen reader (VoiceView) when the countdown starts. */
+  announcement: string;
+}
+
+/** The warning before a mid-roll, from `AdTimeline.nextBreakIn`. */
+export function adCountdownState(nextBreakIn: number | null, strings: Partial<AdUiStrings> = {}): AdCountdownState {
+  if (nextBreakIn === null) {
+    return { visible: false, label: '', announcement: '' };
+  }
+  const s = { ...defaultAdUiStrings, ...strings };
+  return { visible: true, label: s.adIn(nextBreakIn), announcement: s.announceAdIn(nextBreakIn) };
 }

@@ -197,4 +197,36 @@ describe('BreakScheduler (R10, R24)', () => {
     expect(play(scheduler, 0, 100)).toEqual([]);
     expect(scheduler.onEnded()).toEqual([]);
   });
+
+  it('marks() lists the mid-rolls on the timeline and which are used up', () => {
+    const scheduler = new BreakScheduler([
+      { id: 'pre', offset: start },
+      { id: 'b', offset: at(200) },
+      { id: 'a', offset: at(30) },
+      { id: 'half', offset: pct(50) },
+      { id: 'post', offset: end },
+    ]);
+    expect(scheduler.marks()).toEqual([
+      { id: 'a', time: 30, done: false },
+      { id: 'b', time: 200, done: false },
+    ]);
+    scheduler.begin();
+    scheduler.setDuration(600);
+    play(scheduler, 0, 31);
+    expect(scheduler.marks()).toEqual([
+      { id: 'a', time: 30, done: true },
+      { id: 'b', time: 200, done: false },
+      { id: 'half', time: 300, done: false },
+    ]);
+  });
+
+  it('nextIn() gives the seconds to the next mid-roll that is still to play', () => {
+    const scheduler = new BreakScheduler([{ id: 'a', offset: at(30) }, { id: 'b', offset: at(200) }]);
+    scheduler.begin();
+    expect(scheduler.nextIn(26)).toEqual({ breakId: 'a', seconds: 4 });
+    play(scheduler, 0, 31);
+    expect(scheduler.nextIn(31)).toEqual({ breakId: 'b', seconds: 169 });
+    play(scheduler, 31.5, 201);
+    expect(scheduler.nextIn(201)).toBeNull();
+  });
 });

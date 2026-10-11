@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { AdManager, AdSchedule, IDLE_SNAPSHOT } from '../../src/manager/AdManager';
+import { AdManager, AdSchedule, AdTimeline, IDLE_SNAPSHOT } from '../../src/manager/AdManager';
 import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
 import { installImagePolyfill } from '../../src/vast';
 import { FakeClock } from '../fakes/FakeClock';
@@ -35,6 +35,7 @@ function setup(routes: Record<string, string>) {
   const adPlayers: FakePlayer[] = [];
   const snapshots: SessionSnapshot[] = [];
   const events: string[] = [];
+  const timelines: AdTimeline[] = [];
   const manager = new AdManager({
     http,
     clock,
@@ -48,10 +49,11 @@ function setup(routes: Record<string, string>) {
     },
     onChange: (snapshot) => snapshots.push(snapshot),
     onEvent: (name) => events.push(name),
+    onTimeline: (timeline) => timelines.push(timeline),
   });
   const lastAdPlayer = (): FakePlayer => adPlayers[adPlayers.length - 1] as FakePlayer;
   const last = (): SessionSnapshot | undefined => snapshots[snapshots.length - 1];
-  return { http, clock, content, adPlayers, snapshots, events, manager, lastAdPlayer, last };
+  return { http, clock, content, adPlayers, snapshots, events, timelines, manager, lastAdPlayer, last };
 }
 
 type Ctx = ReturnType<typeof setup>;
@@ -521,5 +523,71 @@ describe('AdManager', () => {
     ctx.clock.advance(10_000); // VMAP timeout
     await starting;
     expect(ctx.content.calls).not.toContain('play');
+  });
+
+  describe('timeline', () => {
+    const lastTimeline = (ctx: Ctx): AdTimeline | undefined => ctx.timelines[ctx.timelines.length - 1];
+
+    it('reports the mid-rolls for the timeline once the schedule is known', async () => {
+      const ctx = setup({});
+      await ctx.manager.start(
+        manual([
+          { offset: 'start', vastUrl: 'https://ads.test/none.xml' },
+          { offset: 300, vastUrl: 'https://ads.test/mid2.xml' },
+          { offset: 30, vastUrl: 'https://ads.test/mid.xml' },
+        ]),
+      );
+      expect(ctx.timelines[0]).toEqual({
+        marks: [
+          { id: 'break-3', time: 30, done: false },
+          { id: 'break-2', time: 300, done: false },
+        ],
+        nextBreakIn: null,
+      });
+    });
+
+    it('counts down the last 5 s before a mid-roll whose ads are ready, then marks it played', async () => {
+      const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
+      await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]));
+      ctx.content.emitTime(15);
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await settle();
+      ctx.content.emitTime(24.9);
+      await settle();
+      expect(lastTimeline(ctx)?.nextBreakIn).toBeNull();
+      ctx.content.emitTime(25.2);
+      await settle();
+      expect(lastTimeline(ctx)?.nextBreakIn).toBe(5);
+      ctx.content.emitTime(26.5);
+      await settle();
+      expect(lastTimeline(ctx)?.nextBreakIn).toBe(4);
+
+      ctx.content.emitTime(30);
+      await settle();
+      expect(lastTimeline(ctx)).toEqual({ marks: [{ id: 'break-1', time: 30, done: true }], nextBreakIn: null });
+    });
+
+    it('does not count down to a break whose ads have not loaded', async () => {
+      const ctx = setup({});
+      ctx.http.hang('https://ads.test/slow.xml');
+      await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/slow.xml' }]));
+      ctx.content.emitTime(20);
+      await settle();
+      ctx.content.emitTime(27);
+      await settle();
+      expect(ctx.timelines.every((t) => t.nextBreakIn === null)).toBe(true);
+    });
+
+    it('reports only changes, not every content time update', async () => {
+      const ctx = setup({});
+      await ctx.manager.start(manual([{ offset: 300, vastUrl: 'https://ads.test/mid.xml' }]));
+      const count = ctx.timelines.length;
+      ctx.content.emitTime(10);
+      ctx.content.emitTime(10.25);
+      ctx.content.emitTime(10.5);
+      await settle();
+      expect(ctx.timelines).toHaveLength(count);
+    });
   });
 });

@@ -2,6 +2,14 @@ import type { BreakOffset } from '../vast';
 
 export type Decision = { type: 'prefetch' | 'start'; breakId: string };
 
+/** A mid-roll on the content timeline; `done` once it has played or was passed. */
+export interface BreakMark {
+  id: string;
+  /** Content time, in seconds. */
+  time: number;
+  done: boolean;
+}
+
 export interface SchedulerOptions {
   /** How early to load and buffer the ads of a break (R10). */
   prefetchSeconds?: number;
@@ -137,6 +145,21 @@ export class BreakScheduler {
   /** Mark a break as used without playing it (for example, its ad request failed). */
   skip(breakId: string): void {
     this.entries.filter((e) => e.id === breakId).forEach((e) => (e.done = true));
+  }
+
+  /** The mid-rolls inside the content, in time order: where a timeline can mark the breaks. */
+  marks(): BreakMark[] {
+    return this.entries
+      .filter((e) => e.offset.kind === 'time' || e.offset.kind === 'percent')
+      .filter((e) => e.time !== null && (this.duration === null || e.time < this.duration))
+      .sort((a, b) => (a.time as number) - (b.time as number))
+      .map((e) => ({ id: e.id, time: e.time as number, done: e.done }));
+  }
+
+  /** The next mid-roll still to play after `time`, and how many seconds away it is. */
+  nextIn(time: number): { breakId: string; seconds: number } | null {
+    const next = this.midRolls().find((e) => (e.time as number) >= time);
+    return next ? { breakId: next.id, seconds: (next.time as number) - time } : null;
   }
 
   private midRolls(): Entry[] {

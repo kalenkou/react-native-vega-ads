@@ -1,4 +1,4 @@
-import { adUiState } from '../../src/ui/adUiState';
+import { adCountdownState, adUiState } from '../../src/ui/adUiState';
 import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
 
 function snapshot(overrides: Partial<SessionSnapshot>): SessionSnapshot {
@@ -50,5 +50,21 @@ describe('adUiState (R26)', () => {
     expect(ui.label).toBe('Reklama 1 z 2 · 0:12');
     expect(ui.skip.label).toBe('Pomiń za 2');
     expect(ui.announcement).toBe('Reklama 1 z 2, 15 s, Pomiń za 2');
+  });
+});
+
+describe('adCountdownState', () => {
+  it('shows "Ad in N" before a break and announces the break once, at its start', () => {
+    expect(adCountdownState(5)).toEqual({ visible: true, label: 'Ad in 5', announcement: 'Ad break in 5 seconds' });
+    expect(adCountdownState(1).label).toBe('Ad in 1');
+  });
+
+  it('is hidden when no break is coming', () => {
+    expect(adCountdownState(null)).toEqual({ visible: false, label: '', announcement: '' });
+  });
+
+  it('lets the app replace the strings', () => {
+    const state = adCountdownState(3, { adIn: (n) => `Werbung in ${n}`, announceAdIn: (n) => `Werbepause in ${n} Sekunden` });
+    expect(state).toEqual({ visible: true, label: 'Werbung in 3', announcement: 'Werbepause in 3 Sekunden' });
   });
 });
