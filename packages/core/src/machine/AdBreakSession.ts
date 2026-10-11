@@ -87,6 +87,8 @@ export class AdBreakSession {
   private previousReleased: () => void = () => undefined;
   /** Set when the device could not start a second ad player; then the break uses one. */
   private standbyUnavailable = false;
+  /** The active ad already plays but is still hidden under the finishing one. */
+  private firstFrameHidden = false;
   private standby: Standby | null = null;
   private releasing: Promise<void> = Promise.resolve();
   private current: Current | null = null;
@@ -249,6 +251,15 @@ export class AdBreakSession {
 
   private onPlaying(): void {
     this.whilePlaying((c) => {
+      if (this.shownSurface !== this.playerSurface) {
+        // Fire TV rule: no impression for an ad that is not visible yet. See releasePrevious().
+        this.firstFrameHidden = true;
+        this.emitChange();
+        if (this.deps.standbySurface && !this.standby) {
+          void this.prepareStandby(c);
+        }
+        return;
+      }
       this.impressed = true;
       c.tracker.firstFrame();
       c.tracker.resumed();
@@ -303,7 +314,9 @@ export class AdBreakSession {
   private onTime(): void {
     this.whilePlaying((c) => {
       const time = this.player?.getCurrentTime() ?? 0;
-      c.tracker.progress(time);
+      if (!this.firstFrameHidden) {
+        c.tracker.progress(time);
+      }
       this.emitChange();
       const remainingMs = (c.item.ad.creative.duration - time) * 1000;
       if (this.standby?.ready && !this.previous && remainingMs <= (this.deps.handOverLeadMs ?? 500)) {
@@ -324,6 +337,8 @@ export class AdBreakSession {
     pod.next(elapsed);
     this.standby = null;
     this.previous = { player, tracker: current.tracker };
+    // One sound at a time: the finishing ad keeps playing for its pixels, silently.
+    player.setMuted(true);
     this.releasing = new Promise((resolve) => (this.previousReleased = resolve));
     await this.switchTo(standby);
   }
@@ -337,6 +352,12 @@ export class AdBreakSession {
     previous.tracker.ended();
     // The finished ad's surface is empty now; the active ad is the one to show.
     this.shownSurface = this.playerSurface;
+    if (this.firstFrameHidden && this.current) {
+      this.firstFrameHidden = false;
+      this.impressed = true;
+      this.current.tracker.firstFrame();
+      this.current.tracker.progress(this.player?.getCurrentTime() ?? 0);
+    }
     this.emitChange();
     await previous.player.deinitialize();
     this.previousReleased();

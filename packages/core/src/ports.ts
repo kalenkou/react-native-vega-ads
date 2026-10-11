@@ -13,6 +13,8 @@ export interface PlayerPort {
   detachSurface(handle: string): void;
   setAutoplay(autoplay: boolean): void;
   setSrc(url: string): void;
+  /** Silences the player without pausing it. */
+  setMuted(muted: boolean): void;
   /** Resolves as soon as the command is accepted, not when frames are shown. */
   play(): Promise<void>;
   pause(): void;

@@ -6,6 +6,7 @@ import type { PlayerEventName, PlayerPort } from '@vega-ads/core';
  */
 export interface W3cVideoPlayer {
   autoplay: boolean;
+  muted: boolean;
   src: string;
   currentTime: number;
   readonly duration: number;
@@ -52,6 +53,10 @@ export class W3cPlayerAdapter implements PlayerPort {
 
   setSrc(url: string): void {
     this.player.src = url;
+  }
+
+  setMuted(muted: boolean): void {
+    this.player.muted = muted;
   }
 
   play(): Promise<void> {

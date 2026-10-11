@@ -314,6 +314,9 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
     expect(next.calls).toContain('play');
     expect(next.hasMediaControlFocus).toBe(true);
     expect(first.deinitialized).toBe(false);
+    // One sound at a time (Fire TV audio focus test): the finishing ad is silenced.
+    expect(first.muted).toBe(true);
+    expect(next.muted).toBe(false);
     // The standby surface is above the first one: show it as soon as the next ad starts.
     expect(last(ctx.states)).toMatchObject({ adSurface: STANDBY });
     await next.flush();
@@ -363,12 +366,18 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
     await settle();
     expect(third.calls).toContain('play');
     expect(last(ctx.states)).toMatchObject({ position: 3, adSurface: STANDBY });
+    pixels.requests.splice(0);
     await third.flush();
     await settle();
+    third.emitTime(0.4);
     expect(last(ctx.states)).toMatchObject({ adSurface: STANDBY });
+    // The third ad plays under the second one, so it is not visible yet: no impression, no start.
+    expect(pixels.requests.filter((u) => u.includes('imp-buffet'))).toEqual([]);
+    expect(ctx.events.filter((e) => e === 'impression')).toHaveLength(2);
     second.emitEnded();
     await settle();
     expect(last(ctx.states)).toMatchObject({ position: 3, adSurface: SURFACE });
+    expect(pixels.requests).toContain('https://t.test/imp-buffet');
   });
 
   it('falls back to the current player when the next ad is not buffered in time', async () => {

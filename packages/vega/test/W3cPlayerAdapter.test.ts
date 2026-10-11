@@ -4,6 +4,7 @@ import { W3cPlayerAdapter, W3cVideoPlayer } from '../src/W3cPlayerAdapter';
 class RecordingPlayer implements W3cVideoPlayer {
   calls: string[] = [];
   autoplay = true;
+  muted = false;
   src = '';
   currentTime = 0;
   duration = NaN;
@@ -69,6 +70,14 @@ describe('W3cPlayerAdapter', () => {
     expect(native.autoplay).toBe(false);
     expect(native.src).toBe('https://cdn.test/a.mp4');
     expect(port.getCurrentTime()).toBe(42.5);
+  });
+
+  it('mutes through the muted property', () => {
+    const { native, port } = make();
+    port.setMuted(true);
+    expect(native.muted).toBe(true);
+    port.setMuted(false);
+    expect(native.muted).toBe(false);
   });
 
   it('plays and pauses', async () => {

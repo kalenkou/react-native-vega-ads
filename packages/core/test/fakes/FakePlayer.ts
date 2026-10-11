@@ -9,6 +9,7 @@ export class FakePlayer implements PlayerPort {
   surface: string | null = null;
   src: string | null = null;
   autoplay = true;
+  muted = false;
   paused = true;
   deinitialized = false;
   hasMediaControlFocus = false;
@@ -50,6 +51,10 @@ export class FakePlayer implements PlayerPort {
     this.assertReady();
     this.calls.push(`src:${url}`);
     this.src = url;
+  }
+
+  setMuted(muted: boolean): void {
+    this.muted = muted;
   }
 
   async play(): Promise<void> {
