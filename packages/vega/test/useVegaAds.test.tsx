@@ -138,6 +138,25 @@ describe('useVegaAds', () => {
     expect(ctx.http.requests.filter((url) => url === PRE)).toHaveLength(1);
   });
 
+  it('plays the pre-roll after all when the surfaces are recreated before anything was shown (E1-2)', async () => {
+    const ctx = setup();
+    await ctx.surfacesReady(); // pre-roll loaded, its player waits for canplay
+    act(() => ctx.ads().surfaces.onAdSurface(null));
+    act(() => ctx.ads().surfaces.onAdSurface('a2'));
+    await settle();
+    expect(ctx.http.requests.filter((url) => url === PRE)).toHaveLength(2);
+    expect(ctx.content.calls).not.toContain('play');
+  });
+
+  it('does not repeat a pre-roll that was already on screen when the surfaces are recreated', async () => {
+    const ctx = setup();
+    await ctx.prerollPlaying(); // impression sent
+    act(() => ctx.ads().surfaces.onAdSurface(null));
+    act(() => ctx.ads().surfaces.onAdSurface('a2'));
+    await settle();
+    expect(ctx.http.requests.filter((url) => url === PRE)).toHaveLength(1);
+  });
+
   it('tells the app when an ad is on screen', async () => {
     const ctx = setup();
     await ctx.surfacesReady();

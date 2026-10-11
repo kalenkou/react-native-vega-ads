@@ -65,6 +65,7 @@ export class AdManager {
   /** A break whose start the background cut off before it was shown; wake() starts the content instead. */
   private cutOff: string | null = null;
   private contentStarted = false;
+  private impressed = false;
   private disposed = false;
   private durationKnown = false;
   private readonly offs: Array<() => void> = [];
@@ -110,6 +111,14 @@ export class AdManager {
       await this.playContent();
     }
     await this.apply(first);
+  }
+
+  /**
+   * The viewer has seen something: the content, or at least one ad. Until then a restart
+   * (for example after new surfaces) may begin from the start, with the pre-roll.
+   */
+  get viewingStarted(): boolean {
+    return this.contentStarted || this.impressed;
   }
 
   /** Viewer pressed Skip. */
@@ -274,7 +283,12 @@ export class AdManager {
       macros: this.deps.macros,
       mediaFile: this.deps.mediaFile,
       onChange: (snapshot) => this.onSessionChange(id, session, snapshot),
-      onEvent: this.deps.onEvent,
+      onEvent: (name) => {
+        if (name === 'impression') {
+          this.impressed = true;
+        }
+        this.deps.onEvent?.(name);
+      },
     });
     const entry: Prepared = { session, loading: session.load(adBreak.sources.map((s) => s.source)), loaded: false };
     void entry.loading.then(() => (entry.loaded = true));

@@ -116,7 +116,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   const [ended, setEnded] = useState(false);
   const manager = useRef<AdManager | null>(null);
   /** Which source and player already started, so a restart (new surfaces) resumes instead of replaying. */
-  const startedFor = useRef<{ key: string; player: W3cVideoPlayer | 'port' } | null>(null);
+  const startedFor = useRef<{ key: string; player: W3cVideoPlayer | 'port'; manager: AdManager } | null>(null);
 
   // Read at start time; changing these does not restart the ads.
   const latest = useRef(options);
@@ -170,8 +170,9 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       },
     });
     manager.current = created;
-    const resumed = startedFor.current?.key === sourceKey && startedFor.current.player === contentKey;
-    startedFor.current = { key: sourceKey, player: contentKey as W3cVideoPlayer | 'port' };
+    const previous = startedFor.current;
+    const resumed = previous?.key === sourceKey && previous.player === contentKey && previous.manager.viewingStarted;
+    startedFor.current = { key: sourceKey, player: contentKey as W3cVideoPlayer | 'port', manager: created };
     void created.start(source, resumed ? { resumeAt: content.getCurrentTime() } : {});
     return () => {
       manager.current = null;
