@@ -34,6 +34,16 @@ function usePlayback(player: W3cVideoPlayer | null) {
       ['seeked', update()],
       ['pause', update(true)],
       ['play', update(false)],
+      // For the device log: what the movie player did around each break.
+      ...['play', 'playing', 'pause', 'seeked', 'ended', 'error'].map(
+        (type): [string, () => void] => [
+          type,
+          () =>
+            console.log(
+              `[demo] content ${type} ${player.currentTime.toFixed(1)}`,
+            ),
+        ],
+      ),
     ];
     listeners.forEach(([type, listener]) =>
       player.addEventListener(type, listener),
