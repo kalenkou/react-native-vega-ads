@@ -189,3 +189,22 @@ The preload saves about 0.7 s at the median here; the rest is creating the ad pl
 | After: seek back only when the content moved more than 0.25 s after `pause()` | 3 + 3 cold | 6/6 PASS. No `seeked 0.0`; after the mid-roll the movie went on from 140.1–140.3 s without a seek; frames differ (mean difference ~50) |
 
 The content plays on for 0.1–0.2 s after `pause()` on this device, so the viewer misses at most a quarter second at a break. The rare stop at 0:00 after the pre-roll (1 of 6 earlier) was not seen in these 6 runs; the unneeded seek of a never-played player is a likely cause, not a proven one.
+
+## No repeated ad in a pod (11.10.2026)
+
+`gate-run.sh` with the mid-roll pod that repeats the pre-roll's Kettlo, as when two ad sources sell the same creative.
+
+| Runs | Result |
+|---|---|
+| 2 cold | 2/2 PASS. Impressions: Kettlo (pre-roll), Brewnord, Voltaro. The repeated Kettlo was left out and its `notUsed` pixel arrived; the movie played on after the pod (frames differ, mean difference ~49) |
+
+## Pause ad (12.10.2026)
+
+`pause-run.sh` (kept outside the repo): cold launch, Play, the pre-roll plays out, the play/pause key pauses the movie; after the pause ad shows, Back, then the play/pause key again. The ad is the 600×600 Brewnord card with a QR code from `vast/pause.xml`.
+
+| Build | Result |
+|---|---|
+| First layout | PASS for behaviour: `pause.xml` prefetched at start, `impression` and `creativeView` at the pause (1.5 s delay), `overlayViewDuration` and `close` on Back (6.4 s later); the app stayed on the player and the movie resumed (frames differ). But the QR code and the hint covered the app's controls |
+| QR beside the card, `pauseAdStyle={{top: 100, bottom: 220}}` | PASS, same pixels; the card and QR code stay between the title and the controls |
+
+Not checked yet: the pause ad with VoiceView on (the announcement), and Back while the image is still loading.
