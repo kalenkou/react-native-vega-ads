@@ -734,6 +734,26 @@ describe('AdBreakSession – event order and stuck players (review results-34)',
     expect(settled).toBe(true);
   });
 
+  it('an error of the finishing ad after the hand-over sends 405 for it, not complete (C1-3)', async () => {
+    const imp1 = '<Impression><![CDATA[https://t.test/imp-pod-1]]></Impression>';
+    const body = fixture('pod-optimized.xml').replace(imp1, `${imp1}<Error><![CDATA[https://t.test/error-pod-1?code=[ERRORCODE]]]></Error>`);
+    const ctx = setup(body, { standby: true });
+    const first = await playFirst(ctx);
+    const second = ctx.adPlayers[1] as FakePlayer;
+    second.emitCanPlay();
+    await settle();
+    first.emitTime(9.6); // hand-over: first is the finishing player
+    await settle();
+    sent();
+    first.emitError('MediaError 3');
+    await settle();
+    expect(sent()).toEqual(['https://t.test/error-pod-1?code=405']);
+    expect(ctx.events).not.toContain('complete');
+    expect(ctx.events).toContain('error:405');
+    expect(first.deinitialized).toBe(true);
+    expect(ctx.session.state).toBe('playing');
+  });
+
   it('a media error before canplay fails the ad at once, not after 8 s (C4-1)', async () => {
     const ctx = setup(fixture('inline.xml'));
     let result: string | null = null;

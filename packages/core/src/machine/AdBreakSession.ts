@@ -307,7 +307,7 @@ export class AdBreakSession {
         void this.advance(c);
       });
     }));
-    player.on('error', finishing(() => void this.releasePrevious()));
+    player.on('error', finishing(() => void this.releasePrevious(PLAYBACK_ERROR)));
     return player;
   }
 
@@ -492,14 +492,21 @@ export class AdBreakSession {
     await this.switchTo(standby);
   }
 
-  private async releasePrevious(): Promise<void> {
+  /** @param errorCode set when the finishing ad failed instead of ending. */
+  private async releasePrevious(errorCode?: number): Promise<void> {
     const previous = this.previous;
     if (!previous) {
       return;
     }
     this.previous = null;
     this.clearPreviousTimer();
-    previous.tracker.ended();
+    if (errorCode === undefined) {
+      previous.tracker.ended();
+    } else {
+      // Not fail(): the pod has already moved on to the active ad.
+      previous.tracker.error(errorCode);
+      this.deps.onEvent?.(`error:${errorCode}`);
+    }
     // The finished ad's surface is empty now; the active ad is the one to show.
     this.shownSurface = this.playerSurface;
     if (this.firstFrameHidden && this.current) {
