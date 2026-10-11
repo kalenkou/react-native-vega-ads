@@ -86,3 +86,21 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Severity:** medium (wrong ad measurement on cold start; possible lost pre-roll).
 - **Workaround:** call `setMediaControlFocus` after the first frame is handled (deferred with `setTimeout(0)`); measured after the change: 143 ms from native `playing` to the impression.
 - **Suggestion:** do the media controls setup off the JS thread, or document that the first call is slow and should not be made on a time-critical path.
+
+## FL-10 · "Alexa, next" never reaches the app during an ad, even with "Next" in command_options (11.10.2026)
+- **Task:** let the viewer skip a skippable ad by voice, Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1, SDK 0.24.
+- **Steps:** manifest `IMediaPlaybackServer` with `command_options = ["Next"]` (the "Attributes and features" page says optional commands arrive only when listed); a `KeplerMediaControlHandler` subclass for the ad player with `handleNext` overridden; the ad player's published actions set to PLAY, PAUSE, TOGGLE_PLAY_PAUSE, STOP, NEXT before `setMediaControlFocus` (w3cmedia publishes SEEK, FAST_FORWARD, SKIP_FORWARD… but not NEXT by default); during a skippable ad, past its skip offset, say "Alexa, next" and "Alexa, skip"; every app event mirrored to a server log because the device log drops app lines.
+- **Expected:** `handleNext` is called, or a documented reason why not; a table of Alexa phrases → media control commands.
+- **Actual:** with the default actions Alexa answers "Next is not supported". With NEXT published Alexa says nothing, and `handleNext` is never called (no app event in four runs). No Vega page maps Alexa phrases to commands.
+- **Severity:** medium (voice skip of skippable ads is not possible; "multi-modal" ad UX limited to pause/play).
+- **Workaround:** Skip button with D-pad focus; "Alexa, pause/play" works.
+- **Suggestion:** publish the Alexa phrase → command table for Vega; deliver Next when listed in `command_options`; let apps set supported actions through a public API (today only `mediaControlStateUtil.capabilities`, an undocumented field).
+
+## FL-11 · Video freezes during an Alexa voice interaction without any media event (11.10.2026)
+- **Task:** keep an ad playing correctly while the viewer talks to Alexa, Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1.
+- **Steps:** during an ad, say "Alexa, next" (or any request); watch the ad's `timeupdate`, `pause`, `playing`, `waiting` events and its tracking pixels.
+- **Expected:** a `pause` (or an audio focus / interruption event) when the system takes over, and `playing` when it gives the player back.
+- **Actual:** the ad stops advancing for 6–13 s (quartile pixels 6 s and 16 s apart instead of 2.5 s) with no `pause`, `waiting` or `playing` event. An app cannot tell this from a stalled stream: our 10 s stall watchdog ended one ad with VAST error 405 after a voice request.
+- **Severity:** medium (ads cut short after a voice request; wrong error reporting to ad servers).
+- **Workaround:** two stall timeouts: 10 s after a `waiting` event (real buffering), 30 s when the time stops with no event at all (voice request).
+- **Suggestion:** emit `pause`/`playing` (or a documented interruption event) when Alexa takes and returns the media session.

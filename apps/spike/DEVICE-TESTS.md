@@ -139,3 +139,15 @@ Hook demo, debug build, SDK 0.24. Content: Tears of Steel 720p (CC BY, Blender F
 | Same, after the fix (media controls focus taken after the first frame is tracked, once per ad) | 143 ms on the first launch after install; `start` right after the impression; quartiles every 2.5 s for the 10 s ad → PASS |
 | Mid-roll pod of 3 own ads at 2:00 | pixels for all three ads (impression, start, quartiles every 3.75 / 3 / 2.5 s, complete); the next ad's impression ~0.2 s before the previous `complete` (early hand-over); content resumes at 2:00 → PASS |
 | Phone video of the whole run (179 s), frame by frame, plus per-frame brightness | content → Brewnord → Voltaro → Kettlo → content: no black frame and no content frame between ads; one blended camera frame at each switch → PASS |
+
+## Skip with the remote, and voice (11.10.2026)
+
+Hook demo, Kettlo pre-roll (10 s, `skipoffset` 5 s), events mirrored to the local server log.
+
+| Check | Result |
+|---|---|
+| OK on the Skip button 7.3 s into the ad | `skip` pixel, break ends 0.3 s later, content starts; no `thirdQuartile`/`complete` → PASS |
+| OK 1 s into the ad (before the skip offset) | ignored; the ad plays to `complete` → PASS |
+| "Alexa, next" / "Alexa, skip" during the ad, with `Next` in `command_options` and NEXT in the published actions | `handleNext` never called in 4 runs (FL-10). Not shipped |
+| Voice request during an ad | the ad stops advancing for 6–13 s with no `pause`/`playing` event; once the 10 s stall watchdog ended the ad with 405 (FL-11) |
+| Same, after the fix (10 s only after `waiting`, 30 s for a silent stop) | Alexa requests during the Kettlo pre-roll: quartiles 7.3 s apart instead of 2.5 s, no 405, the ad reaches `complete`, content starts → PASS |

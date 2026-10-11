@@ -43,7 +43,7 @@ On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no offi
 - 10-foot overlay: "Ad 1 of 3 · 0:12", a Skip button with D-pad focus, VoiceView announcements.
 - Back during an ad returns to the content.
 - Home during an ad releases the ad players, as Amazon requires for apps in the background. On return the content continues; the interrupted break is not shown again.
-- Errors and timeouts never stop playback: the content continues. An ad that shows no frame in 5 s is skipped with VAST error 405.
+- Errors and timeouts never stop playback: the content continues. An ad that shows no frame in 5 s, buffers for 10 s, or stops with no media event for 30 s is skipped with VAST error 405. The long silent timeout covers Alexa requests: Fire TV stops the picture without an event while the viewer talks.
 - Pure-JS XML parsing (`@xmldom/xmldom`). You can pass your own parser.
 
 ### Measured on a real device
@@ -130,12 +130,20 @@ export function PlayerScreen({ contentUrl, vmapUrl }: { contentUrl: string; vmap
 
   useEffect(() => {
     const created = new VideoPlayer();
+    let alive = true;
     void created.initialize().then(() => {
+      if (!alive) {
+        return; // the screen closed while the player was starting
+      }
       created.autoplay = false;
       created.src = contentUrl;
       setPlayer(created);
     });
-    return () => void created.deinitialize();
+    return () => {
+      alive = false;
+      setPlayer(null);
+      void created.deinitialize();
+    };
   }, [contentUrl]);
 
   const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player });
@@ -157,7 +165,16 @@ source: { breaks: [{ offset: 'start', vastUrl }, { offset: 600, vastUrl }, { off
 
 With a post-roll, wait for `ads.ended` before you leave the screen at the end of the content.
 
-To fill the Fire TV advertising ID macros, pass `macros: adIdMacros(source)` (from `@vega-ads/core`). `source` gives the user's tracking choice and the ID. When the user limits ad tracking, or the ID service fails, the ID is not sent and `LIMITADTRACKING` is `1`.
+To fill the Fire TV advertising ID macros (`IFA`, `IFATYPE`, `LIMITADTRACKING`):
+
+```ts
+import { AdIdRetriever } from '@amazon-devices/kepler-adid-retriever';
+import { adIdMacros, vegaAdIdSource } from '@vega-ads/vega';
+
+const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player, macros: adIdMacros(vegaAdIdSource(AdIdRetriever)) });
+```
+
+When the user opts out of interest-based ads, or the ID service fails, the ID is not sent and `LIMITADTRACKING` is `1`.
 
 A full integration into Amazon's sample app (Shaka, MP4 and DASH) is in [`examples/vega-video-sample`](examples/vega-video-sample).
 
