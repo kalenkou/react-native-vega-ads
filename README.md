@@ -72,10 +72,10 @@ The packages are not published yet. Build and pack them from this repository:
 
 ```sh
 npm ci
-npm pack ./packages/xml ./packages/core ./packages/vega
+npm pack ./packages/core ./packages/vega
 ```
 
-Then, in your app, install the three `.tgz` files: `npm install --no-save path/to/*.tgz`. After the npm release this becomes `npm install react-native-vega-ads`.
+Then, in your app, install the two `.tgz` files: `npm install --no-save path/to/*.tgz`. After the npm release this becomes `npm install react-native-vega-ads`.
 
 Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. Your Vega app already has them. The Amazon packages are marked optional, so `react-native-ads-core` also installs in non-Vega projects.
 
@@ -307,13 +307,12 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 
 ## Architecture
 
-Three packages, each for its own user:
+Two packages, each for its own user:
 
 | Package | What it does | Who installs it |
 |---|---|---|
 | `react-native-vega-ads` | Vega integration: `useVegaAds`, surfaces, overlay, media controls, `W3cPlayerAdapter` | Vega apps with ads (this is the one to install) |
 | `react-native-ads-core` | VAST/VMAP requests, media file choice, IAB tracking, break schedule, pods, session state. No player code | installed with `react-native-vega-ads`; on its own when you need only VAST/VMAP and tracking |
-| `react-native-vega-xml` | XML for Vega: `parseXml`, xml2js-style `xmlToObject`, a `DOMParser` polyfill | any Vega app that reads XML (VAST, EPG, RSS, TTML subtitles) |
 
 `core` never imports a player SDK, `fetch` or timers. It talks to the platform through ports: `PlayerPort`, `HttpPort` and `ClockPort`.
 
@@ -376,7 +375,7 @@ How the library meets the Appstore advertising policy, the Advertising ID policy
 - **No VPAID or SIMID.** Interactive ads are not supported.
 - **No NonLinear or Companion ads.**
 - **No SSAI.** `react-native-vega-ads` is client-side only.
-- **XML.** Vega has no `DOMParser`, and native XML modules are not available. The library parses with pure JS ([`react-native-vega-xml`](packages/xml), on `@xmldom/xmldom`). A 34.4 KB VAST takes about 60 ms on the JS thread. Ads load before the break, so the viewer does not wait. You can pass your own parser.
+- **XML.** Vega has no `DOMParser`, and native XML modules are not available. The library parses with pure JS (`@xmldom/xmldom`); `installDOMParser()` from `react-native-ads-core` adds a global `DOMParser` for other libraries. Pure-JS parsers such as `fast-xml-parser` also run on Vega. A 34.4 KB VAST takes about 60 ms on the JS thread. Ads load before the break, so the viewer does not wait. You can pass your own parser.
 
 ## Friction log
 

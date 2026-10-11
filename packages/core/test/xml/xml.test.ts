@@ -1,4 +1,4 @@
-import { installDOMParser, parseXml, xmlToObject } from '../src';
+import { installDOMParser, parseXml } from '../../src/xml';
 
 describe('parseXml', () => {
   it('parses a document with namespaces and CDATA', () => {
@@ -35,30 +35,5 @@ describe('installDOMParser', () => {
     const target: Record<string, unknown> = { DOMParser: own };
     expect(installDOMParser(target)).toBe(false);
     expect(target.DOMParser).toBe(own);
-  });
-});
-
-describe('xmlToObject (xml2js-style defaults)', () => {
-  it('maps attributes to $, repeated and single children to arrays, and text-only elements to strings', () => {
-    const result = xmlToObject('<VAST version="4.2"><Ad id="a"><AdTitle>One</AdTitle></Ad><Ad id="b"><AdTitle>Two</AdTitle></Ad></VAST>');
-    expect(result).toEqual({
-      VAST: {
-        $: { version: '4.2' },
-        Ad: [
-          { $: { id: 'a' }, AdTitle: ['One'] },
-          { $: { id: 'b' }, AdTitle: ['Two'] },
-        ],
-      },
-    });
-  });
-
-  it('keeps text next to attributes in _ and trims whitespace between elements', () => {
-    const result = xmlToObject('<MediaFile type="video/mp4">\n  <![CDATA[ https://a.test/ad.mp4 ]]>\n</MediaFile>');
-    expect(result).toEqual({ MediaFile: { $: { type: 'video/mp4' }, _: 'https://a.test/ad.mp4' } });
-  });
-
-  it('returns an empty string for an empty element and null for text that is not XML', () => {
-    expect(xmlToObject('<Empty/>')).toEqual({ Empty: '' });
-    expect(xmlToObject('not xml')).toBeNull();
   });
 });

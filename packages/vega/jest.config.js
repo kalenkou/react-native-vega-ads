@@ -4,7 +4,6 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/test'],
   moduleNameMapper: {
-    '^react-native-vega-xml$': '<rootDir>/../xml/src',
     '^react-native-ads-core$': '<rootDir>/../core/src',
     '^react-native$': '<rootDir>/test/mocks/react-native.ts',
     '^@amazon-devices/react-native-w3cmedia$': '<rootDir>/test/mocks/w3cmedia.ts',

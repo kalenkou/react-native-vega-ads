@@ -1,4 +1,4 @@
-import { parseXml } from 'react-native-vega-xml';
+import { parseXml } from '../../xml';
 import type { ClockPort, HttpPort } from '../ports';
 
 export const DEFAULT_VAST_TIMEOUT_MS = 4000;
