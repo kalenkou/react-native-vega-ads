@@ -455,7 +455,7 @@ While building `react-native-vega-ads`, I logged platform issues with steps, exp
 
 ## Credits
 
-Device tests and the demo use *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Soundtrack (C) Joram Letwory – www.tearsofsteel.org, CC BY-ND 3.0. The demo ads use the Inter font (SIL Open Font License).
+Device tests and the demo use *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Soundtrack (C) Joram Letwory – www.tearsofsteel.org, CC BY-ND 3.0. The demo's second title is *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0. The demo ads use the Inter font (SIL Open Font License).
 
 ## License
 

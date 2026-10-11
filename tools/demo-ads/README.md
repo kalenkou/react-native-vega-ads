@@ -29,6 +29,7 @@ It fills `media/` (not committed) in about a minute:
 
 - `tears_of_steel_720p.mp4` – the movie, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Downloaded from `download.blender.org` and checked by SHA-256. The video is copied as it is; the MP3 sound becomes AAC, which w3cmedia plays, at -24 LUFS (the TV level of ATSC A/85; the web release is about -12 LUFS).
 - `poster.jpg` – a frame of the movie;
+- `sintel_720p.mp4` and `poster_sintel.jpg` – the second title, *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0. The zip from `download.blender.org` is checked by SHA-256; the video is copied as it is, the 5.1 AC-3 sound becomes stereo AAC at -24 LUFS;
 - `fonts/Inter.ttf` and `fonts/OFL.txt` – [Inter](https://github.com/google/fonts/tree/main/ofl/inter), SIL Open Font License;
 - `ads/` – the five ads, the pause ad card and its QR code, drawn by `make_ads.py`;
 - `loudness.json` – the integrated loudness of the movie and the ads (LUFS, EBU R128), measured with ffmpeg. The server writes it into each ad's VAST.
@@ -62,6 +63,7 @@ The server prints its address and serves:
 - `vast/quillary.xml` – Quillary (the post-roll);
 - `vast/pause.xml` – the Brewnord pause ad: a `NonLinear` image with the `tl_qrcode` extension. Its pixels: `impression`, `creativeView`, `overlayViewDuration`, `close`;
 - `vmap/movie.xml` – pre-roll, the mid-rolls (the first one is the pod), post-roll;
+- `vmap/sintel.xml` – the same for Sintel, mid-rolls at 2:42.1 and 9:03.1 (`--sintel-midrolls`). The first one carries the break context in `contexts/sintel.json`: a local vision model saw a sword and heard a line about blood, so the break blocks Toys and Games, Life Insurance and Sporting Goods, and the player leaves out Kettlo (Sporting Goods) with error 205. `--sintel-context FILE` replaces it;
 - `vmap/timer.xml` – the same with mid-rolls at fixed times, 2:00 and 6:00, to compare with;
 - `p?ad=…&e=…` – tracking pixels, logged to the console; `stats` – counts;
 - any other file in `media/`, for example a `poster.jpg`.
@@ -74,6 +76,8 @@ node ../make-vmap/dist/main.js --local media/tears_of_steel_720p.mp4 --vast-url 
 # 2 mid-rolls: 00:02:19.917, 00:07:21.208
 node serve.mjs --dir media --midrolls 139.917,441.208
 ```
+
+`--context FILE` adds break contexts to `vmap/movie.xml`: a JSON array, one entry per mid-roll (`null` for none), each `{ mood, scene, signals, blockedAdCategories }`, as make-vmap writes them into its VMAP.
 
 `--latency MS` answers every VAST and VMAP request after MS milliseconds, like a real ad
 server, to measure what preloading saves. Media files are not delayed.

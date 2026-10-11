@@ -9,7 +9,8 @@
 // (for measuring how much preloading saves; the media files are not delayed).
 // --context FILE: a JSON array with the context of each mid-roll in vmap/movie.xml, in order
 // (null for none): { mood, scene, signals, blockedAdCategories }, the BreakContext of make-vmap.
-// --sintel-midrolls, --sintel-context: the same for vmap/sintel.xml, the second title.
+// --sintel-midrolls, --sintel-context: the same for vmap/sintel.xml, the second title. The default
+// context, contexts/sintel.json, is what make-vmap --context-model wrote for these two breaks.
 // MEDIA_DIR holds the output of make_ads.py (ads/) and the content movie.
 // Needs `npm run build` in tools/make-vmap first.
 
@@ -34,7 +35,7 @@ const { values } = parseArgs({
     latency: { type: 'string', default: '0' },
     context: { type: 'string' },
     'sintel-midrolls': { type: 'string', default: '162.083,543.125' },
-    'sintel-context': { type: 'string' },
+    'sintel-context': { type: 'string', default: new URL('contexts/sintel.json', import.meta.url).pathname },
   },
 });
 if (!values.dir) {

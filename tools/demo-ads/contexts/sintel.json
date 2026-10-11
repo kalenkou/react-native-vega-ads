@@ -1,0 +1,16 @@
+[
+  {
+    "mood": "sad",
+    "scene": "A lone hunter is searching for a kindred spirit or a dragon, embarking on a dangerous quest. The scene conveys a sense of solitude and determination.",
+    "signals": [
+      { "name": "weapons", "evidence": "The character is carrying a sword, which is a weapon." },
+      { "name": "injury", "evidence": "The dialogue mentions that the character is unprepared and lucky their blood is still flowing, which" }
+    ],
+    "blockedAdCategories": ["1248", "1343", "1524"]
+  },
+  {
+    "mood": "tense",
+    "scene": "A character with red hair is seen in a dimly lit environment, possibly a cave. The character appears to be in a state of alertness or surprise. The scene transitions to show the character facing a ser",
+    "blockedAdCategories": []
+  }
+]
