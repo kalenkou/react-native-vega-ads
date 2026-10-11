@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import TestRenderer, { act } from 'react-test-renderer';
+import { Text, View } from 'react-native';
 import { FakeClock } from '../../core/test/fakes/FakeClock';
 import { FakeHttp } from '../../core/test/fakes/FakeHttp';
 import { VegaAdsPlayer, VegaAdsPlayerProps } from '../src/VegaAdsPlayer';
@@ -89,5 +90,54 @@ describe('VegaAdsPlayer', () => {
     act(() => ctx.renderer.unmount());
     await settle();
     expect(ctx.players[0]?.deinitialized).toBe(true);
+  });
+});
+
+describe('VegaAdsPlayer – customising', () => {
+  it('plays through the app\'s own player and leaves it to the app', async () => {
+    const own = new FakeW3cPlayer(600);
+    await own.initialize();
+    own.autoplay = false;
+    own.src = 'https://cdn.test/own.mp4';
+    const ctx = setup({ source: undefined, player: own });
+    await settle();
+    ctx.surfacesReady();
+    await settle();
+    expect(ctx.players.every((p) => p !== own)).toBe(true);
+    expect(ctx.players[0]?.src).not.toBe('https://cdn.test/movie.mp4'); // no content player was created
+    expect(own.calls).toContain('surface:s0');
+    act(() => ctx.renderer.unmount());
+    await settle();
+    expect(own.deinitialized).toBe(false);
+  });
+
+  it('draws the app\'s own controls with the player and the ad state', async () => {
+    const seen: Array<{ hasPlayer: boolean; playing: boolean }> = [];
+    const ctx = setup({
+      children: ({ player, ads }) => {
+        seen.push({ hasPlayer: player !== null, playing: ads.playing });
+        return <View testID="my-controls" />;
+      },
+    });
+    await settle();
+    expect(ctx.renderer.root.findAllByProps({ testID: 'my-controls' }).length).toBeGreaterThan(0);
+    expect(seen.some((s) => s.hasPlayer)).toBe(true);
+  });
+
+  it('adds only the ad surfaces when the app draws the content surface itself', async () => {
+    const ctx = setup({ contentSurface: false });
+    await settle();
+    const views = ctx.renderer.root.findAll((node) => (node.type as unknown) === 'KeplerVideoSurfaceView');
+    expect(views).toHaveLength(2);
+    ctx.surfacesReady();
+    await settle();
+    expect(ctx.http.requests.some((url) => url.startsWith('https://ads.test/pre.xml'))).toBe(true);
+  });
+
+  it('draws the app\'s own ad overlay instead of the default one', async () => {
+    const ctx = setup({ renderOverlay: (ads) => <Text testID="my-overlay">{ads.ui.label}</Text> });
+    await settle();
+    expect(ctx.renderer.root.findAllByProps({ testID: 'my-overlay' }).length).toBeGreaterThan(0);
+    expect(ctx.renderer.root.findAllByProps({ testID: 'vega-ads-focus' })).toHaveLength(0);
   });
 });

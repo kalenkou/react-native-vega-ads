@@ -131,7 +131,35 @@ export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: 
 
 Remote and Alexa play/pause work through media controls. `onEnd` runs when the content and its post-roll are over. `adId` is optional; without it no ID is sent.
 
-### Your own player UI
+### Customise any part
+
+Every part of `<VegaAdsPlayer>` can be replaced; the ads keep working.
+
+Your own controls over the video (hidden during ads):
+
+```tsx
+<VegaAdsPlayer source={{ uri }} ads={{ vmapUrl }}>
+  {({ player, ads }) => !ads.playing && <MyControls player={player} />}
+</VegaAdsPlayer>
+```
+
+Your own player, for example the `VideoPlayer` that Shaka plays through. Create it as usual (initialized, `autoplay` off, source set); the component uses it and never releases it:
+
+```tsx
+<VegaAdsPlayer player={myVideoPlayer} ads={{ vmapUrl }} />
+```
+
+Your own content surface (the screen already draws one): the component adds only the ad surfaces above it.
+
+```tsx
+<VegaAdsPlayer player={myVideoPlayer} ads={{ vmapUrl }} contentSurface={false}>
+  <MyPlayerScreen />
+</VegaAdsPlayer>
+```
+
+Your own ad label and Skip button: `renderOverlay={(ads) => <MyAdOverlay ui={ads.ui} onSkip={ads.skip} />}`. Keep the D-pad focus on it during ads.
+
+### Your own player UI, with the hook
 
 When your screen has its own controls, use the hook and the components. `useVideoPlayer` creates the content `VideoPlayer` (initialized, `autoplay` off) and releases it when the screen closes:
 
@@ -212,6 +240,10 @@ useTVEventHandler((event) => {
 | `ads` | `{ vmapUrl }` or `{ breaks: [{ offset, vastUrl }] }`. `null` plays the content without ads. |
 | `adId` | `AdIdRetriever` from `@amazon-devices/kepler-adid-retriever`. Optional. |
 | `onEnd` | Called when the content and its post-roll are over. |
+| `player` | Your own content `VideoPlayer` instead of `source`. The component never releases it. |
+| `children` | Your UI over the video, or a function `({ player, ads }) => ...`. |
+| `contentSurface` | `false` when your screen draws the content surface itself. Default `true`. |
+| `renderOverlay` | `(ads) => ...` your own ad label and Skip button instead of `AdOverlay`. |
 | `style`, `scalingMode` | Layout and w3cmedia scaling mode (default `'fit'`). |
 | other | Any `useVegaAds` option below (`onEvent`, `strings`, `adPause`, ...). |
 

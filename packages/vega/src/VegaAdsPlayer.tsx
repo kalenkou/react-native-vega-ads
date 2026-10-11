@@ -1,15 +1,29 @@
-import { type ReactElement, useEffect, useMemo, useRef } from 'react';
+import { type ReactElement, type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { adIdMacros, type AdSchedule, type Macros } from 'react-native-ads-core';
 import { AdOverlay } from './AdOverlay';
+import { AdSurfaceLayers } from './AdSurfaceLayers';
 import { DualSurfaceView } from './DualSurfaceView';
-import { useVegaAds, type UseVegaAdsOptions } from './useVegaAds';
+import { useVegaAds, type UseVegaAdsOptions, type VegaAds } from './useVegaAds';
 import { useVideoPlayer } from './useVideoPlayer';
 import { vegaAdIdSource, type VegaAdIdRetriever } from './vegaAdIdSource';
+import type { W3cVideoPlayer } from './W3cPlayerAdapter';
+
+export interface VegaAdsPlayerState {
+  /** The content player, null until it is ready. */
+  player: W3cVideoPlayer | null;
+  /** Ad state: `playing`, `ui`, `skip()`, `back()`... */
+  ads: VegaAds;
+}
 
 export interface VegaAdsPlayerProps extends Omit<UseVegaAdsOptions, 'source' | 'contentPlayer'> {
-  /** The movie or episode. Null shows nothing yet. */
-  source: { uri: string } | null;
+  /** The movie or episode; the component creates and releases its player. Null waits. */
+  source?: { uri: string } | null;
+  /**
+   * Your own content `VideoPlayer` instead of `source` (for example the one Shaka plays
+   * through): initialized, `autoplay` off, source set. The component never releases it.
+   */
+  player?: W3cVideoPlayer | null;
   /** A VMAP URL, or VAST tags with their times. Null plays the content without ads. */
   ads: AdSchedule | null;
   /**
@@ -19,22 +33,54 @@ export interface VegaAdsPlayerProps extends Omit<UseVegaAdsOptions, 'source' | '
   adId?: VegaAdIdRetriever;
   /** The content and its post-roll are over: close the screen here. */
   onEnd?: () => void;
+  /**
+   * Your UI over the video: controls, captions, a title. Drawn below the ad overlay.
+   * Hide controls while `ads.playing` is true.
+   */
+  children?: ReactNode | ((state: VegaAdsPlayerState) => ReactNode);
+  /**
+   * false: your app draws the content surface itself (in `children`); the component adds only
+   * the two ad surfaces above it. Default true.
+   */
+  contentSurface?: boolean;
+  /**
+   * Your own ad label and Skip button instead of AdOverlay. Keep the D-pad focus on it during
+   * ads, or the remote moves focus to the screen behind the ad.
+   */
+  renderOverlay?: (ads: VegaAds) => ReactNode;
   /** w3cmedia scaling mode. Default 'fit'. */
   scalingMode?: string;
   style?: StyleProp<ViewStyle>;
 }
 
 /**
- * Content with ads in one component: creates and releases the content player, draws the
- * video surfaces and the ad overlay. Remote and Alexa play/pause work through media controls.
+ * Content with ads in one component. By default it creates and releases the content player,
+ * draws the video surfaces and the ad overlay; each part can be replaced:
  *
  * ```tsx
- * <VegaAdsPlayer source={{ uri }} ads={{ vmapUrl }} adId={AdIdRetriever} onEnd={goBack} />
+ * <VegaAdsPlayer source={{ uri }} ads={{ vmapUrl }} adId={AdIdRetriever} onEnd={goBack}>
+ *   {({ player, ads }) => !ads.playing && <MyControls player={player} />}
+ * </VegaAdsPlayer>
  * ```
  */
 export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
-  const { source, ads: schedule, adId, onEnd, scalingMode, style, macros, ...options } = props;
-  const player = useVideoPlayer(source?.uri ?? null, { createVideoPlayer: options.createVideoPlayer });
+  const {
+    source,
+    player: appPlayer,
+    ads: schedule,
+    adId,
+    onEnd,
+    children,
+    contentSurface = true,
+    renderOverlay,
+    scalingMode,
+    style,
+    macros,
+    ...options
+  } = props;
+  const ownsPlayer = appPlayer === undefined;
+  const created = useVideoPlayer(ownsPlayer ? (source?.uri ?? null) : null, { createVideoPlayer: options.createVideoPlayer });
+  const player = ownsPlayer ? created : appPlayer;
   // The ID is read once per retriever: the user's choice does not change during playback.
   const allMacros = useMemo<Macros | undefined>(
     () => (adId ? { ...adIdMacros(vegaAdIdSource(adId)), ...macros } : macros),
@@ -50,10 +96,21 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
     }
   }, [ads.ended]);
 
+  const ui = typeof children === 'function' ? children({ player, ads }) : children;
   return (
     <View style={[styles.root, style]}>
-      <DualSurfaceView surfaces={ads.surfaces} contentPlayer={player} scalingMode={scalingMode} />
-      <AdOverlay ui={ads.ui} onSkip={ads.skip} />
+      {contentSurface ? (
+        <>
+          <DualSurfaceView surfaces={ads.surfaces} contentPlayer={player} scalingMode={scalingMode} />
+          {ui}
+        </>
+      ) : (
+        <>
+          {ui}
+          <AdSurfaceLayers surfaces={ads.surfaces} scalingMode={scalingMode} />
+        </>
+      )}
+      {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} />}
     </View>
   );
 }

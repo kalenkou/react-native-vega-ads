@@ -1,4 +1,5 @@
 import React from 'react';
+import {StyleSheet, Text} from 'react-native';
 import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
 import {VegaAdsPlayer} from 'react-native-vega-ads';
 import {VMAP_OPTIMIZED_POD_TAG} from './spike/ads';
@@ -20,6 +21,13 @@ export const PlayerDemo = ({onClose}: {onClose: () => void}) => (
     }}
     adId={AdIdRetriever}
     onEnd={onClose}
-    onEvent={name => log(`player event: ${name}`)}
-  />
+    onEvent={(name: string) => log(`player event: ${name}`)}>
+    {({ads}) =>
+      !ads.playing && <Text style={styles.controls}>App controls (hidden during ads)</Text>
+    }
+  </VegaAdsPlayer>
 );
+
+const styles = StyleSheet.create({
+  controls: {position: 'absolute', bottom: 40, left: 40, color: '#fff', fontSize: 28, zIndex: 5},
+});
