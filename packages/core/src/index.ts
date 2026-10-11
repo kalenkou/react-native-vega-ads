@@ -9,7 +9,7 @@ export type { BreakMark, Decision, SchedulerOptions } from './schedule/BreakSche
 export { PodController } from './pod/PodController';
 export type { PodItem, PodOptions } from './pod/PodController';
 export { RepeatGuard, REPEAT_WINDOW_MS } from './pod/RepeatGuard';
-export type { DroppedAd, RepeatOptions } from './pod/RepeatGuard';
+export type { DroppedAd, RepeatMemory, RepeatOptions } from './pod/RepeatGuard';
 export { PauseAdController } from './pause/PauseAdController';
 export type { PauseAdDeps, PauseAdView } from './pause/PauseAdController';
 export { AdBreakSession } from './machine/AdBreakSession';

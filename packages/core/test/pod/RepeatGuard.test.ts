@@ -1,4 +1,4 @@
-import { RepeatGuard, REPEAT_WINDOW_MS } from '../../src/pod/RepeatGuard';
+import { RepeatGuard, RepeatMemory, REPEAT_WINDOW_MS } from '../../src/pod/RepeatGuard';
 import type { LinearAd } from '../../src/vast';
 import { FakeClock } from '../fakes/FakeClock';
 
@@ -134,5 +134,122 @@ describe('RepeatGuard', () => {
     const guard = new RepeatGuard(new FakeClock(0));
     guard.shown(ad('tea-1', { advertiser: { value: 'Leafline Tea' } }));
     expect(guard.filter([[ad('tea-2', { advertiser: { value: 'Leafline Tea' } })]]).dropped).toHaveLength(0);
+  });
+
+  describe('with a memory, across titles and app launches', () => {
+    /** Like AsyncStorage: one string under one key. */
+    interface Store {
+      value: string | null;
+      writes: number;
+      memory: RepeatMemory;
+    }
+    function storage(initial: string | null = null): Store {
+      const store: Store = {
+        value: initial,
+        writes: 0,
+        memory: {
+          read: async () => store.value,
+          write: async (value: string) => {
+            store.writes += 1;
+            store.value = value;
+          },
+        },
+      };
+      return store;
+    }
+
+    async function settle(): Promise<void> {
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+    }
+
+    it('drops a creative the household saw in another title', async () => {
+      const clock = new FakeClock(0);
+      const store = storage();
+      new RepeatGuard(clock, { memory: store.memory }).shown(ad('kettlo'));
+      await settle();
+
+      clock.advance(REPEAT_WINDOW_MS - 1);
+      const next = new RepeatGuard(clock, { memory: store.memory });
+      await next.ready();
+      expect(ids(next.filter([[ad('kettlo'), ad('brewnord')]]).responses)).toEqual([['brewnord']]);
+    });
+
+    it('stores only creatives still inside the window, at most 500', async () => {
+      const clock = new FakeClock(0);
+      const store = storage();
+      const guard = new RepeatGuard(clock, { memory: store.memory, withinMs: 1000 });
+      await guard.ready();
+      guard.shown(ad('old'));
+      clock.advance(1000);
+      for (let i = 0; i < 600; i++) guard.shown(ad(`n${i}`, { media: [`https://cdn.test/n${i}.mp4`] }));
+      await settle();
+      const saved = JSON.parse(store.value as string) as { v: number; seen: Record<string, number> };
+      expect(saved.v).toBe(1);
+      expect(Object.keys(saved.seen)).toHaveLength(500);
+      expect(saved.seen['media:https://cdn.test/old.mp4']).toBeUndefined();
+      expect(saved.seen['media:https://cdn.test/n599.mp4']).toBe(1000);
+      expect(saved.seen['media:https://cdn.test/n99.mp4']).toBeUndefined();
+    });
+
+    it('forgets a creative once its window is over', async () => {
+      const clock = new FakeClock(0);
+      const store = storage();
+      const guard = new RepeatGuard(clock, { memory: store.memory, withinMs: 1000 });
+      guard.shown(ad('old'));
+      clock.advance(1000);
+      guard.shown(ad('new'));
+      await settle();
+      expect(Object.keys((JSON.parse(store.value as string) as { seen: object }).seen)).toEqual(['media:https://cdn.test/new.mp4']);
+    });
+
+    it('keeps a creative shown again among the newest, even when it was first seen long ago', async () => {
+      const clock = new FakeClock(0);
+      const store = storage();
+      const guard = new RepeatGuard(clock, { memory: store.memory });
+      guard.shown(ad('kettlo'));
+      clock.advance(1);
+      for (let i = 0; i < 500; i++) guard.shown(ad(`n${i}`));
+      clock.advance(1);
+      guard.shown(ad('kettlo'));
+      await settle();
+      const seen = (JSON.parse(store.value as string) as { seen: Record<string, number> }).seen;
+      expect(seen['media:https://cdn.test/kettlo.mp4']).toBe(2);
+      expect(seen['media:https://cdn.test/n0.mp4']).toBeUndefined();
+    });
+
+    it('keeps the later time when the memory and this player both saw a creative', async () => {
+      const clock = new FakeClock(0);
+      const store = storage(JSON.stringify({ v: 1, seen: { 'media:https://cdn.test/kettlo.mp4': 0 } }));
+      clock.advance(5000);
+      const guard = new RepeatGuard(clock, { memory: store.memory, withinMs: 6000 });
+      guard.shown(ad('kettlo'));
+      await guard.ready();
+      clock.advance(2000);
+      expect(guard.filter([[ad('kettlo')]]).dropped).toHaveLength(1);
+    });
+
+    it('plays every ad when the memory cannot be read or holds something else', async () => {
+      for (const memory of [
+        { read: () => Promise.reject(new Error('disk')), write: async () => undefined },
+        { read: async () => 'not json', write: async () => undefined },
+        { read: async () => JSON.stringify({ v: 2, seen: { 'media:https://cdn.test/kettlo.mp4': 0 } }), write: async () => undefined },
+        { read: async () => JSON.stringify({ v: 1, seen: { 'media:https://cdn.test/kettlo.mp4': '0' } }), write: async () => undefined },
+      ]) {
+        const guard = new RepeatGuard(new FakeClock(1), { memory });
+        await guard.ready();
+        expect(guard.filter([[ad('kettlo')]]).dropped).toHaveLength(0);
+      }
+    });
+
+    it('goes on when the memory cannot be written', async () => {
+      const guard = new RepeatGuard(new FakeClock(0), { memory: { read: async () => null, write: () => Promise.reject(new Error('full')) } });
+      guard.shown(ad('kettlo'));
+      await settle();
+      expect(guard.filter([[ad('kettlo')]]).dropped).toHaveLength(1);
+    });
+
+    it('is ready at once without a memory', async () => {
+      await expect(new RepeatGuard(new FakeClock(0)).ready()).resolves.toBeUndefined();
+    });
   });
 });

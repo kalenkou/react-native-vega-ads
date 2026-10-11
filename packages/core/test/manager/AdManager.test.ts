@@ -189,6 +189,55 @@ describe('AdManager', () => {
     return ctx;
   }
 
+  it('with a memory, leaves out a pre-roll the household saw in another title, even when the memory answers late', async () => {
+    let stored: string | null = null;
+    let release = (): void => undefined;
+    let late = false;
+    const memory = {
+      read: () =>
+        late ? new Promise<string | null>((resolve) => (release = () => resolve(stored))) : Promise.resolve(stored),
+      write: async (value: string) => {
+        stored = value;
+      },
+    };
+    const routes = { 'https://ads.test/pre.xml': fixture('vast/inline.xml') };
+    const first = setup(routes, { avoidRepeats: { memory } });
+    const starting = first.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    first.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await playAdToEnd(first);
+    expect(stored).not.toBeNull();
+
+    late = true;
+    const second = setup(routes, { avoidRepeats: { memory } });
+    const next = second.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    expect(second.adPlayers).toHaveLength(0);
+    release();
+    await next;
+    await settle();
+    expect(second.adPlayers).toHaveLength(0);
+    expect(second.events).toContain('skipped:repeat');
+    expect(second.content.calls).toContain('play');
+  });
+
+  it('starts no ad when the viewer leaves while the memory is read', async () => {
+    let release = (): void => undefined;
+    const memory = {
+      read: () => new Promise<string | null>((resolve) => (release = () => resolve(null))),
+      write: async () => undefined,
+    };
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') }, { avoidRepeats: { memory } });
+    void ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.manager.dispose();
+    release();
+    await settle();
+    expect(ctx.adPlayers).toHaveLength(0);
+  });
+
   it('keeps breaks within maxBreakAds and maxBreakSeconds, and tells the ad server the limits', async () => {
     const tag = 'https://ads.test/pod.xml?ads=[BREAKMAXADS]&dur=[BREAKMAXDURATION]';
     const asked = 'https://ads.test/pod.xml?ads=1&dur=60';

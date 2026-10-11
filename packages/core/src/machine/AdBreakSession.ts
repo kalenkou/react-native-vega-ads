@@ -163,6 +163,10 @@ export class AdBreakSession {
       }
       responses.push(result.status === 'ok' ? result.ads : []);
     }
+    await this.deps.repeats?.ready(); // what the household saw in other titles
+    if (this.state !== 'loading') {
+      return 'empty';
+    }
     this.pod = new PodController(this.withoutRepeats(responses), {
       budgetMs: this.deps.budgetMs,
       maxAds: this.deps.maxAds,
