@@ -19,6 +19,8 @@ export interface SessionRunDeps {
   componentInstance: () => unknown;
   /** The ad surface to show on top, or null to show content. */
   onAdSurface: (surface: string | null) => void;
+  /** Memory soak: no pre/post-roll, the mid-roll pod repeated every 45 s of content. */
+  soak?: boolean;
 }
 
 /**
@@ -39,10 +41,19 @@ export async function runVmapSession(deps: SessionRunDeps): Promise<void> {
     await content.play();
     return;
   }
-  const breaks = new Map<string, ScheduledBreak>(
-    vmap.breaks.map((b) => [b.id, b]),
-  );
-  const scheduler = new BreakScheduler(vmap.breaks);
+  let plan = vmap.breaks;
+  if (deps.soak) {
+    const mid = vmap.breaks.find((b) => b.offset.kind === 'time');
+    plan = mid
+      ? Array.from({length: 12}, (_, i) => ({
+          ...mid,
+          id: `soak-${i + 1}`,
+          offset: {kind: 'time' as const, seconds: 15 + i * 45},
+        }))
+      : [];
+  }
+  const breaks = new Map<string, ScheduledBreak>(plan.map((b) => [b.id, b]));
+  const scheduler = new BreakScheduler(plan);
   const sessions = new Map<string, AdBreakSession>();
   const loads = new Map<string, Promise<'ready' | 'empty'>>();
   let active: AdBreakSession | null = null;
@@ -137,7 +148,7 @@ export async function runVmapSession(deps: SessionRunDeps): Promise<void> {
   });
   content.on('ended', () => apply(scheduler.onEnded()));
 
-  log(`session: ${vmap.breaks.length} breaks, begin`);
+  log(`session: ${plan.length} breaks, begin${deps.soak ? ' (soak)' : ''}`);
   const first = scheduler.begin();
   if (first.length === 0) {
     await content.play();

@@ -43,3 +43,13 @@ Button "VMAP session": Google sample VMAP `premidpostoptimizedpod` → `BreakSch
 | Gap between pod ads | ~1 s from `complete` of ad 2 to impression of ad 3 (same player, new `src`) → **TO FIX**: prebuffer the next ad in a second ad player |
 | Gap between pod ads, two ad players (A/B surfaces, next ad prebuffered while the current plays) | `complete` → first frame of next ad: 412 ms, then 496 ms (was 1018 ms). The previous ad's last frame stays on screen until the next ad renders; the surface swaps on its first frame (log "@B" → "@A"). Phone video (11.10.2026): ~0.4–0.6 s of the paused **content frame** between pod ads – on Vega an ad surface turns empty after `ended`, so the content below shows through. |
 | Early hand-over (next ad starts 500 ms before the current ends, old ad plays to its end) | next ad's first frame 85 ms **before** the previous ad's `ended`; `complete` still sent after the real end → PASS (logs); phone video re-check: TODO |
+
+## Memory soak through the library (11.10.2026)
+
+Button "Soak": Google optimized pod (3 × 10 s) every 45 s of content, two ad players with early hand-over.
+
+| Check | Result |
+|---|---|
+| Breaks played in 11 min | 9 breaks × 3 ads = 27 ads, last break at 375 s, content resumed at 375.05 s → PASS |
+| PSS (lcm_service `rm_pss`) | peak 91 MB, then plateau 65–68 MB to the end; no growth per break → PASS (limit 400 MiB) |
+| Hand-over late in the run | ad 3 first frame 64 ms after ad 2 `complete` → PASS |

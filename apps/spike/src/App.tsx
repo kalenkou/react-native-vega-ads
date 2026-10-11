@@ -211,33 +211,37 @@ export const App = () => {
     [prepareAd, startBreak, focusMediaControls],
   );
 
-  const runSession = useCallback(async () => {
-    if (!mainSurface.current || !adSurface.current) {
-      log('surfaces not ready yet');
-      return;
-    }
-    breaksLeft.current = 0;
-    await adPlayer.current?.deinitialize().catch(() => undefined);
-    adPlayer.current = null;
-    await mainPlayer.current?.deinitialize().catch(() => undefined);
-    const main = new VideoPlayer();
-    await main.initialize();
-    main.setSurfaceHandle(mainSurface.current);
-    main.autoplay = false;
-    main.addEventListener('playing', () =>
-      log(`content: playing at ${main.currentTime.toFixed(2)} s`),
-    );
-    main.src = CONTENT_URL;
-    mainPlayer.current = main;
-    log('run: VMAP session (core)');
-    await runVmapSession({
-      content: main,
-      adSurface: adSurface.current,
-      standbySurface: adSurfaceB.current ?? undefined,
-      componentInstance: () => componentInstance,
-      onAdSurface: setShownAdSurface,
-    });
-  }, [componentInstance]);
+  const runSession = useCallback(
+    async (soak = false) => {
+      if (!mainSurface.current || !adSurface.current) {
+        log('surfaces not ready yet');
+        return;
+      }
+      breaksLeft.current = 0;
+      await adPlayer.current?.deinitialize().catch(() => undefined);
+      adPlayer.current = null;
+      await mainPlayer.current?.deinitialize().catch(() => undefined);
+      const main = new VideoPlayer();
+      await main.initialize();
+      main.setSurfaceHandle(mainSurface.current);
+      main.autoplay = false;
+      main.addEventListener('playing', () =>
+        log(`content: playing at ${main.currentTime.toFixed(2)} s`),
+      );
+      main.src = CONTENT_URL;
+      mainPlayer.current = main;
+      log('run: VMAP session (core)');
+      await runVmapSession({
+        content: main,
+        adSurface: adSurface.current,
+        standbySurface: adSurfaceB.current ?? undefined,
+        componentInstance: () => componentInstance,
+        onAdSurface: setShownAdSurface,
+        soak,
+      });
+    },
+    [componentInstance],
+  );
 
   return (
     <View style={styles.root}>
@@ -309,6 +313,11 @@ export const App = () => {
             style={styles.button}
             onPress={() => void runSession()}>
             <Text style={styles.buttonText}>VMAP session</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => void runSession(true)}>
+            <Text style={styles.buttonText}>Soak</Text>
           </TouchableOpacity>
         </View>
         {lines.map((line, index) => (
