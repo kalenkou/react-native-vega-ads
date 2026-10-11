@@ -1,8 +1,7 @@
 import VMAP, { VMAPAdBreak } from '@dailymotion/vmap';
 import { XMLSerializer } from '@xmldom/xmldom';
-import type { ClockPort, HttpPort } from '../ports';
 import type { AdSourceRef } from './types';
-import { createUrlHandler, describeFailure } from './urlHandler';
+import { createUrlHandler, describeFailure, UrlHandlerDeps } from './urlHandler';
 
 export type { AdSourceRef };
 
@@ -97,7 +96,7 @@ function sourceOf(adBreak: VMAPAdBreak): AdSourceRef | null {
   return null;
 }
 
-export async function requestVmap(url: string, deps: { http: HttpPort; clock: ClockPort; timeoutMs?: number }): Promise<VmapResult> {
+export async function requestVmap(url: string, deps: UrlHandlerDeps): Promise<VmapResult> {
   const result = await createUrlHandler(deps).get(url, {});
   if (!('xml' in result)) {
     const failure = describeFailure(result.error);

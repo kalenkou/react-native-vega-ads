@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { parseTimeOffset, requestVmap, VmapResult } from '../../src/request/VmapRequester';
 import { installImagePolyfill } from '../../src/polyfill/image';
+import { parseXml as defaultParseXml } from '../../src/request/urlHandler';
 import { FakeClock } from '../fakes/FakeClock';
 import { FakeHttp } from '../fakes/FakeHttp';
 
@@ -99,6 +100,14 @@ describe('requestVmap (R18)', () => {
       'https://t.test/vmap/overlay/error?code=1003',
       'https://t.test/vmap/prop/error?code=1005',
     ]);
+  });
+
+  it('uses a custom XML parser for the VMAP document', async () => {
+    const parseXml = jest.fn((text: string) => defaultParseXml(text));
+    const http = new FakeHttp().on(URL, { body: fixture('pre-mid-post.xml') });
+    const result = await requestVmap(URL, { http, clock: new FakeClock(), parseXml });
+    expect(result.status).toBe('ok');
+    expect(parseXml).toHaveBeenCalledTimes(1);
   });
 
   it('returns no breaks for an empty VMAP', async () => {

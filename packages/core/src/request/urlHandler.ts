@@ -63,8 +63,20 @@ export function parseXml(text: string): Document | null {
  * the built-in one uses the browser DOMParser, which React Native lacks.
  * The request is aborted after the timeout (R4).
  */
-export function createUrlHandler(deps: { http: HttpPort; clock: ClockPort; timeoutMs?: number }): UrlHandler {
+/** Turns XML text into a DOM document; returns null when the text is not well-formed XML. */
+export type XmlParser = (text: string) => Document | null;
+
+export interface UrlHandlerDeps {
+  http: HttpPort;
+  clock: ClockPort;
+  timeoutMs?: number;
+  /** Replaces the default @xmldom/xmldom parser, for example with a faster one. */
+  parseXml?: XmlParser;
+}
+
+export function createUrlHandler(deps: UrlHandlerDeps): UrlHandler {
   const { http, clock } = deps;
+  const parse = deps.parseXml ?? parseXml;
   const ownTimeout = deps.timeoutMs ?? DEFAULT_VAST_TIMEOUT_MS;
 
   return {
@@ -83,7 +95,7 @@ export function createUrlHandler(deps: { http: HttpPort; clock: ClockPort; timeo
         if (!response.ok) {
           return { error: failure(`http:${response.status}`), statusCode: response.status };
         }
-        const xml = parseXml(text);
+        const xml = parse(text);
         if (!xml) {
           return { error: failure('xml'), statusCode: response.status };
         }

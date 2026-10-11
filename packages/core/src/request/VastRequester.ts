@@ -1,7 +1,7 @@
 import { VASTClient } from '@dailymotion/vast-client';
 import type { ClockPort, HttpPort } from '../ports';
 import type { AdSourceRef, VastAd, VastLinearCreative } from './types';
-import { createUrlHandler, describeFailure, LoadFailure, parseXml, UrlHandler } from './urlHandler';
+import { createUrlHandler, describeFailure, LoadFailure, parseXml, UrlHandler, XmlParser } from './urlHandler';
 
 /**
  * vast-client counts documents, not wrappers: with `wrapperLimit: N` it follows
@@ -31,6 +31,7 @@ export interface VastRequestDeps {
   clock: ClockPort;
   timeoutMs?: number;
   random?: () => number;
+  parseXml?: XmlParser;
 }
 
 const XML_PARSING_ERROR = 100;
@@ -57,13 +58,13 @@ function isLinear(creative: { type: string }): creative is VastLinearCreative {
 const EMBEDDED_URL = 'vega-ads:embedded-vast';
 
 /** Serves VAST that came inside a VMAP; any wrapper it points to goes to the network. */
-function withEmbedded(xml: string, network: UrlHandler): UrlHandler {
+function withEmbedded(xml: string, network: UrlHandler, parse: XmlParser): UrlHandler {
   return {
     async get(url, options) {
       if (url !== EMBEDDED_URL) {
         return network.get(url, options);
       }
-      const doc = parseXml(xml);
+      const doc = parse(xml);
       return doc
         ? { xml: doc, details: { byteLength: xml.length, statusCode: 200, rawXml: xml } }
         : { error: new Error('vega-ads:xml'), statusCode: null };
@@ -74,7 +75,7 @@ function withEmbedded(xml: string, network: UrlHandler): UrlHandler {
 export async function requestVast(source: string | AdSourceRef, deps: VastRequestDeps): Promise<VastResult> {
   const ref: AdSourceRef = typeof source === 'string' ? { kind: 'url', url: source } : source;
   const network = createUrlHandler(deps);
-  const urlHandler = ref.kind === 'xml' ? withEmbedded(ref.xml, network) : network;
+  const urlHandler = ref.kind === 'xml' ? withEmbedded(ref.xml, network, deps.parseXml ?? parseXml) : network;
   const url = ref.kind === 'xml' ? EMBEDDED_URL : cacheBust(ref.url, deps.random ?? Math.random);
   const client = new VASTClient();
   const parser = client.getParser() as unknown as {

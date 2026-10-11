@@ -79,6 +79,20 @@ describe('urlHandler (R4, R16)', () => {
     expect(clear).toHaveBeenCalledTimes(1);
   });
 
+  it('uses a custom XML parser when one is given', async () => {
+    const parseXml = jest.fn(() => ({ documentElement: { nodeName: 'VAST' } }) as unknown as Document);
+    const handler = createUrlHandler({ http: new FakeHttp().on(URL, { body: VAST }), clock: new FakeClock(), parseXml });
+    const result = await handler.get(URL, {});
+    expect(parseXml).toHaveBeenCalledWith(VAST);
+    expect('xml' in result && result.xml.documentElement.nodeName).toBe('VAST');
+  });
+
+  it('treats null from a custom parser as malformed XML', async () => {
+    const handler = createUrlHandler({ http: new FakeHttp().on(URL, { body: VAST }), clock: new FakeClock(), parseXml: () => null });
+    const result = await handler.get(URL, {});
+    expect(describeFailure((result as { error: Error }).error)).toEqual({ kind: 'xml' });
+  });
+
   it('still recognises a failure after vast-client re-wraps it with new Error(error)', () => {
     const original = new Error('vega-ads:timeout');
     expect(describeFailure(new Error(String(original)))).toEqual({ kind: 'timeout' });

@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { requestVast, VastResult } from '../../src/request/VastRequester';
 import { installImagePolyfill } from '../../src/polyfill/image';
+import { parseXml as defaultParseXml } from '../../src/request/urlHandler';
 import { FakeClock } from '../fakes/FakeClock';
 import { FakeHttp } from '../fakes/FakeHttp';
 
@@ -170,6 +171,18 @@ describe('requestVast', () => {
   it('reports 100 for broken embedded VAST', async () => {
     const result = await requestVast({ kind: 'xml', xml: '<VAST><Ad>' }, { http: new FakeHttp(), clock: new FakeClock() });
     expect(result).toEqual({ status: 'failed', errorCode: 100, failure: { kind: 'xml' } });
+  });
+
+  it('passes a custom XML parser to every document of the chain, embedded VAST included', async () => {
+    const seen: string[] = [];
+    const parseXml = (text: string): Document | null => {
+      seen.push(text.includes('<Wrapper>') ? 'wrapper' : 'inline');
+      return defaultParseXml(text);
+    };
+    const http = new FakeHttp().on(INLINE, { body: fixture('inline.xml') });
+    const result = await requestVast({ kind: 'xml', xml: wrapperTo(INLINE, 'w1') }, { http, clock: new FakeClock(), parseXml });
+    expect(result.status).toBe('ok');
+    expect(seen).toEqual(['wrapper', 'inline']);
   });
 
   it('adds a cache-busting value to the ad tag when it has the macro', async () => {
