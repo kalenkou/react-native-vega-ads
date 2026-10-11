@@ -1,16 +1,21 @@
 import { parseArgs } from 'node:util';
 import { buildVmap, formatTimeOffset } from './buildVmap';
+import { FfmpegRunner, ffmpegSegments } from './ffmpegSegments';
 import { pickBreaks, PickBreaksOptions } from './pickBreaks';
 import { RekognitionPort, rekognitionSegments } from './rekognition';
+import type { Segment } from './segments';
 
 export const USAGE = `Usage: make-vmap --bucket B --key K --vast-url URL [options]
+       make-vmap --local FILE --vast-url URL [options]
 
-Finds mid-roll points in a video in S3 with Amazon Rekognition segment detection
-and writes a VMAP 1.0 document.
+Finds mid-roll points in a video and writes a VMAP 1.0 document: with Amazon
+Rekognition segment detection for a video in S3, or with ffmpeg on this computer
+(shot changes and silent black frames, no cloud, no cost).
 
 Required:
-  --bucket B              S3 bucket of the video
+  --bucket B              S3 bucket of the video (Rekognition)
   --key K                 S3 key of the video (H.264 .mp4 or .mov)
+  --local FILE            a video file on this computer instead (needs ffmpeg)
   --vast-url URL          VAST tag URL for every mid-roll
 
 Options:
@@ -36,8 +41,10 @@ export interface S3Location {
 }
 
 export interface CliOptions {
-  bucket: string;
-  key: string;
+  bucket?: string;
+  key?: string;
+  /** A local video file: breaks come from ffmpeg instead of Rekognition. */
+  local?: string;
   vastUrl: string;
   preroll?: string;
   postroll?: string;
@@ -65,6 +72,8 @@ export interface CliDeps {
   stdout(text: string): void;
   stderr(text: string): void;
   sleep?: (ms: number) => Promise<void>;
+  /** Runs ffmpeg and resolves with its stderr; needed for --local. */
+  runFfmpeg?: FfmpegRunner;
 }
 
 function baseName(path: string): string {
@@ -106,6 +115,7 @@ function defined<T extends object>(value: T): T {
 const FLAGS = {
   bucket: { type: 'string' },
   key: { type: 'string' },
+  local: { type: 'string' },
   'vast-url': { type: 'string' },
   preroll: { type: 'string' },
   postroll: { type: 'string' },
@@ -129,14 +139,20 @@ function readFlags(argv: string[]) {
 
 export function parseCliArgs(argv: string[]): CliOptions {
   const flags = readFlags(argv);
-  const key = required('key', flags.key);
-  const bucket = required('bucket', flags.bucket);
+  const local = flags.local;
+  if (local !== undefined && (flags.bucket !== undefined || flags.key !== undefined)) {
+    throw new UsageError('--local reads a file on this computer: leave out --bucket and --key');
+  }
+  const key = local === undefined ? required('key', flags.key) : undefined;
+  const bucket = local === undefined ? required('bucket', flags.bucket) : undefined;
   const vastUrl = required('vast-url', flags['vast-url']);
-  const fileName = flags.out ? baseName(flags.out) : `${baseName(key).replace(/\.[^.]*$/, '')}.vmap`;
+  const source = local ?? key!;
+  const fileName = flags.out ? baseName(flags.out) : `${baseName(source).replace(/\.[^.]*$/, '')}.vmap`;
 
   return defined({
     bucket,
     key,
+    local,
     vastUrl,
     preroll: flags.preroll,
     postroll: flags.postroll,
@@ -167,14 +183,24 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
   }
 
   try {
-    const { rekognition, storage } = deps.createPorts(options.region);
-    deps.stderr(`Starting segment detection for s3://${options.bucket}/${options.key}`);
-    const detection = await rekognitionSegments(
-      rekognition,
-      { bucket: options.bucket, key: options.key },
-      { sleep: deps.sleep },
-    );
-    deps.stderr(`Job ${detection.jobId}: ${detection.segments.length} segments`);
+    let ports: ReturnType<CliDeps['createPorts']> | undefined;
+    const aws = () => (ports ??= deps.createPorts(options.region));
+    let detection: { segments: Segment[]; durationSeconds?: number };
+    if (options.local !== undefined) {
+      if (!deps.runFfmpeg) throw new Error('ffmpeg is not available');
+      deps.stderr(`Finding shot changes, black frames and silence in ${options.local} with ffmpeg`);
+      detection = await ffmpegSegments(options.local, deps.runFfmpeg);
+      deps.stderr(`${detection.segments.length} segments`);
+    } else {
+      deps.stderr(`Starting segment detection for s3://${options.bucket}/${options.key}`);
+      const job = await rekognitionSegments(
+        aws().rekognition,
+        { bucket: options.bucket!, key: options.key! },
+        { sleep: deps.sleep },
+      );
+      deps.stderr(`Job ${job.jobId}: ${job.segments.length} segments`);
+      detection = job;
+    }
 
     const times = pickBreaks(detection.segments, { ...options.breaks, durationSeconds: detection.durationSeconds });
     deps.stderr(`${times.length} mid-rolls: ${times.map(formatTimeOffset).join(', ') || 'none'}`);
@@ -193,7 +219,7 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
     }
     if (options.upload) {
       const { bucket, key } = options.upload;
-      await storage.putObject({ Bucket: bucket, Key: key, Body: xml, ContentType: 'application/xml' });
+      await aws().storage.putObject({ Bucket: bucket, Key: key, Body: xml, ContentType: 'application/xml' });
       deps.stderr(`Uploaded s3://${bucket}/${key}`);
     }
     return 0;

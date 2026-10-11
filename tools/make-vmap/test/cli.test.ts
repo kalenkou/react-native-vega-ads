@@ -164,3 +164,33 @@ describe('runCli', () => {
     expect(err.join('\n')).toContain('Access denied to S3 object');
   });
 });
+
+describe('local mode (ffmpeg, no AWS)', () => {
+  const LOCAL_LOG = [
+    '  Duration: 00:30:00.00, start: 0.000000, bitrate: 4000 kb/s',
+    '[Parsed_silencedetect_0 @ 0x1] silence_start: 469.5',
+    '[Parsed_blackdetect_0 @ 0x2] black_start:470 black_end:472 black_duration:2',
+    '[Parsed_silencedetect_0 @ 0x1] silence_end: 473 | silence_duration: 3.5',
+  ].join('\n');
+
+  it('needs only --local and --vast-url', () => {
+    expect(parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST])).toEqual({ local: 'film.mp4', vastUrl: VAST, breaks: {} });
+  });
+
+  it('rejects --local together with --bucket or --key', () => {
+    expect(() => parseCliArgs(['--local', 'film.mp4', '--bucket', 'b', '--vast-url', VAST])).toThrow(/--local/);
+  });
+
+  it('finds breaks with ffmpeg and creates no AWS client', async () => {
+    const ctx = fakeDeps(FILM);
+    const runs: string[][] = [];
+    ctx.deps.runFfmpeg = async (args) => (runs.push(args), LOCAL_LOG);
+    const created: unknown[] = [];
+    const createPorts = ctx.deps.createPorts;
+    ctx.deps.createPorts = (region) => (created.push(region), createPorts(region));
+    expect(await runCli(['--local', 'film.mp4', '--vast-url', VAST], ctx.deps)).toBe(0);
+    expect(runs[0]).toEqual(expect.arrayContaining(['-i', 'film.mp4']));
+    expect(created).toEqual([]);
+    expect(ctx.out.join('')).toContain('timeOffset="00:07:51.000"');
+  });
+});
