@@ -85,12 +85,27 @@ describe('parseContext', () => {
         said('death', 'The weapon suggests a potential death.'),
         said('grief', 'He appears distressed, possibly grieving.'),
         said('injury', 'Someone could be hurt.'),
+        said('child in danger', 'The robot arm resembles a weapon.'),
         said('violence', ' '),
         said('weapons', 'A soldier aims a rifle.'),
       ),
     );
     expect(context?.signals).toEqual([{ name: 'weapons', evidence: 'A soldier aims a rifle.' }]);
     expect(context?.blockedAdCategories).toEqual(['1248']);
+  });
+
+  it('drops a signal whose evidence says it is not there', () => {
+    const context = parseContext(
+      answer(
+        said('vehicle crash', 'There is no evidence of a vehicle crash in the scene.'),
+        said('weapons', 'No weapons are visible in the frames.'),
+        said('drinking', 'Drinking is not shown.'),
+        said('injury', 'There are no signs of injury.'),
+        said('grief', 'None.'),
+        said('death', 'He is not breathing and she closes his eyes.'),
+      ),
+    );
+    expect(context?.signals).toEqual([{ name: 'death', evidence: 'He is not breathing and she closes his eyes.' }]);
   });
 
   it('is null for an answer it cannot trust', () => {

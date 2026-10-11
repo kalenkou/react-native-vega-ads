@@ -39,7 +39,10 @@ export const MOODS = ['calm', 'happy', 'romantic', 'sad', 'tense', 'violent'] as
 const SCENE_MAX = 200;
 
 /** Words of a guess: evidence that only "suggests" something does not block an ad. */
-const GUESS = /\b(suggests?|suggesting|potential(ly)?|possibl[ey]|could|may|might|appears?|seems?|likely|indicat\w*|impl(y|ies))\b/i;
+const GUESS = /\b(suggests?|suggesting|potential(ly)?|possibl[ey]|could|may|might|appears?|seems?|likely|resembl\w*|indicat\w*|impl(y|ies))\b/i;
+
+/** Evidence that the thing is not there; the schema makes the model fill the field anyway. */
+const ABSENT = /\b(no evidence|there (is|are) no|no (signs?|mention)|(is|are) not (visible|shown|seen|present|mentioned)|none)\b|^no \w+ (is|are)\b/i;
 
 /** Seconds before the break of the frames the model looks at. */
 const FRAME_OFFSETS = [28, 15, 2];
@@ -125,7 +128,7 @@ export function parseContext(output: string): BreakContext | null {
   const found = new Map<string, string>();
   for (const { signal, evidence } of signals as Array<{ signal: string; evidence: string }>) {
     const seen = evidence.trim();
-    if (seen !== '' && !GUESS.test(seen) && !found.has(signal)) {
+    if (seen !== '' && !GUESS.test(seen) && !ABSENT.test(seen) && !found.has(signal)) {
       found.set(signal, seen);
     }
   }
