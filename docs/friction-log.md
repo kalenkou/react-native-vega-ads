@@ -131,3 +131,21 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Severity:** medium (voice is a main input on Fire TV; developers have to guess and test phrase by phrase).
 - **Workaround:** support the remote keys only, and say so (as `react-native-vega-ads` does).
 - **Suggestion:** publish the phrase → command table for Vega, and which commands are delivered while a second player (an ad) has media controls focus.
+
+## FL-15 · With the TV off, the screenshot tool hangs or writes an empty file, without an error (12.10.2026)
+- **Task:** run a scripted test on a Fire TV Stick 4K Select at night, judged by screenshots and the app's network requests.
+- **Steps:** with the TV (HDMI sink) switched off, `vega run-app` the app, press keys with `inputd-cli`, then `gwsi-tool-screenshooter /tmp/a.png` over `vega exec vda`.
+- **Expected:** an error that no display is connected, or a black frame.
+- **Actual:** the app sent no network request after launch; one `gwsi-tool-screenshooter` call did not return for more than 4 minutes; a later call returned at once and wrote a 0-byte file. No message in either case. With the TV on, the same script passed.
+- **Severity:** low (lost time; a test looks like an app bug).
+- **Workaround:** keep the TV on and awake during scripted runs; put a timeout on every `vega exec vda` call; treat a 0-byte screenshot as "no display".
+- **Suggestion:** make the screenshot tool fail with a clear message when no display is active.
+
+## FL-16 · Amazon's automated device testing does not take Vega packages (12.10.2026)
+- **Task:** get the same evidence other Fire TV apps can show: Amazon installs, launches and measures the app on its own devices.
+- **Steps:** read the Appstore Quality Central and Live Device Interaction docs; search the developer forum.
+- **Expected:** a way to run a `.vpkg` on Amazon-hosted Fire TV Stick 4K Select devices.
+- **Actual:** both services take Fire OS APKs only. An Amazon reply on the forum (https://community.amazondeveloper.com/t/can-t-we-test-vega-apps-on-appstore-quality-center/28258): "There is no VPKG/Vega OS support at this time", and the Fire TV Stick 4K Select is not in Live Device Interaction.
+- **Severity:** medium (a Vega developer without a stick cannot check the app on hardware before submitting; the docs say "you must test your app on a Fire TV Stick before submitting").
+- **Workaround:** test on our own stick against the Vega KPI targets with `vega exec perf kpi-visualizer --certification` and the list in "Test before submission".
+- **Suggestion:** add Vega devices to Appstore Quality Central and Live Device Interaction.
