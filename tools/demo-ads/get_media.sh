@@ -2,11 +2,13 @@
 # Downloads and builds everything the demo plays, into DIR (default: media):
 #   DIR/tears_of_steel_720p.mp4  the movie, (CC) Blender Foundation, CC BY 3.0
 #   DIR/poster.jpg               a frame of the movie for the details screen
+#   DIR/sintel_720p.mp4          the second title, (c) Blender Foundation | durian.blender.org, CC BY 3.0
+#   DIR/poster_sintel.jpg        a frame of Sintel
 #   DIR/fonts/Inter.ttf          Inter, SIL Open Font License, with OFL.txt
 #   DIR/ads/*.mp4                the five demo ads, drawn by make_ads.py
 #   DIR/ads/brewnord_pause.png, brewnord_qr.png  the pause ad and its QR code
 #   DIR/loudness.json            integrated loudness (LUFS, EBU R128) of the movie and the ads
-# Needs curl, shasum, ffmpeg with libx264 and aac, and Python 3 (Pillow and segno go into DIR/.venv).
+# Needs curl, shasum, unzip, ffmpeg with libx264 and aac, and Python 3 (Pillow and segno go into DIR/.venv).
 # Usage: sh get_media.sh [DIR]
 set -eu
 
@@ -14,6 +16,8 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 DIR=${1:-media}
 MOVIE_URL=https://download.blender.org/demo/movies/ToS/tears_of_steel_720p.mov
 MOVIE_SHA256=efa9062d9cdb7a338e40ad530dfdf234806743f29ae6a1a136b97ece4e588e8f
+SINTEL_URL=https://download.blender.org/durian/movies/Sintel.2010.720p.mkv.zip
+SINTEL_SHA256=d252f898641b20f51c64206f31063e659c28b152a9d988936736d1b56e6e4db3
 FONT_URL='https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz,wght%5D.ttf'
 FONT_SHA256=29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031
 OFL_URL=https://github.com/google/fonts/raw/main/ofl/inter/OFL.txt
@@ -49,6 +53,21 @@ if [ ! -s "$DIR/poster.jpg" ]; then
     -frames:v 1 -q:v 3 "$DIR/poster.jpg"
 fi
 
+download "$SINTEL_URL" "$DIR/Sintel.2010.720p.mkv.zip" "$SINTEL_SHA256"
+if [ ! -s "$DIR/sintel_720p.mp4" ]; then
+  # H.264 High stays; the 5.1 AC-3 sound becomes stereo AAC at -24 LUFS, as above. No subtitles.
+  unzip -p "$DIR/Sintel.2010.720p.mkv.zip" Sintel.2010.720p.mkv > "$DIR/Sintel.2010.720p.mkv"
+  ffmpeg -hide_banner -loglevel error -y -i "$DIR/Sintel.2010.720p.mkv" -map 0:v:0 -map 0:a:0 \
+    -c:v copy -af loudnorm=I=-24:TP=-2:LRA=15 -ac 2 -ar 48000 -c:a aac -b:a 160k -movflags +faststart \
+    "$DIR/sintel_720p.part.mp4"
+  mv "$DIR/sintel_720p.part.mp4" "$DIR/sintel_720p.mp4"
+  rm -f "$DIR/Sintel.2010.720p.mkv" "$DIR/loudness.json"
+fi
+if [ ! -s "$DIR/poster_sintel.jpg" ]; then
+  ffmpeg -hide_banner -loglevel error -y -ss 00:05:07 -i "$DIR/sintel_720p.mp4" \
+    -frames:v 1 -q:v 3 "$DIR/poster_sintel.jpg"
+fi
+
 download "$FONT_URL" "$DIR/fonts/Inter.ttf" "$FONT_SHA256"
 download "$OFL_URL" "$DIR/fonts/OFL.txt"
 if [ ! -x "$DIR/.venv/bin/python" ]; then
@@ -73,6 +92,7 @@ if [ ! -s "$DIR/loudness.json" ]; then
   echo "measure loudness"
   {
     printf '{\n  "tears_of_steel_720p.mp4": %s' "$(lufs "$DIR/tears_of_steel_720p.mp4")"
+    printf ',\n  "sintel_720p.mp4": %s' "$(lufs "$DIR/sintel_720p.mp4")"
     for ad in kettlo brewnord voltaro ferntop quillary; do
       printf ',\n  "ads/%s_720p.mp4": %s' "$ad" "$(lufs "$DIR/ads/${ad}_720p.mp4")"
     done

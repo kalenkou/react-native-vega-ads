@@ -2,13 +2,14 @@
 // and logs tracking pixels. For device tests before the files live on S3.
 //
 // Usage: node serve.mjs --dir MEDIA_DIR [--host LAN_IP] [--port 8080] [--midrolls 139.9,441.2] [--latency 0]
-//        [--context FILE]
+//        [--context FILE] [--sintel-midrolls 162.1,543.1] [--sintel-context FILE]
 // --midrolls: mid-roll times in seconds, for example from `make-vmap --local`; the first one
 // gets a pod of three ads. vmap/timer.xml keeps fixed times (2:00, 6:00) to compare with.
 // --latency MS: answer each VAST/VMAP request after MS milliseconds, like a real ad server
 // (for measuring how much preloading saves; the media files are not delayed).
 // --context FILE: a JSON array with the context of each mid-roll in vmap/movie.xml, in order
 // (null for none): { mood, scene, signals, blockedAdCategories }, the BreakContext of make-vmap.
+// --sintel-midrolls, --sintel-context: the same for vmap/sintel.xml, the second title.
 // MEDIA_DIR holds the output of make_ads.py (ads/) and the content movie.
 // Needs `npm run build` in tools/make-vmap first.
 
@@ -32,6 +33,8 @@ const { values } = parseArgs({
     midrolls: { type: 'string', default: '120,360' },
     latency: { type: 'string', default: '0' },
     context: { type: 'string' },
+    'sintel-midrolls': { type: 'string', default: '162.083,543.125' },
+    'sintel-context': { type: 'string' },
   },
 });
 if (!values.dir) {
@@ -94,13 +97,15 @@ if (!(latency >= 0)) {
   process.exit(2);
 }
 
-const midrollTimes = values.midrolls.split(',').map(Number);
-if (midrollTimes.some((time) => !(time > 0))) {
-  console.error('--midrolls: positive times in seconds, for example 139.9,441.2');
-  process.exit(2);
+function times(flag) {
+  const list = values[flag].split(',').map(Number);
+  if (list.some((time) => !(time > 0))) {
+    console.error(`--${flag}: positive times in seconds, for example 139.9,441.2`);
+    process.exit(2);
+  }
+  return list;
 }
-
-const contexts = values.context ? JSON.parse(readFileSync(values.context, 'utf8')) : [];
+const readContexts = (file) => (file ? JSON.parse(readFileSync(file, 'utf8')) : []);
 
 const vmap = (times, withContext = []) =>
   buildVmap({
@@ -132,7 +137,8 @@ const documents = {
     qr: { scanUrl: 'https://brewnord.example/pause', imageUrl: base + 'ads/brewnord_qr.png' },
     pixelBaseUrl: base,
   }),
-  'vmap/movie.xml': vmap(midrollTimes, contexts),
+  'vmap/movie.xml': vmap(times('midrolls'), readContexts(values.context)),
+  'vmap/sintel.xml': vmap(times('sintel-midrolls'), readContexts(values['sintel-context'])),
   'vmap/timer.xml': vmap([120, 360]),
 };
 
