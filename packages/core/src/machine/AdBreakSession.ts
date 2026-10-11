@@ -54,6 +54,8 @@ export interface SessionDeps {
    * between two ads; starting early lets the next ad's first frame cover the end.
    */
   handOverLeadMs?: number;
+  /** An ad that shows no frame this long after play() fails with 405 (goal 7). Default 5000. */
+  playTimeoutMs?: number;
   onChange?: (snapshot: SessionSnapshot) => void;
   /** IAB events sent, plus `error:<code>` and `breakEnd`. */
   onEvent?: (name: string) => void;
@@ -102,6 +104,9 @@ export class AdBreakSession {
   private savedContentTime = 0;
   private startedAt = 0;
   private impressed = false;
+  /** The active player reported an error before the break started. */
+  private brokenWhileReady = false;
+  private watchdog: unknown = null;
 
   constructor(deps: SessionDeps) {
     this.deps = deps;
@@ -145,6 +150,12 @@ export class AdBreakSession {
     content.pause();
     this.setState('playing');
     const player = this.player;
+    if (this.brokenWhileReady && this.current) {
+      this.fail(this.current.tracker, PLAYBACK_ERROR);
+      await this.advance();
+      return;
+    }
+    this.armWatchdog();
     await player.play();
     await player.takeMediaControlFocus();
   }
@@ -221,10 +232,15 @@ export class AdBreakSession {
       void this.advance();
     })));
     player.on('ended', finishing(() => void this.releasePrevious()));
-    player.on('error', active(() => this.whilePlaying((c) => {
-      this.fail(c.tracker, PLAYBACK_ERROR);
-      void this.advance();
-    })));
+    player.on('error', active(() => {
+      if (this.state === 'ready') {
+        this.brokenWhileReady = true;
+      }
+      this.whilePlaying((c) => {
+        this.fail(c.tracker, PLAYBACK_ERROR);
+        void this.advance();
+      });
+    }));
     player.on('error', finishing(() => void this.releasePrevious()));
     return player;
   }
@@ -256,7 +272,28 @@ export class AdBreakSession {
     return ready;
   }
 
+  /** Fails the current ad if it shows no frame in time; a dead player must not hold the break. */
+  private armWatchdog(): void {
+    this.disarmWatchdog();
+    const current = this.current;
+    this.watchdog = this.deps.clock.setTimeout(() => {
+      this.watchdog = null;
+      if (this.current === current && current && this.state === 'playing') {
+        this.fail(current.tracker, PLAYBACK_ERROR);
+        void this.advance();
+      }
+    }, this.deps.playTimeoutMs ?? 5000);
+  }
+
+  private disarmWatchdog(): void {
+    if (this.watchdog !== null) {
+      this.deps.clock.clearTimeout(this.watchdog);
+      this.watchdog = null;
+    }
+  }
+
   private onPlaying(): void {
+    this.disarmWatchdog();
     this.whilePlaying((c) => {
       if (this.shownSurface !== this.playerSurface) {
         // Fire TV rule: no impression for an ad that is not visible yet. See releasePrevious().
@@ -314,6 +351,14 @@ export class AdBreakSession {
     const off = standby.player.on('canplay', () => {
       off();
       standby.ready = true;
+    });
+    // A standby that breaks is dropped; its ad then plays on the current player.
+    standby.player.on('error', () => {
+      if (this.standby === standby) {
+        this.standby = null;
+        this.deps.onEvent?.('standby:error');
+        void standby.player.deinitialize();
+      }
     });
     standby.player.setSrc(url);
   }
@@ -405,6 +450,7 @@ export class AdBreakSession {
       player.setAutoplay(true);
       player.setSrc(url);
       this.emitChange();
+      this.armWatchdog();
       await player.play();
       return;
     }
@@ -426,6 +472,7 @@ export class AdBreakSession {
     }
     this.current = { item: standby.item, tracker: this.trackerFor(standby.item.ad) };
     this.emitChange();
+    this.armWatchdog();
     await standby.player.play();
     await standby.player.takeMediaControlFocus();
   }
@@ -442,6 +489,7 @@ export class AdBreakSession {
   }
 
   private async releasePlayer(): Promise<void> {
+    this.disarmWatchdog();
     const players = [this.player, this.standby?.player, this.previous?.player];
     this.player = null;
     this.playerSurface = null;

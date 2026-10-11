@@ -439,3 +439,100 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
     expect(ctx.adPlayers).toHaveLength(1);
   });
 });
+
+describe('AdBreakSession – stuck players never keep the content paused (goal 7, R7)', () => {
+  it('sends 405 and returns to content when the ad shows no frame in time', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    await contentAt(ctx.content, 42.5);
+    await loadReady(ctx);
+    await ctx.session.start(); // the player accepts play() but never renders (no flush)
+    ctx.clock.advance(4_999);
+    await settle();
+    expect(ctx.session.state).toBe('playing');
+    ctx.clock.advance(1);
+    await settle();
+    expect(ctx.events).toContain('error:405');
+    expect(sent()).toContain('https://t.test/error?code=405');
+    expect(ctx.session.state).toBe('finished');
+    expect(ctx.content.calls.slice(-3)).toEqual(['seek:42.5', 'play', 'focus']);
+  });
+
+  it('fails the next pod ad on the same player when it shows no frame in time', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitEnded(); // ad 2 starts on the same player; it never renders
+    await settle();
+    ctx.clock.advance(5_000);
+    await settle();
+    expect(ctx.events).toContain('error:405');
+    // R7: the buffet ad replaces it; it does not render either, so the break ends.
+    expect(player.src).toBe('https://cdn.test/buffet.mp4');
+    ctx.clock.advance(5_000);
+    await settle();
+    expect(ctx.events.filter((e) => e === 'error:405')).toHaveLength(2);
+    expect(ctx.session.state).toBe('finished');
+    expect(ctx.content.calls).toContain('play');
+  });
+
+  it('fails a prebuffered ad that shows no frame after the hand-over', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true });
+    const first = await loadReady(ctx);
+    await ctx.session.start();
+    await first.flush();
+    await settle();
+    const standby = ctx.adPlayers[1] as FakePlayer;
+    standby.emitCanPlay();
+    await settle();
+    first.emitEnded(); // switch to the standby player, which never renders
+    await settle();
+    expect(standby.calls).toContain('play');
+    ctx.clock.advance(5_000);
+    await settle();
+    expect(ctx.events).toContain('error:405');
+  });
+
+  it('keeps playing when the first frame comes in time', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    ctx.clock.advance(60_000);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    expect(ctx.session.state).toBe('playing');
+  });
+
+  it('fails the ad at once when its player broke while waiting for the break', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    player.emitError('decoder lost');
+    await ctx.session.start();
+    await settle();
+    expect(ctx.events).toContain('error:405');
+    expect(ctx.session.state).toBe('finished');
+    expect(ctx.content.calls).toContain('play');
+  });
+
+  it('drops a standby player that fails after canplay and plays that ad on the current player', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true });
+    const first = await loadReady(ctx);
+    await ctx.session.start();
+    await first.flush();
+    await settle();
+    const standby = ctx.adPlayers[1] as FakePlayer;
+    standby.emitCanPlay();
+    standby.emitError('stream broke');
+    await settle();
+    expect(standby.deinitialized).toBe(true);
+
+    first.emitTime(9.6); // no hand-over to a broken player
+    await settle();
+    expect(standby.calls).not.toContain('play');
+    first.emitEnded();
+    await settle();
+    expect(first.calls.filter((c) => c.startsWith('src:'))).toEqual(['src:https://cdn.test/pod-1.mp4', 'src:https://cdn.test/pod-2.mp4']);
+    expect(ctx.session.state).toBe('playing');
+  });
+});
