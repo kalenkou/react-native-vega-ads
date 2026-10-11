@@ -1,0 +1,5 @@
+build
+buildinfo.json
+.tmp
+# The address of your media server (src/media.example.ts shows the shape)
+src/media.local.ts
