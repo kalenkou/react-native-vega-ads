@@ -90,3 +90,5 @@ Hook demo, manifest without media controls entries, `mediaControls: false` (no `
 Result: without the manifest entries, w3cmedia's legacy player session still pauses a PLAYING player on the play/pause key, but does not resume a paused one. An app that handles the key itself races with it: pause looks fine, resume is undone at once. → FAIL for the "own handler, no manifest" mode. Use the manifest + media controls (one owner of the key, Alexa works) and do not handle `playpause` in the app while `ads.playing`.
 
 Confirmed by hand on the device (same no-manifest build): remote play/pause pauses the ad, the next press does not resume it; "Alexa, pause" / "Alexa, play" have no effect during the ad or the content. → Without the manifest entries neither the app-key mode nor voice control works; the manifest + media controls mode is required.
+
+Confirmed by hand on the device with the normal build (manifest entries, `mediaControls` on, hook demo): remote play/pause pauses and resumes the ad; "Alexa, pause" / "Alexa, play" work during the ad and on the content. → PASS (11.10.2026)
