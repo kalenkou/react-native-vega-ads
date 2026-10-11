@@ -92,3 +92,18 @@ Result: without the manifest entries, w3cmedia's legacy player session still pau
 Confirmed by hand on the device (same no-manifest build): remote play/pause pauses the ad, the next press does not resume it; "Alexa, pause" / "Alexa, play" have no effect during the ad or the content. → Without the manifest entries neither the app-key mode nor voice control works; the manifest + media controls mode is required.
 
 Confirmed by hand on the device with the normal build (manifest entries, `mediaControls` on, hook demo): remote play/pause pauses and resumes the ad; "Alexa, pause" / "Alexa, play" work during the ad and on the content. → PASS (11.10.2026)
+
+## Amazon vega-video-sample with Shaka, SDK 0.24 / RN 0.83 (11.10.2026)
+
+The public AmazonAppDev/vega-video-sample (React Native 0.83, w3cmedia 2.3.2, Shaka for DASH/HLS) built with Vega SDK 0.24.12112; the packed `@vega-ads/*` installed; integration on the player screen: `useVegaAds` + `AdSurfaceLayers` + `AdOverlay`, the sample's own media controls handler passed as `contentMediaControlHandler`, player UI and buffering view hidden while `ads.playing`. VMAP: Google sample pre/mid(pod of 3)/post.
+
+| Check | Result |
+|---|---|
+| MP4 title ("Empire", static player path) | pre-roll → `breakEnd` → content starts; mid-roll pod "Ad 1..3 of 3" at 0:15 → PASS |
+| DASH title through Shaka ("Infinite Blue") — first runs | pre-roll stuck in `interrupted`, black screen. Cause: Shaka sends `timeupdate` while the pre-roll loads; the manager released the pre-roll as a passed break. Fixed in core (4c5772c), unit test added |
+| DASH title after the fix, 3 fresh launches | pre-roll plays every time (3/3) → PASS |
+| Remote play/pause during the pre-roll (media controls of the sample's manifest) | `pause`, then `resume` → PASS |
+| Mid-roll pod over Shaka content | 3 ads back to back, next ad's impression before the previous `complete` (early hand-over) → PASS |
+| Back during the 3rd pod ad | `breakEnd`, content continues at 0:17 with the player UI → PASS |
+
+Open: post-roll on this sample (the titles are long), Home during an ad, captions above ads, standby decoder on 4K titles.
