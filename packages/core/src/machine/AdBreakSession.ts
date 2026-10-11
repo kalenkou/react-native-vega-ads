@@ -85,6 +85,8 @@ export class AdBreakSession {
   /** After an early hand-over, the ad that is still finishing its last fraction of a second. */
   private previous: { player: PlayerPort; tracker: AdTracker } | null = null;
   private previousReleased: () => void = () => undefined;
+  /** Set when the device could not start a second ad player; then the break uses one. */
+  private standbyUnavailable = false;
   private standby: Standby | null = null;
   private releasing: Promise<void> = Promise.resolve();
   private current: Current | null = null;
@@ -261,7 +263,7 @@ export class AdBreakSession {
   private async prepareStandby(current: Current): Promise<void> {
     const pod = this.pod;
     const standbySurface = this.deps.standbySurface;
-    if (!pod || !standbySurface) {
+    if (!pod || !standbySurface || this.standbyUnavailable) {
       return;
     }
     const remainingMs = Math.max(0, current.item.ad.creative.duration - (this.player?.getCurrentTime() ?? 0)) * 1000;
@@ -275,7 +277,20 @@ export class AdBreakSession {
     if (this.current !== current || this.standby) {
       return;
     }
-    const standby: Standby = { player: await this.createPlayer(surface), surface, item, ready: false };
+    let player: PlayerPort;
+    try {
+      player = await this.createPlayer(surface);
+    } catch {
+      // For example, no free video decoder on a smaller device.
+      this.standbyUnavailable = true;
+      this.deps.onEvent?.('standby:unavailable');
+      return;
+    }
+    if (this.current !== current || this.standby || this.state !== 'playing') {
+      await player.deinitialize();
+      return;
+    }
+    const standby: Standby = { player, surface, item, ready: false };
     this.standby = standby;
     standby.player.setAutoplay(false);
     const off = standby.player.on('canplay', () => {

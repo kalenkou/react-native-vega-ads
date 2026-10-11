@@ -27,7 +27,7 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 20; i++) await Promise.resolve();
 }
 
-function setup(body: string, options: { budgetMs?: number; standby?: boolean } = {}) {
+function setup(body: string, options: { budgetMs?: number; standby?: boolean; maxPlayers?: number } = {}) {
   const http = new FakeHttp().on(TAG, { body });
   const clock = new FakeClock(1_000_000);
   const content = new FakePlayer({ duration: 600 });
@@ -42,6 +42,13 @@ function setup(body: string, options: { budgetMs?: number; standby?: boolean } =
     adSurface: SURFACE,
     standbySurface: options.standby ? STANDBY : undefined,
     createAdPlayer: () => {
+      if (options.maxPlayers !== undefined && adPlayers.filter((p) => !p.deinitialized).length >= options.maxPlayers) {
+        // Like a device without a free video decoder: the player cannot start.
+        const failing = new FakePlayer({ duration: 10 });
+        failing.initialize = () => Promise.reject(new Error('no decoder available'));
+        adPlayers.push(failing);
+        return failing;
+      }
       const player = new FakePlayer({ duration: 10 });
       adPlayers.push(player);
       return player;
@@ -399,6 +406,22 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
     await settle();
     expect(ctx.session.state).toBe('finished');
     expect(ctx.adPlayers.every((p) => p.deinitialized)).toBe(true);
+  });
+
+  it('keeps playing with one ad player when the device cannot create a second one', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true, maxPlayers: 1 });
+    const first = await playFirst(ctx);
+    expect(ctx.adPlayers).toHaveLength(2);
+    first.emitTime(9.6);
+    first.emitEnded();
+    await settle();
+    expect(first.src).toBe('https://cdn.test/pod-2.mp4');
+    expect(last(ctx.states)).toMatchObject({ state: 'playing', position: 2, adSurface: SURFACE });
+    expect(ctx.events).toContain('standby:unavailable');
+    await first.flush();
+    first.emitEnded();
+    await settle();
+    expect(ctx.session.state).toBe('finished');
   });
 
   it('does not prebuffer anything for the last ad of the break', async () => {
