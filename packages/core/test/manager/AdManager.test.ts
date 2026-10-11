@@ -151,7 +151,10 @@ describe('AdManager', () => {
     expect(ctx.last()?.state).toBe('playing');
 
     await playAdToEnd(ctx);
-    expect(ctx.content.calls.filter((c) => c === 'seek:30')).toHaveLength(1);
+    // The content did not move during the break, so it plays on from 30 s without a seek.
+    expect(ctx.content.calls.filter((c) => c.startsWith('seek'))).toEqual([]);
+    expect(ctx.content.getCurrentTime()).toBe(30);
+    expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
     expect(ctx.lastAdPlayer().deinitialized).toBe(true);
   });
 
@@ -368,7 +371,8 @@ describe('AdManager', () => {
     expect(ctx.content.calls).not.toContain('play');
 
     await ctx.manager.wake();
-    expect(ctx.content.calls.slice(-3)).toEqual(['seek:0', 'play', 'focus']);
+    expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
+    expect(ctx.content.calls).not.toContain('seek:0');
     expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
     expect(ctx.events).toContain('break:break-1:interrupted');
     expect(ctx.http.requests.filter((u) => u === 'https://ads.test/pre.xml')).toHaveLength(1);

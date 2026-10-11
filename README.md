@@ -53,7 +53,7 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11.10.2026. Details: [`apps/spike/DEVICE-T
 | Check | Result |
 |---|---|
 | Switch content → ad | 56–151 ms, no dark frame on video at ~30 fps |
-| Content resume position | drift 0.00 s on every break |
+| Content resume position | where it paused, within 0.25 s; a seek back only above that (a seek re-buffers) |
 | Mid-roll prefetch | pod of 3 ads ready in 1.6 s, 15 s before the break |
 | Gap between ads in a pod | next ad's first frame 64–85 ms before the previous ad ends |
 | Tracking pixels | impression + 5 events per ad, all HTTP 200 |

@@ -252,6 +252,39 @@ describe('AdBreakSession – viewer actions (R8, R13, R23)', () => {
     expect(player.src).toBe('https://cdn.test/pod-2.mp4');
   });
 
+  it('does not seek the content when it did not move during the break (a pre-roll at 0)', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitEnded();
+    await settle();
+    expect(ctx.content.calls.filter((c) => c.startsWith('seek'))).toEqual([]);
+    expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
+  });
+
+  it('seeks back only when the content moved more than a quarter second after pause()', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    await contentAt(ctx.content, 42.5);
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    ctx.content.emitTime(42.75); // a late update, within the tolerance
+    player.emitEnded();
+    await settle();
+    expect(ctx.content.calls.filter((c) => c.startsWith('seek'))).toEqual([]);
+
+    const moved = setup(fixture('inline.xml'));
+    await contentAt(moved.content, 42.5);
+    const second = await loadReady(moved);
+    await moved.session.start();
+    await second.flush();
+    moved.content.emitTime(42.76);
+    second.emitEnded();
+    await settle();
+    expect(moved.content.calls.slice(-3)).toEqual(['seek:42.5', 'play', 'focus']);
+  });
+
   it('on Back, releases the ad and returns to content without skip or close pixels', async () => {
     const ctx = setup(fixture('inline.xml'));
     await contentAt(ctx.content, 12);
@@ -262,7 +295,8 @@ describe('AdBreakSession – viewer actions (R8, R13, R23)', () => {
     await ctx.session.cancel();
     expect(sent()).toEqual([]);
     expect(player.deinitialized).toBe(true);
-    expect(ctx.content.calls).toContain('seek:12');
+    expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
+    expect(ctx.content.calls).not.toContain('seek:12');
     expect(ctx.session.state).toBe('finished');
   });
 
@@ -277,7 +311,8 @@ describe('AdBreakSession – viewer actions (R8, R13, R23)', () => {
     expect(player.deinitialized).toBe(true);
     expect(ctx.session.state).toBe('interrupted');
     await ctx.session.resumeContent();
-    expect(ctx.content.calls.slice(-3)).toEqual(['seek:30', 'play', 'focus']);
+    expect(ctx.content.calls.filter((c) => c.startsWith('seek'))).toEqual([]);
+    expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
     expect(ctx.session.state).toBe('finished');
   });
 
@@ -550,7 +585,8 @@ describe('AdBreakSession – stuck players never keep the content paused (goal 7
     expect(ctx.events).toContain('error:405');
     expect(sent()).toContain('https://t.test/error?code=405');
     expect(ctx.session.state).toBe('finished');
-    expect(ctx.content.calls.slice(-3)).toEqual(['seek:42.5', 'play', 'focus']);
+    expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
+    expect(ctx.content.calls).not.toContain('seek:42.5');
   });
 
   it('fails the next pod ad on the same player when it shows no frame in time', async () => {

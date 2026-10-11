@@ -178,3 +178,14 @@ Demo app, release build, 10 cold launches each, 8 s on the movie page, then Play
 | Runs with both log lines only (4 and 9 runs) | 2866 ms → 1804 ms | | |
 
 The preload saves about 0.7 s at the median here; the rest is creating the ad player and buffering the first frame on a cold launch, which varies by more than a second from run to run. With a faster ad server the saving is smaller (on the LAN without added latency it is within the noise).
+
+## Gate runs: full demo, cold launches, and no seek after a break (11.10.2026)
+
+`gate-run.sh` (kept outside the repo): cold launch, 8 s on the movie page, Play, the pre-roll plays out, seek to ~2:05, "Ad in N", the mid-roll pod plays out, then two screenshots 2 s apart must differ and two seeks 6 s apart must be ≥ 13 s apart. Ads are judged by the server's pixel log, the movie by the app's `[demo] content` lines and the screenshots, because the system log drops lines (FL-02).
+
+| Build | Runs | Result |
+|---|---|---|
+| Before: the content was always seeked back after a break | 3 cold | ads and movie played in all 3 (pixels; positions 7 → 124 s; pause at 140 s). Log showed `seeked 0.0` right after every pre-roll: a seek of a player that had never played |
+| After: seek back only when the content moved more than 0.25 s after `pause()` | 3 + 3 cold | 6/6 PASS. No `seeked 0.0`; after the mid-roll the movie went on from 140.1–140.3 s without a seek; frames differ (mean difference ~50) |
+
+The content plays on for 0.1–0.2 s after `pause()` on this device, so the viewer misses at most a quarter second at a break. The rare stop at 0:00 after the pre-roll (1 of 6 earlier) was not seen in these 6 runs; the unneeded seek of a never-played player is a likely cause, not a proven one.

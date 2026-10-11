@@ -73,6 +73,13 @@ const MEDIA_LOAD_ERROR = 400;
 const MEDIA_NOT_SUPPORTED = 403;
 const PLAYBACK_ERROR = 405;
 
+/**
+ * pause() is not instant: the content may play on for a moment, so the break seeks it back to
+ * where it paused. A smaller difference is not worth a seek (a seek re-buffers, and a player that
+ * has never played, before a pre-roll, should simply start).
+ */
+const RESUME_SEEK_TOLERANCE_S = 0.25;
+
 interface Current {
   item: PodItem;
   tracker: AdTracker;
@@ -647,7 +654,9 @@ export class AdBreakSession {
     this.current = null;
     this.setState('resuming');
     if (this.resumeContentAfter) {
-      content.setCurrentTime(this.savedContentTime);
+      if (Math.abs(content.getCurrentTime() - this.savedContentTime) > RESUME_SEEK_TOLERANCE_S) {
+        content.setCurrentTime(this.savedContentTime);
+      }
       await content.play();
     }
     await content.takeMediaControlFocus();
