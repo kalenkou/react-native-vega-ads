@@ -110,6 +110,13 @@ The public AmazonAppDev/vega-video-sample (React Native 0.83, w3cmedia 2.3.2, Sh
 | Same, then 4.6 s in the background | the system Low Resource Killer ends the app (`memory-mid: request to terminate`, `LowResourceKiller`). The same happens with Home during content without an ad, so it is the sample's memory on a 1 GB stick, not the ads |
 | Background/foreground during the pre-roll (`vlcm trigger-app background`, then `foreground`) | no ad on return; the sample itself closes the player screen on `background` (`navigateBack` in its `handleAppStateChange`), so it shows the details screen. Resume after background is covered by unit tests (`suspend`/`wake`) |
 
+Regression after the review fixes (stall watchdog, late/duplicate event guards, VMAP pixels, request macros; a589ddb), same device and sample, MP4 title:
+
+| Check | Result |
+|---|---|
+| Pre-roll → content → mid-roll pod "Ad 1..3 of 3" at 0:15 → content | PASS. The pod plays in `sequence` order; Google's sample returns its creatives in a different order on each request |
+| Remote pause of the pre-roll for 16 s (longer than the 10 s stall watchdog), then resume | the ad stays paused on the same frame, resumes from it, ends, content starts → PASS (a paused ad is not taken for a stalled one) |
+
 `inputd-cli button_press KEY_HOME` reaches the app as a key but does not bring the launcher to the foreground; use `vlcm launch-app orpheus://com.amazon.smplighthouse.launcher.main` to test Home.
 
 Open: post-roll on this sample (the titles are long), display off during an ad, captions above ads, standby decoder on 4K titles.
