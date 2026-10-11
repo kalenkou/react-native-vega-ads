@@ -79,6 +79,8 @@ Options:
 
 With `--local FILE --speech-model ggml-base.en.bin`, the tool also finds speech with [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (`whisper-cli` on the `PATH`, no cloud, no cost). No mid-roll goes inside speech or within 1 s of it, so an ad never cuts a line. The tool uses word times, not sentence times, and skips sound labels such as `[MUSIC PLAYING]`. The model file is not in this repository: download a ggml model from the whisper.cpp project. A 12-minute film takes about 10 s on an Apple Silicon Mac.
 
+With `--context-model` and `--context-mmproj` as well, a local vision model ([llama.cpp](https://github.com/ggml-org/llama.cpp) `llama-mtmd-cli`, for example Qwen2.5-VL-7B-Instruct) looks at three frames and the last minute of dialogue before each break. It reports sensitive content with evidence: death, grief, violence, weapons, vehicle crash, injury, drinking, child in danger. Fixed rules in `src/breakContext.ts` (`SENSITIVITY_RULES`) turn each signal into IAB Ad Product Taxonomy 2.0 codes to block after that scene, for example a vehicle crash blocks car ads. The VMAP carries them in a `vega-ads:context` extension. About 7 s per break, no cloud. See [eval/](eval/README.md) for how often it is right.
+
 Exit codes: `0` success, `1` AWS or job error, `2` bad arguments.
 
 ## Tests
