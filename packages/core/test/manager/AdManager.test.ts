@@ -486,6 +486,33 @@ describe('AdManager', () => {
     expect(ctx.content.calls).not.toContain('play');
   });
 
+  it('sends the VMAP breakStart and breakEnd pixels of a played break (C2-2)', async () => {
+    const pixels = new FakeHttp();
+    delete g.Image;
+    installImagePolyfill(pixels, g);
+    const ctx = setup({ [VMAP]: fixture('vmap/pre-mid-post.xml'), 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start({ vmapUrl: VMAP });
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    expect(pixels.requests).toContain('https://t.test/vmap/pre/start');
+    expect(pixels.requests).not.toContain('https://t.test/vmap/pre/end');
+    await playAdToEnd(ctx);
+    expect(pixels.requests).toContain('https://t.test/vmap/pre/end');
+  });
+
+  it('sends the VMAP error pixel with 1009 when a break has no ads (C2-2)', async () => {
+    const pixels = new FakeHttp();
+    delete g.Image;
+    installImagePolyfill(pixels, g);
+    const ctx = setup({ [VMAP]: fixture('vmap/pre-mid-post.xml'), 'https://ads.test/pre.xml': fixture('vast/empty.xml') });
+    await ctx.manager.start({ vmapUrl: VMAP });
+    await settle();
+    expect(pixels.requests).toContain('https://t.test/vmap/pre/error?code=1009');
+    expect(pixels.requests).not.toContain('https://t.test/vmap/pre/start');
+  });
+
   it('dispose() during the VMAP request starts nothing', async () => {
     const ctx = setup({});
     ctx.http.hang(VMAP);

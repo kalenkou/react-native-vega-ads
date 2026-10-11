@@ -1,4 +1,4 @@
-import { ClockPort, HttpPort, Macros, MediaFileOptions, requestVmap, ScheduledBreak } from '@vega-ads/vast';
+import { ClockPort, HttpPort, Macros, MediaFileOptions, requestVmap, ScheduledBreak, VmapTrackingEvent } from '@vega-ads/vast';
 import { AdBreakSession, SessionSnapshot } from '../machine/AdBreakSession';
 import { BreakScheduler, Decision } from '../schedule/BreakScheduler';
 import type { PlayerPort } from '../ports';
@@ -35,6 +35,9 @@ export const IDLE_SNAPSHOT: SessionSnapshot = Object.freeze({
   skipIn: null,
   adSurface: null,
 });
+
+/** VMAP error: the ad source of the break gave no playable ad. */
+const VMAP_EMPTY_RESPONSE = 1009;
 
 interface Prepared {
   session: AdBreakSession;
@@ -310,6 +313,7 @@ export class AdManager {
     }
     if (result !== 'ready') {
       this.prepared.delete(id);
+      this.trackBreak(id, 'error', VMAP_EMPTY_RESPONSE);
       if (this.isPostRoll(id)) {
         this.deps.onEvent?.('content:ended');
       } else if (!this.contentStarted) {
@@ -319,6 +323,7 @@ export class AdManager {
     }
     this.active = entry.session;
     this.activeId = id;
+    this.trackBreak(id, 'breakStart');
     await entry.session.start({ resumeContent: !this.isPostRoll(id) });
   }
 
@@ -327,6 +332,7 @@ export class AdManager {
       return;
     }
     if (snapshot.state === 'finished') {
+      this.trackBreak(id, 'breakEnd');
       this.active = null;
       this.contentStarted = true;
       this.prepared.delete(id);
@@ -337,6 +343,11 @@ export class AdManager {
       return;
     }
     this.deps.onChange?.(snapshot);
+  }
+
+  /** VMAP tracking of the break (manual schedules have no pixels). */
+  private trackBreak(id: string, event: VmapTrackingEvent, errorCode?: number): void {
+    this.breaks.get(id)?.sources.forEach((source) => source.track(event, errorCode));
   }
 
   private async playContent(): Promise<void> {

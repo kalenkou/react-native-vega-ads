@@ -74,6 +74,33 @@ describe('requestVmap (R18)', () => {
     ]);
   });
 
+  it('replaces the VMAP 1.0.1 [ERROR_CODE] macro too, every occurrence (C2-1)', async () => {
+    const doc = `<?xml version="1.0"?>
+<vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
+  <vmap:AdBreak timeOffset="soon" breakType="linear" breakId="x">
+    <vmap:AdSource><vmap:AdTagURI templateType="vast3"><![CDATA[https://ads.test/x.xml]]></vmap:AdTagURI></vmap:AdSource>
+    <vmap:TrackingEvents><vmap:Tracking event="error"><![CDATA[https://t.test/e?c=[ERROR_CODE]&d=[ERRORCODE]&e=[ERRORCODE]]]></vmap:Tracking></vmap:TrackingEvents>
+  </vmap:AdBreak>
+</vmap:VMAP>`;
+    await load(doc);
+    expect(pixels.requests).toEqual(['https://t.test/e?c=1000&d=1000&e=1000']);
+  });
+
+  it('gives breaks without breakId their own ids (C2-3)', async () => {
+    const doc = `<?xml version="1.0"?>
+<vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
+  <vmap:AdBreak timeOffset="00:00:30" breakType="linear">
+    <vmap:AdSource><vmap:AdTagURI templateType="vast3"><![CDATA[https://ads.test/m30.xml]]></vmap:AdTagURI></vmap:AdSource>
+  </vmap:AdBreak>
+  <vmap:AdBreak timeOffset="00:01:00" breakType="linear">
+    <vmap:AdSource><vmap:AdTagURI templateType="vast3"><![CDATA[https://ads.test/m60.xml]]></vmap:AdTagURI></vmap:AdSource>
+  </vmap:AdBreak>
+</vmap:VMAP>`;
+    const result = await load(doc);
+    if (result.status !== 'ok') throw new Error(result.status);
+    expect(result.breaks.map((b) => b.id)).toEqual(['t30', 't60']);
+  });
+
   it('joins AdBreaks that share an offset into one break (standard pod, R17)', async () => {
     const result = await load(fixture('standard-pod.xml'));
     if (result.status !== 'ok') throw new Error(result.status);

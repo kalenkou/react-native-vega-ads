@@ -16,6 +16,8 @@ declare module '@dailymotion/vmap' {
     adSource: VMAPAdSource | null;
     trackingEvents: Array<{ event: string; uri: string }>;
     track(event: string, errorCode?: number): void;
+    /** Sends one pixel (an Image request in a browser-like global). */
+    tracker(uri: string): void;
   }
 
   export default class VMAP {

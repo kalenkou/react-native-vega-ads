@@ -99,6 +99,21 @@ function sourceOf(adBreak: VMAPAdBreak): AdSourceRef | null {
   return null;
 }
 
+/**
+ * Sends the break's tracking pixels. Done here, not by @dailymotion/vmap: it replaces only
+ * the first `[ERRORCODE]` and not the `[ERROR_CODE]` spelling of VMAP 1.0.1.
+ */
+function track(adBreak: VMAPAdBreak, event: VmapTrackingEvent, errorCode?: number): void {
+  for (const tracker of adBreak.trackingEvents) {
+    if (tracker.event !== event) {
+      continue;
+    }
+    const code = String(errorCode ?? '');
+    const uri = event === 'error' ? tracker.uri.split('[ERRORCODE]').join(code).split('[ERROR_CODE]').join(code) : tracker.uri;
+    adBreak.tracker(uri);
+  }
+}
+
 export async function requestVmap(url: string, deps: UrlHandlerDeps): Promise<VmapResult> {
   const result = await createUrlHandler(deps).get(url, {});
   if (!('xml' in result)) {
@@ -118,30 +133,30 @@ export async function requestVmap(url: string, deps: UrlHandlerDeps): Promise<Vm
   const breaks = new Map<string, ScheduledBreak>();
   for (const adBreak of vmap.adBreaks) {
     if (!isLinearBreak(adBreak)) {
-      adBreak.track('error', VMAP_BREAK_TYPE_NOT_SUPPORTED);
+      track(adBreak, 'error', VMAP_BREAK_TYPE_NOT_SUPPORTED);
       continue;
     }
     const offset = parseTimeOffset(adBreak.timeOffset);
     if (!offset) {
       // Positional offsets (#n) are skipped quietly: they are valid VMAP, just not supported yet.
       if (!(adBreak.timeOffset ?? '').startsWith('#')) {
-        adBreak.track('error', VMAP_SCHEMA_ERROR);
+        track(adBreak, 'error', VMAP_SCHEMA_ERROR);
       }
       continue;
     }
     const source = sourceOf(adBreak);
     if (!source) {
-      adBreak.track('error', VMAP_TEMPLATE_TYPE_NOT_SUPPORTED);
+      track(adBreak, 'error', VMAP_TEMPLATE_TYPE_NOT_SUPPORTED);
       continue;
     }
 
     const key = offsetKey(offset);
-    const scheduled = breaks.get(key) ?? { id: adBreak.breakId ?? key, offset, sources: [] };
+    const scheduled = breaks.get(key) ?? { id: adBreak.breakId || key, offset, sources: [] };
     scheduled.sources.push({
       id: adBreak.adSource?.id ?? null,
       source,
       allowMultipleAds: adBreak.adSource?.allowMultipleAds === 'true',
-      track: (event, errorCode) => adBreak.track(event, errorCode),
+      track: (event, errorCode) => track(adBreak, event, errorCode),
     });
     breaks.set(key, scheduled);
   }
