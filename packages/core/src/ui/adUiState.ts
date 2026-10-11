@@ -7,6 +7,8 @@ export interface AdUiStrings {
   skipIn: (seconds: number) => string;
   seconds: (count: number) => string;
   announceSkipIn: (seconds: number) => string;
+  /** Said once when Skip becomes possible during an ad. */
+  announceCanSkip: string;
   /** Before a break: "Ad in 5". */
   adIn: (seconds: number) => string;
   announceAdIn: (seconds: number) => string;
@@ -24,6 +26,7 @@ export const defaultAdUiStrings: AdUiStrings = {
   skipIn: (seconds) => `Skip in ${seconds}`,
   seconds: (count) => `${count} seconds`,
   announceSkipIn: (seconds) => `you can skip in ${seconds} seconds`,
+  announceCanSkip: 'You can skip the ad now',
   adIn: (seconds) => `Ad in ${seconds}`,
   announceAdIn: (seconds) => `Ad break in ${seconds} seconds`,
   pauseAdHint: 'Back closes the ad',
@@ -38,6 +41,8 @@ export interface AdUiState {
   skip: { visible: boolean; enabled: boolean; label: string };
   /** Text for the screen reader (VoiceView) when the ad starts. */
   announcement: string;
+  /** Text for the screen reader while Skip is possible; empty otherwise. */
+  skipAnnouncement: string;
 }
 
 function clock(seconds: number): string {
@@ -65,7 +70,8 @@ export function adUiState(snapshot: SessionSnapshot, strings: Partial<AdUiString
   if (known) parts.push(s.seconds(Math.round(snapshot.adDuration)));
   if (skippable && !snapshot.canSkip) parts.push(s.announceSkipIn(waitSeconds));
 
-  return { visible, label, skip, announcement: parts.join(', ') };
+  const skipAnnouncement = skippable && snapshot.canSkip ? s.announceCanSkip : '';
+  return { visible, label, skip, announcement: parts.join(', '), skipAnnouncement };
 }
 
 export interface AdCountdownState {

@@ -11,6 +11,7 @@ function ui(overrides: Partial<AdUiState> = {}): AdUiState {
     label: 'Ad 1 of 3 · 0:12',
     skip: { visible: false, enabled: false, label: '' },
     announcement: 'Ad 1 of 3, 12 seconds',
+    skipAnnouncement: '',
     ...overrides,
   };
 }
@@ -96,5 +97,25 @@ describe('AdOverlay', () => {
     update(ui({ visible: false }));
     update(ui({ label: 'Ad · 0:10', announcement: 'Ad, 10 seconds' }));
     expect(announce).toHaveBeenCalledTimes(2);
+  });
+
+  it('tells the screen reader once when Skip becomes possible, not when the ad starts skippable', () => {
+    const waiting = { visible: true, enabled: false, label: 'Skip in 1' };
+    const ready = { visible: true, enabled: true, label: 'Skip Ad' };
+    const { update } = render(ui({ label: 'Ad · 0:15', skip: waiting }));
+    update(ui({ label: 'Ad · 0:14', skip: ready, skipAnnouncement: 'You can skip the ad now' }));
+    update(ui({ label: 'Ad · 0:13', skip: ready, skipAnnouncement: 'You can skip the ad now' }));
+    expect(announce.mock.calls.map((c) => c[0])).toEqual(['Ad 1 of 3, 12 seconds', 'You can skip the ad now']);
+
+    announce.mockClear();
+    update(ui({ visible: false }));
+    update(ui({ label: 'Ad · 0:10', skip: ready, skipAnnouncement: 'You can skip the ad now' }));
+    expect(announce.mock.calls.map((c) => c[0])).toEqual(['Ad 1 of 3, 12 seconds']);
+  });
+
+  it('does not say "skip now" for the next ad of a pod that starts skippable', () => {
+    const { update } = render(ui({ label: 'Ad 1 of 2 · 0:15', skip: { visible: true, enabled: false, label: 'Skip in 5' } }));
+    update(ui({ label: 'Ad 2 of 2 · 0:10', announcement: 'Ad 2 of 2, 10 seconds', skip: { visible: true, enabled: true, label: 'Skip Ad' }, skipAnnouncement: 'You can skip the ad now' }));
+    expect(announce.mock.calls.map((c) => c[0])).toEqual(['Ad 1 of 3, 12 seconds', 'Ad 2 of 2, 10 seconds']);
   });
 });

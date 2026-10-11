@@ -27,6 +27,13 @@ describe('adUiState (R26)', () => {
     expect(adUiState(snapshot({ skipIn: 0, canSkip: true })).skip).toEqual({ visible: true, enabled: true, label: 'Skip Ad' });
   });
 
+  it('has a screen reader line for the moment Skip becomes possible', () => {
+    expect(adUiState(snapshot({ skipIn: 0, canSkip: true })).skipAnnouncement).toBe('You can skip the ad now');
+    expect(adUiState(snapshot({ skipIn: 2 })).skipAnnouncement).toBe('');
+    expect(adUiState(snapshot({ skipIn: null })).skipAnnouncement).toBe('');
+    expect(adUiState(snapshot({ skipIn: 0, canSkip: true }), { announceCanSkip: 'Możesz pominąć' }).skipAnnouncement).toBe('Możesz pominąć');
+  });
+
   it('gives a screen reader announcement when an ad starts', () => {
     expect(adUiState(snapshot({ adTime: 0 })).announcement).toBe('Ad 1 of 2, 15 seconds');
     expect(adUiState(snapshot({ total: 1, adTime: 0, adDuration: 30, skipIn: 5 })).announcement).toBe('Ad, 30 seconds, you can skip in 5 seconds');
