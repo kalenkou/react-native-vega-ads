@@ -124,6 +124,32 @@ describe('pickBreaks', () => {
     expect(pickBreaks(reversed)).toEqual(pickBreaks(segments));
   });
 
+  describe('with speech', () => {
+    const at = (startSeconds: number, endSeconds: number) => ({ startMs: startSeconds * 1000, endMs: endSeconds * 1000 });
+
+    it('never places a break inside speech', () => {
+      // The cut at 150 s is in the middle of a sentence; the next cut, 200 s, is clear.
+      expect(pickBreaks(shotsEvery(50, 1800), { speech: [at(140, 160)] }).slice(0, 2)).toEqual([200, 500]);
+    });
+
+    it('keeps a second clear of speech on both sides', () => {
+      const segments = shotsEvery(50, 1800);
+      expect(pickBreaks(segments, { speech: [at(140, 149.1)] })[0]).toBe(200);
+      expect(pickBreaks(segments, { speech: [at(150.9, 160)] })[0]).toBe(200);
+      expect(pickBreaks(segments, { speech: [at(140, 148.9), at(151.1, 160)] })[0]).toBe(150);
+    });
+
+    it('drops black frames that have speech over them', () => {
+      const segments = [...shotsEvery(50, 1800), cue('BlackFrames', 170, 172)];
+      // Without speech the black frames at 171 s win; with a line over them the cut at 150 s stays.
+      expect(pickBreaks(segments, { speech: [at(169, 174)] })[0]).toBe(150);
+    });
+
+    it('changes nothing when there is no speech', () => {
+      expect(pickBreaks(shotsEvery(50, 1800), { speech: [] })).toEqual(pickBreaks(shotsEvery(50, 1800)));
+    });
+  });
+
   it('rejects invalid options', () => {
     expect(() => pickBreaks([], { minGapSeconds: -1 })).toThrow(RangeError);
     expect(() => pickBreaks([], { maxBreaks: 1.5 })).toThrow(RangeError);

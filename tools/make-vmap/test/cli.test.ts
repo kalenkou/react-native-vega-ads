@@ -194,3 +194,65 @@ describe('local mode (ffmpeg, no AWS)', () => {
     expect(ctx.out.join('')).toContain('timeOffset="00:07:51.000"');
   });
 });
+
+describe('speech (whisper.cpp, no AWS)', () => {
+  // Silent black frames at 471 s and a shot change at 500 s; someone speaks from 469 s to 474 s.
+  const LOG = [
+    '  Duration: 00:30:00.00, start: 0.000000, bitrate: 4000 kb/s',
+    '[Parsed_silencedetect_0 @ 0x1] silence_start: 469.5',
+    '[Parsed_blackdetect_0 @ 0x2] black_start:470 black_end:472 black_duration:2',
+    '[Parsed_silencedetect_0 @ 0x1] silence_end: 473 | silence_duration: 3.5',
+    '[Parsed_showinfo_2 @ 0x3] n:   0 pts: 0 pts_time:500 duration:512',
+  ].join('\n');
+  const WHISPER_JSON = JSON.stringify({
+    transcription: [{ offsets: { from: 469000, to: 474000 }, tokens: [{ text: ' Hello', offsets: { from: 469000, to: 474000 } }] }],
+  });
+  const ARGV = ['--local', 'film.mp4', '--vast-url', VAST, '--speech-model', 'models/ggml-base.en.bin'];
+
+  function speechDeps() {
+    const ctx = fakeDeps(FILM);
+    const runs: string[][] = [];
+    const removed: string[] = [];
+    ctx.deps.runFfmpeg = async (args) => (runs.push(args), args.includes('null') ? LOG : '');
+    ctx.deps.whisper = {
+      runWhisper: async (args) => void runs.push(args),
+      readFile: async () => WHISPER_JSON,
+      makeTempDir: async () => '/tmp/make-vmap-x',
+      removeDir: async (path) => void removed.push(path),
+    };
+    return { ...ctx, runs, removed };
+  }
+
+  it('reads --speech-model with --local', () => {
+    expect(parseCliArgs(ARGV)).toEqual({ local: 'film.mp4', vastUrl: VAST, speechModel: 'models/ggml-base.en.bin', breaks: {} });
+  });
+
+  it('rejects --speech-model without --local', () => {
+    expect(() => parseCliArgs([...REQUIRED, '--speech-model', 'model.bin'])).toThrow(/--speech-model/);
+  });
+
+  it('keeps the break out of speech', async () => {
+    const ctx = speechDeps();
+    expect(await runCli(ARGV, ctx.deps)).toBe(0);
+    // Without speech the black frames at 471 s win; they are under a line, so the cut at 500 s is used.
+    expect(ctx.out.join('')).toContain('timeOffset="00:08:20.000"');
+    expect(ctx.out.join('')).not.toContain('00:07:51');
+    expect(ctx.runs.some((args) => args.includes('models/ggml-base.en.bin'))).toBe(true);
+    expect(ctx.removed).toEqual(['/tmp/make-vmap-x']);
+    expect(ctx.err.join('\n')).toContain('1 stretch of speech');
+  });
+
+  it('places breaks as before without --speech-model', async () => {
+    const ctx = speechDeps();
+    expect(await runCli(ARGV.slice(0, 4), ctx.deps)).toBe(0);
+    expect(ctx.out.join('')).toContain('timeOffset="00:07:51.000"');
+    expect(ctx.removed).toEqual([]);
+  });
+
+  it('fails when whisper is not available', async () => {
+    const ctx = speechDeps();
+    delete ctx.deps.whisper;
+    expect(await runCli(ARGV, ctx.deps)).toBe(1);
+    expect(ctx.err.join('\n')).toContain('whisper');
+  });
+});

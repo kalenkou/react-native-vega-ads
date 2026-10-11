@@ -1,16 +1,18 @@
 import { parseArgs } from 'node:util';
 import { buildVmap, formatTimeOffset } from './buildVmap';
 import { FfmpegRunner, ffmpegSegments } from './ffmpegSegments';
-import { pickBreaks, PickBreaksOptions } from './pickBreaks';
+import { pickBreaks, PickBreaksOptions, SpeechInterval } from './pickBreaks';
 import { RekognitionPort, rekognitionSegments } from './rekognition';
 import type { Segment } from './segments';
+import { WhisperTools, whisperSpeech } from './whisperSpeech';
 
 export const USAGE = `Usage: make-vmap --bucket B --key K --vast-url URL [options]
        make-vmap --local FILE --vast-url URL [options]
 
 Finds mid-roll points in a video and writes a VMAP 1.0 document: with Amazon
 Rekognition segment detection for a video in S3, or with ffmpeg on this computer
-(shot changes and silent black frames, no cloud, no cost).
+(shot changes and silent black frames, no cloud, no cost). With --speech-model,
+whisper.cpp also finds speech on this computer, and no mid-roll cuts a line.
 
 Required:
   --bucket B              S3 bucket of the video (Rekognition)
@@ -19,6 +21,8 @@ Required:
   --vast-url URL          VAST tag URL for every mid-roll
 
 Options:
+  --speech-model FILE     whisper.cpp model (ggml .bin) for --local: keep mid-rolls
+                          out of speech (needs whisper-cli)
   --preroll URL           VAST tag URL for a pre-roll
   --postroll URL          VAST tag URL for a post-roll
   --out FILE              write the VMAP to FILE (default: standard output)
@@ -45,13 +49,15 @@ export interface CliOptions {
   key?: string;
   /** A local video file: breaks come from ffmpeg instead of Rekognition. */
   local?: string;
+  /** A whisper.cpp model: breaks keep out of speech (with `local` only). */
+  speechModel?: string;
   vastUrl: string;
   preroll?: string;
   postroll?: string;
   out?: string;
   upload?: S3Location;
   region?: string;
-  breaks: Omit<PickBreaksOptions, 'durationSeconds'>;
+  breaks: Omit<PickBreaksOptions, 'durationSeconds' | 'speech'>;
 }
 
 export interface PutObjectRequest {
@@ -74,6 +80,8 @@ export interface CliDeps {
   sleep?: (ms: number) => Promise<void>;
   /** Runs ffmpeg and resolves with its stderr; needed for --local. */
   runFfmpeg?: FfmpegRunner;
+  /** Runs whisper-cli and handles its temporary files; needed for --speech-model. */
+  whisper?: Omit<WhisperTools, 'runFfmpeg'>;
 }
 
 function baseName(path: string): string {
@@ -116,6 +124,7 @@ const FLAGS = {
   bucket: { type: 'string' },
   key: { type: 'string' },
   local: { type: 'string' },
+  'speech-model': { type: 'string' },
   'vast-url': { type: 'string' },
   preroll: { type: 'string' },
   postroll: { type: 'string' },
@@ -143,6 +152,9 @@ export function parseCliArgs(argv: string[]): CliOptions {
   if (local !== undefined && (flags.bucket !== undefined || flags.key !== undefined)) {
     throw new UsageError('--local reads a file on this computer: leave out --bucket and --key');
   }
+  if (flags['speech-model'] !== undefined && local === undefined) {
+    throw new UsageError('--speech-model needs the video on this computer: use it with --local');
+  }
   const key = local === undefined ? required('key', flags.key) : undefined;
   const bucket = local === undefined ? required('bucket', flags.bucket) : undefined;
   const vastUrl = required('vast-url', flags['vast-url']);
@@ -153,6 +165,7 @@ export function parseCliArgs(argv: string[]): CliOptions {
     bucket,
     key,
     local,
+    speechModel: flags['speech-model'],
     vastUrl,
     preroll: flags.preroll,
     postroll: flags.postroll,
@@ -186,11 +199,18 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
     let ports: ReturnType<CliDeps['createPorts']> | undefined;
     const aws = () => (ports ??= deps.createPorts(options.region));
     let detection: { segments: Segment[]; durationSeconds?: number };
+    let speech: SpeechInterval[] | undefined;
     if (options.local !== undefined) {
       if (!deps.runFfmpeg) throw new Error('ffmpeg is not available');
       deps.stderr(`Finding shot changes, black frames and silence in ${options.local} with ffmpeg`);
       detection = await ffmpegSegments(options.local, deps.runFfmpeg);
       deps.stderr(`${detection.segments.length} segments`);
+      if (options.speechModel !== undefined) {
+        if (!deps.whisper) throw new Error('whisper-cli is not available');
+        deps.stderr(`Finding speech in ${options.local} with whisper.cpp`);
+        speech = await whisperSpeech(options.local, options.speechModel, { ...deps.whisper, runFfmpeg: deps.runFfmpeg });
+        deps.stderr(`${speech.length} ${speech.length === 1 ? 'stretch' : 'stretches'} of speech`);
+      }
     } else {
       deps.stderr(`Starting segment detection for s3://${options.bucket}/${options.key}`);
       const job = await rekognitionSegments(
@@ -202,7 +222,7 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
       detection = job;
     }
 
-    const times = pickBreaks(detection.segments, { ...options.breaks, durationSeconds: detection.durationSeconds });
+    const times = pickBreaks(detection.segments, { ...options.breaks, durationSeconds: detection.durationSeconds, speech });
     deps.stderr(`${times.length} mid-rolls: ${times.map(formatTimeOffset).join(', ') || 'none'}`);
 
     const xml = buildVmap({

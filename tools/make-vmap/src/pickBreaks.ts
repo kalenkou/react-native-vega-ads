@@ -1,5 +1,11 @@
 import type { Segment } from './segments';
 
+/** A stretch of speech, in milliseconds from the start of the video. */
+export interface SpeechInterval {
+  startMs: number;
+  endMs: number;
+}
+
 export interface PickBreaksOptions {
   /** Minimum time between two mid-rolls. Default 300. */
   minGapSeconds?: number;
@@ -17,6 +23,8 @@ export interface PickBreaksOptions {
   minConfidence?: number;
   /** Video length. Default: the latest segment end. */
   durationSeconds?: number;
+  /** Where people speak: no mid-roll inside speech or within a second of it. Default: none. */
+  speech?: readonly SpeechInterval[];
 }
 
 interface Candidate {
@@ -31,6 +39,9 @@ interface Interval {
 
 /** Technical cues that must never contain an ad break. */
 const BLOCKING_CUES = new Set(['OpeningCredits', 'EndCredits', 'ColorBars', 'Slate', 'StudioLogo']);
+
+/** Clear time kept around speech, so an ad never clips the first or last word of a line. */
+const SPEECH_MARGIN_MS = 1000;
 
 function checkOption(name: string, value: number, integer = false): number {
   if (!Number.isFinite(value) || value < 0 || (integer && !Number.isInteger(value))) {
@@ -55,6 +66,7 @@ function inside(ms: number, intervals: Interval[]): boolean {
  * - a cut inside a black-frame run is the same break as that run;
  * - nothing inside opening credits, colour bars, slates or studio logos;
  * - nothing from the start of the end credits to the end of the video;
+ * - nothing inside `speech` or within a second of it;
  * - nothing before `firstBreakAfterSeconds` or in the last `avoidLastSeconds`;
  * - breaks are at least `minGapSeconds` apart;
  * - from the earliest allowed candidate, black frames within `searchWindowSeconds` win over that candidate.
@@ -78,6 +90,10 @@ export function pickBreaks(segments: readonly Segment[], options: PickBreaksOpti
       ? checkOption('durationSeconds', options.durationSeconds) * 1000
       : Math.max(...timed.map((segment) => segment.EndTimestampMillis));
   const lastAllowed = durationMs - avoidLast;
+  const speech: Interval[] = (options.speech ?? []).map((interval) => ({
+    start: interval.startMs - SPEECH_MARGIN_MS,
+    end: interval.endMs + SPEECH_MARGIN_MS,
+  }));
 
   // Credits and similar cues block breaks whatever their confidence: a false block costs less than an ad in the credits.
   const blocked: Interval[] = [];
@@ -104,7 +120,7 @@ export function pickBreaks(segments: readonly Segment[], options: PickBreaksOpti
     ...blackRuns.map((run) => ({ ms: Math.round((run.start + run.end) / 2), black: true })),
     ...cuts.filter((ms) => !inside(ms, blackRuns)).map((ms) => ({ ms, black: false })),
   ]
-    .filter((candidate) => candidate.ms <= lastAllowed && !inside(candidate.ms, blocked))
+    .filter((candidate) => candidate.ms <= lastAllowed && !inside(candidate.ms, blocked) && !inside(candidate.ms, speech))
     // Time first, black frames first on a tie: the order is stable whatever the input order.
     .sort((a, b) => a.ms - b.ms || Number(b.black) - Number(a.black));
 

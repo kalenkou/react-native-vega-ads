@@ -77,6 +77,8 @@ Options:
 | `--avoid-last S` | 60 | no mid-roll in the last S seconds |
 | `--region R` | from the AWS environment | AWS region |
 
+With `--local FILE --speech-model ggml-base.en.bin`, the tool also finds speech with [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (`whisper-cli` on the `PATH`, no cloud, no cost). No mid-roll goes inside speech or within 1 s of it, so an ad never cuts a line. The tool uses word times, not sentence times, and skips sound labels such as `[MUSIC PLAYING]`. The model file is not in this repository: download a ggml model from the whisper.cpp project. A 12-minute film takes about 10 s on an Apple Silicon Mac.
+
 Exit codes: `0` success, `1` AWS or job error, `2` bad arguments.
 
 ## Tests
