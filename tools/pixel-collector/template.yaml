@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  vega-ads demo backend: ad creatives and VMAP files on S3 behind CloudFront, and a
+  tracking pixel collector (Lambda function URL + DynamoDB) with a daily report.
+
+Resources:
+  # --- Ad creatives and VMAP files -------------------------------------------------
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  MediaOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-media'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  MediaDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: vega-ads creatives and VMAP
+        Origins:
+          - Id: media
+            DomainName: !GetAtt MediaBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt MediaOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: media
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+          # Managed policy "CachingOptimized"; upload VMAP files with a short Cache-Control.
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+
+  MediaBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MediaBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub '${MediaBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${MediaDistribution}'
+
+  # --- Tracking pixels ------------------------------------------------------------
+  PixelTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: day
+          AttributeType: S
+        - AttributeName: key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: day
+          KeyType: HASH
+        - AttributeName: key
+          KeyType: RANGE
+
+  PixelFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs22.x
+      Handler: index.handler
+      CodeUri: .
+      MemorySize: 128
+      Timeout: 5
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PixelTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PixelTable
+      FunctionUrlConfig:
+        # Pixels come from TV devices without AWS credentials.
+        AuthType: NONE
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/index.ts
+        Target: es2020
+
+Outputs:
+  MediaBucketName:
+    Description: Upload creatives and VMAP files here
+    Value: !Ref MediaBucket
+  MediaBaseUrl:
+    Description: Public base URL of the uploaded files
+    Value: !Sub 'https://${MediaDistribution.DomainName}'
+  PixelBaseUrl:
+    Description: 'Tracking pixel base URL: <url>p?ad=<id>&e=<event>, report at <url>report'
+    Value: !GetAtt PixelFunctionUrl.FunctionUrl

@@ -9,3 +9,6 @@ coverage/
 *.p12
 *.pem
 .env*
+# AWS SAM build output and local deploy settings
+.aws-sam/
+samconfig.toml

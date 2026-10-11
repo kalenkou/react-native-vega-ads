@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "tsc -b packages/vast packages/core packages/vega && tsc -p tools/make-vmap --noEmit && tsc -p tools/make-vmap/tsconfig.test.json",
+    "typecheck": "tsc -b packages/vast packages/core packages/vega && tsc -p tools/make-vmap --noEmit && tsc -p tools/make-vmap/tsconfig.test.json && tsc -p tools/pixel-collector --noEmit && tsc -p tools/pixel-collector/tsconfig.test.json",
     "test": "npm run test --workspaces --if-present",
     "check": "npm run lint && npm run typecheck && npm test"
   },
