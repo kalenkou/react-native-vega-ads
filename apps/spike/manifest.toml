@@ -53,3 +53,14 @@ id = "com.amazon.network.service"
 
 [[wants.service]]
 id = "com.amazon.admanager.service.main"
+
+[[extras]]
+key = "interface.provider"
+component-id = "dev.kalenkou.vegaads.spike.main"
+
+[extras.value.application]
+[[extras.value.application.interface]]
+interface_name = "com.amazon.kepler.media.IMediaPlaybackServer"
+command_options = []
+attribute_options = []
+features = []

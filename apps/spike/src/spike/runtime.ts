@@ -1,9 +1,16 @@
-import { log } from './log';
+import {log} from './log';
 
 /** Gate 6: what the Vega JavaScript runtime actually provides. */
 export function reportRuntime(): void {
   const g = globalThis as Record<string, unknown>;
-  const names = ['window', 'Image', 'DOMParser', 'AbortController', 'fetch', 'XMLHttpRequest'];
+  const names = [
+    'window',
+    'Image',
+    'DOMParser',
+    'AbortController',
+    'fetch',
+    'XMLHttpRequest',
+  ];
   names.forEach((name) => log(`runtime: typeof ${name} = ${typeof g[name]}`));
 }
 
@@ -26,9 +33,11 @@ export function installImagePolyfill(): void {
     set src(value: string) {
       this.url = value;
       log(`pixel: ${value.slice(0, 90)}`);
-      fetch(value, { method: 'GET' }).catch((error: unknown) => {
-        log(`pixel failed: ${String(error)}`);
-      });
+      fetch(value, {method: 'GET'})
+        .then((response) => log(`pixel status: ${response.status}`))
+        .catch((error: unknown) => {
+          log(`pixel failed: ${String(error)}`);
+        });
     }
   }
   g.Image = PixelImage;
