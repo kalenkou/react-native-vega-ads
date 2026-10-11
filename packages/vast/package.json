@@ -19,6 +19,16 @@
     "xml2js"
   ],
   "license": "Apache-2.0",
+  "author": "Yury Kalenkou",
+  "homepage": "https://github.com/kalenkou/vega-ads#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kalenkou/vega-ads.git",
+    "directory": "packages/vast"
+  },
+  "bugs": {
+    "url": "https://github.com/kalenkou/vega-ads/issues"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

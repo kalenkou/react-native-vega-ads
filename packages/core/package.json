@@ -1,7 +1,31 @@
 {
   "name": "@vega-ads/core",
   "version": "0.0.0",
+  "description": "Player-independent ad break logic for VAST/VMAP: break schedule, ad pods, two-player hand-over, IAB tracking and overlay state",
+  "keywords": [
+    "vast",
+    "vmap",
+    "ads",
+    "csai",
+    "ad-pods",
+    "iab",
+    "react-native",
+    "vega",
+    "vega-os",
+    "fire-tv",
+    "tv"
+  ],
   "license": "Apache-2.0",
+  "author": "Yury Kalenkou",
+  "homepage": "https://github.com/kalenkou/vega-ads#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kalenkou/vega-ads.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/kalenkou/vega-ads/issues"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

@@ -1,7 +1,32 @@
 {
   "name": "@vega-ads/vega",
   "version": "0.0.0",
+  "description": "VAST/VMAP video ads for React Native on Amazon Vega OS (Fire TV): w3cmedia players, a React hook, surfaces and a 10-foot overlay",
+  "keywords": [
+    "vast",
+    "vmap",
+    "ads",
+    "csai",
+    "react-native",
+    "vega",
+    "vega-os",
+    "kepler",
+    "fire-tv",
+    "w3cmedia",
+    "tv",
+    "ima-alternative"
+  ],
   "license": "Apache-2.0",
+  "author": "Yury Kalenkou",
+  "homepage": "https://github.com/kalenkou/vega-ads#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kalenkou/vega-ads.git",
+    "directory": "packages/vega"
+  },
+  "bugs": {
+    "url": "https://github.com/kalenkou/vega-ads/issues"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
