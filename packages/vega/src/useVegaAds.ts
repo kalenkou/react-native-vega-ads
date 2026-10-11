@@ -113,16 +113,19 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   const [snapshot, setSnapshot] = useState<SessionSnapshot>(IDLE_SNAPSHOT);
   const manager = useRef<AdManager | null>(null);
   /** Which source and player already started, so a restart (new surfaces) resumes instead of replaying. */
-  const startedFor = useRef<{ key: string; player: W3cVideoPlayer | PlayerPort } | null>(null);
+  const startedFor = useRef<{ key: string; player: W3cVideoPlayer | 'port' } | null>(null);
 
   // Read at start time; changing these does not restart the ads.
   const latest = useRef(options);
   latest.current = options;
   const sourceKey = options.source ? JSON.stringify(options.source) : null;
-  const { contentPlayer } = options;
+  // A w3cmedia player is identified by the object; a PlayerPort may be a new wrapper on every
+  // render, so a port change alone does not restart the ads (change `source` to start over).
+  const contentKey = options.contentPlayer === null ? null : isPort(options.contentPlayer) ? 'port' : options.contentPlayer;
 
   useEffect(() => {
     const source = latest.current.source;
+    const contentPlayer = latest.current.contentPlayer;
     if (!source || !sourceKey || !contentPlayer || !contentSurface || !adSurface || !standbySurface) {
       return undefined;
     }
@@ -159,8 +162,8 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       onEvent: (name) => latest.current.onEvent?.(name),
     });
     manager.current = created;
-    const resumed = startedFor.current?.key === sourceKey && startedFor.current.player === contentPlayer;
-    startedFor.current = { key: sourceKey, player: contentPlayer };
+    const resumed = startedFor.current?.key === sourceKey && startedFor.current.player === contentKey;
+    startedFor.current = { key: sourceKey, player: contentKey as W3cVideoPlayer | 'port' };
     void created.start(source, resumed ? { resumeAt: content.getCurrentTime() } : {});
     return () => {
       manager.current = null;
@@ -168,7 +171,20 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       void created.dispose();
     };
     // sourceKey stands for `source`: a new object with the same content must not restart the ads.
-  }, [sourceKey, contentPlayer, contentSurface, adSurface, standbySurface]);
+  }, [sourceKey, contentKey, contentSurface, adSurface, standbySurface]);
+
+  // Amazon requires releasing media resources in the background (R13): release the ad
+  // players there and continue the content on return, without showing the break again.
+  useEffect(() => {
+    const subscription = appState.current.addAppStateListener('change', (state) => {
+      if (state === 'background') {
+        void manager.current?.suspend();
+      } else if (state === 'active') {
+        void manager.current?.wake();
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   const inAd = snapshot.state === 'playing';
   const handleBack = options.handleBack ?? true;

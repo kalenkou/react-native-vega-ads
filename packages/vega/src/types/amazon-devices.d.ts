@@ -37,5 +37,8 @@ declare module '@amazon-devices/react-native-w3cmedia' {
 }
 
 declare module '@amazon-devices/react-native-kepler' {
-  export function useKeplerAppStateManager(): { getComponentInstance(): unknown };
+  export function useKeplerAppStateManager(): {
+    getComponentInstance(): unknown;
+    addAppStateListener(event: 'change', callback: (state: unknown) => void): { remove(): void };
+  };
 }

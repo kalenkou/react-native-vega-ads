@@ -1,11 +1,11 @@
 import { createAdMediaControlHandler } from '../src/adMediaControlHandler';
 
-type Handler = Record<string, () => Promise<void>> & { handled: string[] };
+type Handler = Record<string, (...args: unknown[]) => Promise<void>> & { handled: string[] };
 
 const make = (allowPause: boolean): Handler => createAdMediaControlHandler({ allowPause }) as unknown as Handler;
 
 describe('ad media controls handler (R21)', () => {
-  it.each(['handleSeek', 'handleFastForward', 'handleRewind', 'handleSkipForward', 'handleSkipBackward', 'handleStartOver', 'handleNext', 'handlePrevious', 'handleSetPlaybackSpeed', 'handleStop'])(
+  it.each(['handleSeek', 'handleFastForward', 'handleRewind', 'handleSkipForward', 'handleSkipBackward', 'handleStartOver', 'handleNext', 'handlePrevious', 'handleSetPlaybackSpeed'])(
     'ignores %s: an ad cannot be moved through',
     async (method) => {
       const handler = make(true);
@@ -28,5 +28,19 @@ describe('ad media controls handler (R21)', () => {
     await handler.handleTogglePlayPause?.();
     await handler.handlePlay?.();
     expect(handler.handled).toEqual(['play']);
+  });
+
+  it('pauses on display off even when the publisher does not allow pausing ads', async () => {
+    const handler = make(false);
+    await handler.handlePause?.({ id: 1 }, { source: 'SYSTEM_DISPLAY_OFF' });
+    await handler.handlePause?.({ id: 1 }, { source: 'OTHER' });
+    await handler.handlePause?.({ id: 1 }, { source: 'USER' });
+    expect(handler.handled).toEqual(['pause', 'pause']);
+  });
+
+  it('stop ("Alexa, stop") pauses the ad instead of doing nothing', async () => {
+    const handler = make(true);
+    await handler.handleStop?.();
+    expect(handler.handled).toEqual(['pause']);
   });
 });

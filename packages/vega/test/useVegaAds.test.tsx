@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs';
 import TestRenderer, { act } from 'react-test-renderer';
 import { BackHandler } from 'react-native';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const kepler = require('@amazon-devices/react-native-kepler') as { emitAppState(state: string): void; appStateListenerCount(): number };
 import { FakeClock } from '../../vast/test/fakes/FakeClock';
 import { FakeHttp } from '../../vast/test/fakes/FakeHttp';
 import { useVegaAds, UseVegaAdsOptions, VegaAds } from '../src/useVegaAds';
@@ -254,6 +256,47 @@ describe('useVegaAds', () => {
     expect(handler.handled).toEqual([]);
   });
 
+  it('keeps the ads running when the app passes a new PlayerPort object on every render', async () => {
+    const native = new FakeW3cPlayer(600);
+    const out: { current: VegaAds | null } = { current: null };
+    const http = new FakeHttp().on(PRE, { body: inline });
+    const ads: FakeW3cPlayer[] = [];
+    function InlinePort(): null {
+      out.current = useVegaAds({
+        source: { breaks: [{ offset: 'start', vastUrl: PRE }] },
+        contentPlayer: new W3cPlayerAdapter(native, () => ({ name: 'main' })),
+        http,
+        clock: new FakeClock(0),
+        createVideoPlayer: () => {
+          const p = new FakeW3cPlayer(10);
+          ads.push(p);
+          return p;
+        },
+      });
+      return null;
+    }
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<InlinePort />);
+    });
+    mounted.push(renderer);
+    act(() => out.current?.surfaces.onContentSurface('c1'));
+    act(() => out.current?.surfaces.onAdSurface('a1'));
+    act(() => out.current?.surfaces.onStandbySurface('b1'));
+    await settle();
+    act(() => {
+      ads[0]?.emit('canplay');
+    });
+    await settle();
+    act(() => {
+      ads[0]?.emit('playing');
+    });
+    await settle();
+    expect(http.requests.filter((u) => u === PRE)).toHaveLength(1);
+    expect(ads).toHaveLength(1);
+    expect(out.current?.playing).toBe(true);
+  });
+
   it('accepts any content player through PlayerPort', async () => {
     const native = new FakeW3cPlayer(600);
     const port = new W3cPlayerAdapter(native, () => ({ name: 'main' }));
@@ -296,6 +339,19 @@ describe('useVegaAds', () => {
     expect(back.pressBack()).toBe(false);
   });
 
+  it('in the background releases the ad players; back in front the content continues (R13)', async () => {
+    const ctx = setup();
+    const ad = await ctx.prerollPlaying();
+    act(() => kepler.emitAppState('background'));
+    await settle();
+    expect(ad.deinitialized).toBe(true);
+    expect(ctx.content.calls).not.toContain('play');
+    act(() => kepler.emitAppState('active'));
+    await settle();
+    expect(ctx.content.calls).toContain('play');
+    expect(ctx.ads().playing).toBe(false);
+  });
+
   it('releases ad players and content listeners on unmount', async () => {
     const ctx = setup();
     const ad = await ctx.prerollPlaying();
@@ -307,6 +363,7 @@ describe('useVegaAds', () => {
     expect(ad.deinitialized).toBe(true);
     expect(ctx.content.listenerTypes()).toEqual([]);
     expect(back.listenerCount()).toBe(0);
+    expect(kepler.appStateListenerCount()).toBe(0);
   });
 
   it('starts over when the source changes', async () => {
