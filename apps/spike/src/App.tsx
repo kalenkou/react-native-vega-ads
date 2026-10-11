@@ -24,6 +24,23 @@ const FIRST_BREAK_SEC = 10;
 const BREAK_INTERVAL_SEC = 60;
 const OFFSCREEN_LEFT = -Dimensions.get('window').width * 1.2;
 
+// Kepler's react-native exports useTVEventHandler; the RN 0.72 typings do not.
+const {useTVEventHandler} = require('react-native') as {
+  useTVEventHandler: (
+    handler: (event: {eventType: string; eventKeyAction?: number}) => void,
+  ) => void;
+};
+
+/** Device check: do transport keys reach JS as key events (with and without media controls)? */
+const HwKeyLog = () => {
+  useTVEventHandler((event) => {
+    if (!['up', 'down', 'left', 'right', 'select'].includes(event.eventType)) {
+      log(`hw key: ${event.eventType} action=${event.eventKeyAction}`);
+    }
+  });
+  return null;
+};
+
 export const App = () => {
   const [hookMode, setHookMode] = useState(false);
   const [lines, setLines] = useState<string[]>([]);
@@ -252,6 +269,7 @@ export const App = () => {
 
   return (
     <View style={styles.root}>
+      <HwKeyLog />
       <View style={[styles.surface, styles.mainSurface]}>
         <KeplerVideoSurfaceView
           scalingmode="fit"
@@ -375,12 +393,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     padding: 12,
   },
-  buttons: {flexDirection: 'row', marginBottom: 8},
+  buttons: {flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8},
   button: {
     backgroundColor: '#333',
     paddingVertical: 10,
     paddingHorizontal: 18,
     marginRight: 12,
+    marginBottom: 8,
   },
   buttonText: {color: '#fff', fontSize: 22},
   line: {color: '#9f9', fontSize: 15},

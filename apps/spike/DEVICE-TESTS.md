@@ -65,3 +65,26 @@ Button "XML bench", Release build (`build/armv7-release`). One real VAST respons
 | First run (cold) | 52.3 + 11.1 ms | 75.4 + 12.1 ms |
 
 About 60 ms per 35 KB VAST on the JS thread. The library loads ads ahead of the break (mid-roll pod ready 15 s early), so the viewer does not wait for parsing. A native XML parser is not needed for VAST/VMAP sizes; worth revisiting only for long wrapper chains on the critical path.
+
+## Remote play/pause: media controls vs key events (11.10.2026)
+
+Logger `useTVEventHandler` in the spike (non-D-pad keys), keys injected with `inputd-cli button_press KEY_PLAYPAUSE`.
+
+| Manifest | When | JS key event `playpause` | Player paused by the system |
+|---|---|---|---|
+| with `kepler.media` category + `IMediaPlaybackServer` | no player has focus | yes (down + up) | – |
+| same | during the ad, focus on the ad player | yes (down + up) | yes, ad `pause` 224 ms after key down |
+| without both entries | during content, `setMediaControlFocus` on content (resolves in 4 ms) | yes | no |
+| same | during the ad | yes | no |
+
+Result: the key always reaches JS. Media controls act only with the manifest entries. With the entries, an app that also toggles playback on its own `playpause` key handler toggles twice. "Alexa, pause" needs the manifest path (see the Media Controls gate above).
+
+### App-handled play/pause without the manifest entries: the system interferes (11.10.2026)
+
+Hook demo, manifest without media controls entries, `mediaControls: false` (no `setMediaControlFocus` at all), app calls `ads.togglePause()` on `playpause` key down. Live system log (`loggingctl log -f`) during one press while the ad was paused:
+
+1. JS gets `playpause` down → `togglePause()` → `MediaPlayer: play`, ad plays (`hook event: resume`).
+2. `inputd` MediaController then checks the same key: `isSessionInForeground :0` → `:1` (the player now plays), "Intercepting key event … KEY_PLAYPAUSE state=down".
+3. w3cmedia: "Player Session is performing pause operation on Media Player" → ad paused ~450 ms after it resumed.
+
+Result: without the manifest entries, w3cmedia's legacy player session still pauses a PLAYING player on the play/pause key, but does not resume a paused one. An app that handles the key itself races with it: pause looks fine, resume is undone at once. → FAIL for the "own handler, no manifest" mode. Use the manifest + media controls (one owner of the key, Alexa works) and do not handle `playpause` in the app while `ads.playing`.
