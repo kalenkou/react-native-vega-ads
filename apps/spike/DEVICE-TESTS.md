@@ -166,3 +166,15 @@ Hook demo, Kettlo pre-roll (10 s, `skipoffset` 5 s), events mirrored to the loca
 | "Ad in N" before the mid-roll after a seek to 2:06 | "Ad in 2" at 2:18 (screenshot), `countdown 4` in the log: the pod finished loading 4 s before the break, so the count began at 4. The countdown only shows for a break whose ads are loaded → PASS |
 | Mid-roll pod at 2:19.9 | Brewnord, Voltaro, Kettlo: all pixels, content continues → PASS |
 | Seek forward over the 7:21.2 break (30 × Right) | the break plays at once (Kettlo, all pixels): a seek gives no free pass → PASS |
+
+## Pre-roll after Play, with and without preloadVegaAds (11.10.2026)
+
+Demo app, release build, 10 cold launches each, 8 s on the movie page, then Play. `serve.mjs --latency 600`: every VMAP and VAST answer takes 600 ms, as from a real ad server (the media files are not delayed). Time from the app's `[demo] play` log line to the ad's `impression`, by the device clock. The system log dropped the impression line in 7 of 20 runs (FL-02); there the impression pixel's arrival on the server is used, shifted by the median device-minus-server offset of the other runs (−342 ms; spread ±0.4 s).
+
+| | Median | Min | Max |
+|---|---|---|---|
+| Without preload (VMAP + VAST after Play) | 2418 ms | 1989 ms | 3092 ms |
+| With `preloadVegaAds` on the movie page | 1684 ms | 925 ms | 3093 ms |
+| Runs with both log lines only (4 and 9 runs) | 2866 ms → 1804 ms | | |
+
+The preload saves about 0.7 s at the median here; the rest is creating the ad player and buffering the first frame on a cold launch, which varies by more than a second from run to run. With a faster ad server the saving is smaller (on the LAN without added latency it is within the noise).

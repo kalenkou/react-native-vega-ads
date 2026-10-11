@@ -62,6 +62,7 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11.10.2026. Details: [`apps/spike/DEVICE-T
 | Media controls focus switch | 197–217 ms |
 | VAST parse, 34.4 KB, Release build | ~49 ms text → DOM, ~11 ms DOM → model (median of 30) |
 | Cold launch: ad's first frame → impression pixel | 143 ms |
+| Play → pre-roll's first frame, ad server answering in 600 ms per request (10 cold launches each) | median 2.4 s without preload, 1.7 s with `preloadVegaAds` on the title page |
 | Phone video, content → pod of 3 → content | no black frame, no content frame between ads |
 
 ## Quick start
