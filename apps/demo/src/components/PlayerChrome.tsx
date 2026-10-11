@@ -72,6 +72,14 @@ export const PlayerChrome = ({title, player, ads}: PlayerChromeProps) => {
     };
   }, [show]);
 
+  // For the device log next to the IAB events: when the "Ad in N" countdown runs.
+  const nextBreakIn = ads.timeline.nextBreakIn;
+  useEffect(() => {
+    if (nextBreakIn !== null) {
+      console.log(`[ads] countdown ${nextBreakIn}`);
+    }
+  }, [nextBreakIn]);
+
   useRemoteKeys((key) => {
     if (ads.playing || !player) {
       return; // during ads the remote belongs to the ad overlay and media controls

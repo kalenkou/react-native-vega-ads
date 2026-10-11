@@ -151,3 +151,18 @@ Hook demo, Kettlo pre-roll (10 s, `skipoffset` 5 s), events mirrored to the loca
 | "Alexa, next" / "Alexa, skip" during the ad, with `Next` in `command_options` and NEXT in the published actions | `handleNext` never called in 4 runs (FL-10). Not shipped |
 | Voice request during an ad | the ad stops advancing for 6–13 s with no `pause`/`playing` event; once the 10 s stall watchdog ended the ad with 405 (FL-11) |
 | Same, after the fix (10 s only after `waiting`, 30 s for a silent stop) | Alexa requests during the Kettlo pre-roll: quartiles 7.3 s apart instead of 2.5 s, no 405, the ad reaches `complete`, content starts → PASS |
+
+## Demo app on VegaAdsPlayer (11.10.2026)
+
+`apps/demo`, release build, SDK 0.24. VMAP from `tools/demo-ads/serve.mjs --midrolls 139.917,441.208` (the quiet points `make-vmap --local` found in Tears of Steel): Kettlo pre-roll, pod of 3 at 2:19.9, Kettlo at 7:21.2, post-roll.
+
+| Check | Result |
+|---|---|
+| Movie screen: poster, title, Play button with D-pad focus | renders; `reportFullyDrawn` on mount → PASS |
+| Pre-roll, no key pressed | all pixels, content starts after `complete` → PASS |
+| OK on Skip 7–8 s into the pre-roll (5 runs, 4 of them cold launches) | `skip` pixel, content starts → PASS |
+| Same, 1 run: first launch right after another w3cmedia app (the RNV v7 probe) had played | Skip was ignored, the ad played to `complete`, `breakEnd` was reported, but the content stayed paused at 0:00 (black frame, the app's controls showed "Paused"). Not reproduced in the next 5 runs, also not with the same app switch. Only the `[ads]` lines were logged, so the cause is open. Open: log everything during the stability runs; if it repeats, find out whether `play()` on the content is refused or undone |
+| Break marks on the app's timeline | two marks at 2:19.9 and 7:21.2 (19 % and 60 %) → PASS |
+| "Ad in N" before the mid-roll after a seek to 2:06 | "Ad in 2" at 2:18 (screenshot), `countdown 4` in the log: the pod finished loading 4 s before the break, so the count began at 4. The countdown only shows for a break whose ads are loaded → PASS |
+| Mid-roll pod at 2:19.9 | Brewnord, Voltaro, Kettlo: all pixels, content continues → PASS |
+| Seek forward over the 7:21.2 break (30 × Right) | the break plays at once (Kettlo, all pixels): a seek gives no free pass → PASS |
