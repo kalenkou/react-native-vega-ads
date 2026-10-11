@@ -1,0 +1,54 @@
+import { adUiState } from '../../src/ui/adUiState';
+import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
+
+function snapshot(overrides: Partial<SessionSnapshot>): SessionSnapshot {
+  return { state: 'playing', position: 1, total: 2, adTime: 3.2, adDuration: 15, canSkip: false, skipIn: null, adSurface: 'ad', ...overrides };
+}
+
+describe('adUiState (R26)', () => {
+  it('shows the ad number and the time left, rounded up', () => {
+    expect(adUiState(snapshot({}))).toMatchObject({ visible: true, label: 'Ad 1 of 2 · 0:12' });
+  });
+
+  it('leaves out "of N" for a single ad', () => {
+    expect(adUiState(snapshot({ total: 1, adTime: 0, adDuration: 75 })).label).toBe('Ad · 1:15');
+  });
+
+  it('shows only "Ad" while the duration is unknown', () => {
+    expect(adUiState(snapshot({ total: 1, adDuration: 0 })).label).toBe('Ad');
+  });
+
+  it('hides the skip button for a non-skippable ad', () => {
+    expect(adUiState(snapshot({ skipIn: null })).skip).toEqual({ visible: false, enabled: false, label: '' });
+  });
+
+  it('counts down to skip, then enables it', () => {
+    expect(adUiState(snapshot({ skipIn: 2.1 })).skip).toEqual({ visible: true, enabled: false, label: 'Skip in 3' });
+    expect(adUiState(snapshot({ skipIn: 0, canSkip: true })).skip).toEqual({ visible: true, enabled: true, label: 'Skip Ad' });
+  });
+
+  it('gives a screen reader announcement when an ad starts', () => {
+    expect(adUiState(snapshot({ adTime: 0 })).announcement).toBe('Ad 1 of 2, 15 seconds');
+    expect(adUiState(snapshot({ total: 1, adTime: 0, adDuration: 30, skipIn: 5 })).announcement).toBe('Ad, 30 seconds, you can skip in 5 seconds');
+  });
+
+  it('is hidden when no ad is playing', () => {
+    for (const state of ['idle', 'loading', 'ready', 'empty', 'resuming', 'interrupted', 'finished'] as const) {
+      expect(adUiState(snapshot({ state })).visible).toBe(false);
+    }
+  });
+
+  it('lets the app replace every string', () => {
+    const ui = adUiState(snapshot({ skipIn: 2 }), {
+      ad: 'Reklama',
+      adOf: (position, total) => `Reklama ${position} z ${total}`,
+      skipIn: (seconds) => `Pomiń za ${seconds}`,
+      skip: 'Pomiń',
+      seconds: (n) => `${n} s`,
+      announceSkipIn: (seconds) => `Pomiń za ${seconds}`,
+    });
+    expect(ui.label).toBe('Reklama 1 z 2 · 0:12');
+    expect(ui.skip.label).toBe('Pomiń za 2');
+    expect(ui.announcement).toBe('Reklama 1 z 2, 15 s, Pomiń za 2');
+  });
+});

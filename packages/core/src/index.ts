@@ -13,3 +13,11 @@ export type { MediaFileChoice, MediaFileOptions } from './request/mediaFileSelec
 export type { AdSourceRef, VastAd, VastLinearCreative, VastMediaFile } from './request/types';
 export { BreakScheduler } from './schedule/BreakScheduler';
 export type { Decision, SchedulerOptions } from './schedule/BreakScheduler';
+export { PodController } from './pod/PodController';
+export type { PodItem, PodOptions } from './pod/PodController';
+export { AdTracker, adIdMacros } from './tracking/AdTracker';
+export type { AdIdSource, AdTrackerOptions, Macros } from './tracking/AdTracker';
+export { AdBreakSession } from './machine/AdBreakSession';
+export type { SessionDeps, SessionSnapshot, SessionState } from './machine/AdBreakSession';
+export { adUiState, defaultAdUiStrings } from './ui/adUiState';
+export type { AdUiState, AdUiStrings } from './ui/adUiState';

@@ -15,6 +15,11 @@ describe('public API', () => {
     'selectMediaFile',
     'BreakScheduler',
     'silentLogger',
+    'PodController',
+    'AdTracker',
+    'adIdMacros',
+    'AdBreakSession',
+    'adUiState',
   ])('exports %s', (name) => {
     expect((core as Record<string, unknown>)[name]).toBeDefined();
   });
