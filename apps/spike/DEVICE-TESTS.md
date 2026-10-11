@@ -105,5 +105,11 @@ The public AmazonAppDev/vega-video-sample (React Native 0.83, w3cmedia 2.3.2, Sh
 | Remote play/pause during the pre-roll (media controls of the sample's manifest) | `pause`, then `resume` → PASS |
 | Mid-roll pod over Shaka content | 3 ads back to back, next ad's impression before the previous `complete` (early hand-over) → PASS |
 | Back during the 3rd pod ad | `breakEnd`, content continues at 0:17 with the player UI → PASS |
+| Back during the mid-roll pod (second run) | content continues at 0:16; one screenshot right after Back shows a black frame with the player UI, the next one (3 s later) shows the content → PASS |
+| Home during the pre-roll (launcher started with `vlcm launch-app`) | the ad player pauses, its audio stream stops and the player is destroyed in the first 0.1 s of the log; launcher in foreground 2.3 s later; no ad audio after → PASS |
+| Same, then 4.6 s in the background | the system Low Resource Killer ends the app (`memory-mid: request to terminate`, `LowResourceKiller`). The same happens with Home during content without an ad, so it is the sample's memory on a 1 GB stick, not the ads |
+| Background/foreground during the pre-roll (`vlcm trigger-app background`, then `foreground`) | no ad on return; the sample itself closes the player screen on `background` (`navigateBack` in its `handleAppStateChange`), so it shows the details screen. Resume after background is covered by unit tests (`suspend`/`wake`) |
 
-Open: post-roll on this sample (the titles are long), Home during an ad, captions above ads, standby decoder on 4K titles.
+`inputd-cli button_press KEY_HOME` reaches the app as a key but does not bring the launcher to the foreground; use `vlcm launch-app orpheus://com.amazon.smplighthouse.launcher.main` to test Home.
+
+Open: post-roll on this sample (the titles are long), display off during an ad, captions above ads, standby decoder on 4K titles.
