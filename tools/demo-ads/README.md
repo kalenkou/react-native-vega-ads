@@ -33,8 +33,19 @@ The server prints its address and serves:
 
 - `vast/single.xml` – Kettlo, skippable after 5 s;
 - `vast/pod.xml` – Brewnord, Voltaro, Kettlo as a pod;
-- `vmap/movie.xml` – pre-roll, mid-rolls at 2:00 (pod) and 6:00, post-roll;
-- `p?ad=…&e=…` – tracking pixels, logged to the console; `stats` – counts.
+- `vmap/movie.xml` – pre-roll, the mid-rolls (the first one is the pod), post-roll;
+- `vmap/timer.xml` – the same with mid-rolls at fixed times, 2:00 and 6:00, to compare with;
+- `p?ad=…&e=…` – tracking pixels, logged to the console; `stats` – counts;
+- any other file in `media/`, for example a `poster.jpg`.
+
+The mid-rolls of `vmap/movie.xml` are at 2:00 and 6:00 by default. To use the
+quiet points that [`make-vmap`](../make-vmap) finds in the movie:
+
+```sh
+node ../make-vmap/dist/main.js --local media/tears_of_steel_720p.mp4 --vast-url http://localhost:8080/vast/single.xml --out /dev/null
+# 2 mid-rolls: 00:02:19.917, 00:07:21.208
+node serve.mjs --dir media --midrolls 139.917,441.208
+```
 
 Vega's w3cmedia player refuses `http://` media unless the host is listed in the
 app manifest:
