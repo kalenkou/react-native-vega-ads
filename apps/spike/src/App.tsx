@@ -15,6 +15,8 @@ import {log, subscribe} from './spike/log';
 import {installImagePolyfill, reportRuntime} from './spike/runtime';
 import {checkVmap, loadAd, LoadedAd} from './spike/ads';
 import {runVmapSession} from './spike/sessionRun';
+import {runParseBench} from './spike/parseBench';
+import {HookDemo} from './HookDemo';
 
 const CONTENT_URL =
   'https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4';
@@ -23,6 +25,7 @@ const BREAK_INTERVAL_SEC = 60;
 const OFFSCREEN_LEFT = -Dimensions.get('window').width * 1.2;
 
 export const App = () => {
+  const [hookMode, setHookMode] = useState(false);
   const [lines, setLines] = useState<string[]>([]);
   const [adVisible, setAdVisible] = useState(false);
   const mainSurface = useRef<string | null>(null);
@@ -243,6 +246,10 @@ export const App = () => {
     [componentInstance],
   );
 
+  if (hookMode) {
+    return <HookDemo />;
+  }
+
   return (
     <View style={styles.root}>
       <View style={[styles.surface, styles.mainSurface]}>
@@ -318,6 +325,26 @@ export const App = () => {
             style={styles.button}
             onPress={() => void runSession(true)}>
             <Text style={styles.buttonText}>Soak</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() =>
+              void runParseBench().catch((error: unknown) =>
+                log(`xml bench failed: ${String(error)}`),
+              )
+            }>
+            <Text style={styles.buttonText}>XML bench</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              void adPlayer.current?.deinitialize().catch(() => undefined);
+              void mainPlayer.current?.deinitialize().catch(() => undefined);
+              adPlayer.current = null;
+              mainPlayer.current = null;
+              setHookMode(true);
+            }}>
+            <Text style={styles.buttonText}>Hook demo</Text>
           </TouchableOpacity>
         </View>
         {lines.map((line, index) => (

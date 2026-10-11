@@ -53,3 +53,15 @@ Button "Soak": Google optimized pod (3 × 10 s) every 45 s of content, two ad pl
 | Breaks played in 11 min | 9 breaks × 3 ads = 27 ads, last break at 375 s, content resumed at 375.05 s → PASS |
 | PSS (lcm_service `rm_pss`) | peak 91 MB, then plateau 65–68 MB to the end; no growth per break → PASS (limit 400 MiB) |
 | Hand-over late in the run | ad 3 first frame 64 ms after ad 2 `complete` → PASS |
+
+## XML parsing speed (11.10.2026)
+
+Button "XML bench", Release build (`build/armv7-release`). One real VAST response (Google sample single inline tag, 34.4 KB) is fetched once, then parsed 30 times without network. Two runs.
+
+| Step | Run 1 | Run 2 |
+|---|---|---|
+| `@xmldom/xmldom` text → DOM | median 49.6 ms, p95 58.4 ms (48.1–58.8) | median 48.7 ms, p95 52.9 ms (47.9–75.4) |
+| `@dailymotion/vast-client` DOM → model | median 11.1 ms, p95 15.7 ms | median 10.9 ms, p95 14.7 ms |
+| First run (cold) | 52.3 + 11.1 ms | 75.4 + 12.1 ms |
+
+About 60 ms per 35 KB VAST on the JS thread. The library loads ads ahead of the break (mid-roll pod ready 15 s early), so the viewer does not wait for parsing. A native XML parser is not needed for VAST/VMAP sizes; worth revisiting only for long wrapper chains on the critical path.
