@@ -69,6 +69,7 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11.10.2026. Details: [`apps/spike/DEVICE-T
 | Cold launch: ad's first frame → impression pixel | 143 ms |
 | Play → pre-roll's first frame, ad server answering in 600 ms per request (10 cold launches each) | median 2.4 s without preload, 1.7 s with `preloadVegaAds` on the title page |
 | Phone video, content → pod of 3 → content | no black frame, no content frame between ads |
+| Cold launch, launch → first frame (30 launches, `kpi-visualizer --certification`) | mean 2.39 s, P90 3.35 s. Amazon's target is 1.5 s; Amazon's own empty template gets a mean of 2.07 s on this stick. Fully drawn: P90 3.36 s (target: 8 s) |
 
 ## Quick start
 

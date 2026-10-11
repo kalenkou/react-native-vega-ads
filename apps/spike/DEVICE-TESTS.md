@@ -239,3 +239,14 @@ Not checked yet: by ear, that the ad sounds as loud as the movie and the movie i
 | 1 | PASS: at the mid-roll the player fetched `pod.xml`, sent Voltaro's error pixel with `code=205` within 80 ms and never an impression for it; Kettlo got `notUsed` (seen in the pre-roll); Brewnord played to `complete` and the movie went on |
 
 The context in this test is written by hand. The model did not block anything at these two breaks of Tears of Steel; see `tools/make-vmap/eval/` for what it finds.
+
+## Cold launch KPI: demo and Amazon's template (12.10.2026)
+
+`vega exec perf kpi-visualizer --kpi cool-start-latency` on the release build of the demo (`--certification`, 30 launches), then the same tool on a fresh app from Amazon's `helloWorld` React Native template (9 usable launches of 10; the tool dropped one for a trace error). Amazon's targets for a cold start: first frame under 1.5 s, fully drawn under 8 s.
+
+| App | Launch → first frame | Launch → fully drawn |
+|---|---|---|
+| Demo (n = 29) | min 1194 ms, mean 2393 ms, max 4244 ms, P90 3354 ms | mean 2398 ms, P90 3355 ms |
+| Amazon template (n = 9) | min 1217 ms, mean 2068 ms, max 3306 ms | no marker in the template |
+
+The first-frame target is not met on this stick even by the empty template. The demo adds about 0.3 s to the mean, inside the spread (stdev 800 ms and 913 ms). The fully drawn target is met. JS bundle load: mean 103 ms.
