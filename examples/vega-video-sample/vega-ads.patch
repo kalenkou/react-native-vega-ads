@@ -1,0 +1,123 @@
+diff --git a/src/screens/PlayerScreen.tsx b/src/screens/PlayerScreen.tsx
+index a8a3bbf..dfa3ae6 100644
+--- a/src/screens/PlayerScreen.tsx
++++ b/src/screens/PlayerScreen.tsx
+@@ -52,6 +52,9 @@ import { COLORS } from '../styles/Colors';
+ import { VideoHandler } from '../utils/VideoHandler';
+ import VideoPlayerUI from '../w3cmedia/mediacontrols/VideoPlayerUI';
+ import { ShakaPlayer } from '../w3cmedia/shakaplayer/ShakaPlayer';
++import { AdOverlay, AdSurfaceLayers, useVegaAds } from '@vega-ads/vega';
++import { ADS_ENABLED, ADS_VMAP_URL } from '../ads/adsConfig';
++import { AppOverrideMediaControlHandler } from '../utils/AppOverrideMediaControlHandler';
+ 
+ const BACKGROUND_STATE: AppStateStatus = 'background';
+ 
+@@ -104,6 +107,19 @@ const PlayerScreen = ({
+   const componentInstance: IComponentInstance =
+     keplerAppStateManager.getComponentInstance();
+ 
++  // vega-ads: the content player is handed over once it has a surface; the library starts it
++  // after the pre-roll. The app's own media controls handler is restored after every break.
++  const [adsContentPlayer, setAdsContentPlayer] = React.useState<VideoPlayer | null>(null);
++  const [vmapUrl] = React.useState(() => `${ADS_VMAP_URL}${Date.now()}`);
++  const contentMediaControlHandler = useRef<AppOverrideMediaControlHandler | null>(null);
++  const [contentStarted, setContentStarted] = React.useState<boolean>(!ADS_ENABLED);
++  const ads = useVegaAds({
++    source: ADS_ENABLED ? { vmapUrl } : null,
++    contentPlayer: adsContentPlayer,
++    contentMediaControlHandler: contentMediaControlHandler.current ?? undefined,
++    onEvent: (name) => console.log(`[ads] ${name}`),
++  });
++
+   const videoHandler = new VideoHandler(
+     videoRef,
+     player,
+@@ -128,7 +144,8 @@ const PlayerScreen = ({
+   });
+ 
+   useEffect(() => {
+-    if (!isVideoEnded) {
++    // With ads, wait for the post-roll before leaving the screen.
++    if (!isVideoEnded || (ADS_ENABLED && !ads.ended)) {
+       return;
+     }
+     timer.current = setTimeout(() => {
+@@ -137,7 +154,7 @@ const PlayerScreen = ({
+ 
+     return () => clearTimeout(Number(timer.current));
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [isVideoEnded]);
++  }, [isVideoEnded, ads.ended]);
+ 
+   useEffect(() => {
+     console.log(
+@@ -365,10 +382,25 @@ const PlayerScreen = ({
+         bifFrameImagesRef.current = await getBifFrameImageSource(data.bifUrl);
+       }
+ 
++      if (ADS_ENABLED && videoRef.current) {
++        // vega-ads starts the content after the pre-roll; report the first real play.
++        const content = videoRef.current;
++        contentMediaControlHandler.current = new AppOverrideMediaControlHandler(content, false);
++        const onFirstPlaying = () => {
++          content.removeEventListener('playing', onFirstPlaying);
++          setContentStarted(true);
++          setShowBuffering(false);
++          reportVideoPlaying();
++        };
++        content.addEventListener('playing', onFirstPlaying);
++        setAdsContentPlayer(content);
++        return;
++      }
++
+       // Play video once surface has created and set to media reference
+       playVideo();
+     }
+-  }, [data.bifUrl, playVideo]);
++  }, [data.bifUrl, playVideo, reportVideoPlaying]);
+ 
+   const onSurfaceViewCreated = useCallback(
+     (_surfaceHandle: string): void => {
+@@ -437,16 +469,17 @@ const PlayerScreen = ({
+               onCaptionViewCreated={onCaptionViewCreated}
+               onCaptionViewDestroyed={onCaptionViewDestroyed}
+               style={styles.captions}
+-              show={captionID !== CAPTION_DISABLE_ID}
++              show={captionID !== CAPTION_DISABLE_ID && !ads.playing}
+               testID="kepler-captions-view"
+             />
++            {ADS_ENABLED && <AdSurfaceLayers surfaces={ads.surfaces} />}
+           </>
+         )}
+ 
+-        {showBuffering && (
++        {showBuffering && !ads.playing && (
+           <BufferingWindow backgroundColor={COLORS.SEMI_TRANSPARENT} />
+         )}
+-        {showVideoPlayerUI && (
++        {showVideoPlayerUI && contentStarted && !ads.playing && (
+           <VideoPlayerUI
+             videoRef={videoRef}
+             navigateBack={navigateBack}
+@@ -458,6 +491,7 @@ const PlayerScreen = ({
+           />
+         )}
+         {isVideoError && <ErrorView navigateBack={navigateBack} />}
++        {ADS_ENABLED && <AdOverlay ui={ads.ui} onSkip={ads.skip} />}
+       </View>
+     </SafeAreaView>
+   );
+diff --git a/src/ads/adsConfig.ts b/src/ads/adsConfig.ts
+new file mode 100644
+index 0000000..ebd00d5
+--- /dev/null
++++ b/src/ads/adsConfig.ts
+@@ -0,0 +1,8 @@
++/** Client-side ads with vega-ads. Turn off to get the original sample behaviour. */
++export const ADS_ENABLED = true;
++
++/** Public test VMAP: pre-roll, a mid-roll pod of 3 at 0:15, post-roll. */
++export const ADS_VMAP_URL =
++  'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/vmap_ad_samples' +
++  '&sz=640x480&cust_params=sample_ar%3Dpremidpostoptimizedpod&ciu_szs=300x250&gdfp_req=1' +
++  '&ad_rule=1&output=vmap&unviewed_position_start=1&env=vp&impl=s&cmsid=496&vid=short_onecue&correlator=';
