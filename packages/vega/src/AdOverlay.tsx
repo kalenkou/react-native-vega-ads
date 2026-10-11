@@ -38,6 +38,16 @@ export function AdOverlay({ ui, onSkip, style }: AdOverlayProps): JSX.Element | 
   return (
     <View style={[styles.root, style]} pointerEvents="box-none">
       <Text style={styles.label}>{ui.label}</Text>
+      {!ui.skip.visible && (
+        // Nothing to press, but the D-pad focus must stay on the ad, not on the app behind it.
+        <TouchableOpacity
+          testID="vega-ads-focus"
+          style={styles.focusAnchor}
+          hasTVPreferredFocus
+          accessibilityLabel={ui.label}
+          onPress={() => undefined}
+        />
+      )}
       {ui.skip.visible && (
         <TouchableOpacity
           testID="vega-ads-skip"
@@ -81,5 +91,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   skipWaiting: { opacity: 0.6 },
+  focusAnchor: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   skipText: { color: '#fff', fontSize: 24 },
 });

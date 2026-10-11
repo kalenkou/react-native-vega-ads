@@ -8,6 +8,7 @@ import {
   AdUiState,
   AdUiStrings,
   adUiState,
+  PlayerPort,
   ClockPort,
   HttpPort,
   IDLE_SNAPSHOT,
@@ -18,15 +19,29 @@ import {
 } from '@vega-ads/core';
 import { W3cPlayerAdapter, W3cVideoPlayer } from './W3cPlayerAdapter';
 import { fetchHttp, systemClock } from './platform';
+import { createAdMediaControlHandler } from './adMediaControlHandler';
 
 export interface UseVegaAdsOptions {
   /** A VMAP URL, or VAST tags with their times. `null` waits (for example, until the title is known). */
   source: AdSchedule | null;
   /**
-   * Your content `VideoPlayer`, initialized, with `autoplay = false` and `src` set.
-   * The hook starts it after the pre-roll, or at once when there is none.
+   * Your content `VideoPlayer` (also when Shaka plays through it), initialized, with
+   * `autoplay = false` and its source set. The hook starts it after the pre-roll, or at
+   * once when there is none. Any other player works through a `PlayerPort` adapter.
    */
-  contentPlayer: W3cVideoPlayer | null;
+  contentPlayer: W3cVideoPlayer | PlayerPort | null;
+  /** Your media controls handler for the content, if you use one; it is restored after each break. */
+  contentMediaControlHandler?: unknown;
+  /** Remote and voice may pause ads. Default true. */
+  adPause?: boolean;
+  /**
+   * true (default, recommended on Vega): media controls own remote play/pause and Alexa
+   * (needs the manifest entries). Ignore `playpause` in your own key handler while `playing`.
+   * false: the library never takes media controls focus. Measured on Vega OS 1.2: without the
+   * manifest entries a legacy player session still pauses a playing player on the key, so an
+   * app that resumes the ad itself is undone; see DEVICE-TESTS.md.
+   */
+  mediaControls?: boolean;
   /** Ad tag macros, for example from `adIdMacros()` (IFA, LIMITADTRACKING). */
   macros?: Macros;
   /** How early a break is loaded and buffered. Default 15 s. */
@@ -50,22 +65,33 @@ export interface UseVegaAdsOptions {
 export interface AdSurfaces {
   /** The ad surface to show on top of the content, or null between ads. */
   shown: string | null;
+  onContentSurface: (handle: string | null) => void;
   onAdSurface: (handle: string | null) => void;
   onStandbySurface: (handle: string | null) => void;
 }
 
 export interface VegaAds {
+  /** True while an ad is on screen. Your own remote handler should leave play/pause to `togglePause` then. */
+  playing: boolean;
   snapshot: SessionSnapshot;
   /** What AdOverlay shows. */
   ui: AdUiState;
   surfaces: AdSurfaces;
   /** Viewer pressed Skip. False when skipping is not allowed yet. */
   skip: () => boolean;
+  /**
+   * Play/pause of the ad from your own UI (for example an on-screen button). False outside ads.
+   * Do not call it for the remote `playpause` key on Vega: media controls (or, without the
+   * manifest entries, the legacy player session) already act on that key.
+   */
+  togglePause: () => boolean;
   /** Leave the ad break and go back to the content. */
   back: () => Promise<void>;
 }
 
 const newVideoPlayer = (): W3cVideoPlayer => new VideoPlayer() as unknown as W3cVideoPlayer;
+
+const isPort = (player: W3cVideoPlayer | PlayerPort): player is PlayerPort => 'takeMediaControlFocus' in player;
 
 /**
  * Client-side ads for one piece of content on Vega:
@@ -78,12 +104,16 @@ const newVideoPlayer = (): W3cVideoPlayer => new VideoPlayer() as unknown as W3c
  */
 export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   // The manager object may be new on every render; read it through a ref so it never restarts the ads.
-  const appState = useRef(useKeplerAppStateManager());
-  appState.current = useKeplerAppStateManager();
+  const appStateNow = useKeplerAppStateManager();
+  const appState = useRef(appStateNow);
+  appState.current = appStateNow;
+  const [contentSurface, setContentSurface] = useState<string | null>(null);
   const [adSurface, setAdSurface] = useState<string | null>(null);
   const [standbySurface, setStandbySurface] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<SessionSnapshot>(IDLE_SNAPSHOT);
   const manager = useRef<AdManager | null>(null);
+  /** Which source and player already started, so a restart (new surfaces) resumes instead of replaying. */
+  const startedFor = useRef<{ key: string; player: W3cVideoPlayer | PlayerPort } | null>(null);
 
   // Read at start time; changing these does not restart the ads.
   const latest = useRef(options);
@@ -93,18 +123,33 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
 
   useEffect(() => {
     const source = latest.current.source;
-    if (!source || !contentPlayer || !adSurface || !standbySurface) {
+    if (!source || !sourceKey || !contentPlayer || !contentSurface || !adSurface || !standbySurface) {
       return undefined;
     }
     const o = latest.current;
     const componentInstance = o.componentInstance ?? (() => appState.current.getComponentInstance());
     const http = o.http ?? fetchHttp;
     installImagePolyfill(http);
+    const content = isPort(contentPlayer)
+      ? contentPlayer
+      : new W3cPlayerAdapter(
+          contentPlayer,
+          componentInstance,
+          () => latest.current.contentMediaControlHandler,
+          o.mediaControls ?? true,
+        );
+    const adHandler = createAdMediaControlHandler({ allowPause: o.adPause ?? true });
     const created = new AdManager({
       http,
       clock: o.clock ?? systemClock,
-      content: new W3cPlayerAdapter(contentPlayer, componentInstance),
-      createAdPlayer: () => new W3cPlayerAdapter((o.createVideoPlayer ?? newVideoPlayer)(), componentInstance),
+      content,
+      createAdPlayer: () =>
+        new W3cPlayerAdapter(
+          (o.createVideoPlayer ?? newVideoPlayer)(),
+          componentInstance,
+          () => adHandler,
+          o.mediaControls ?? true,
+        ),
       adSurface,
       standbySurface,
       macros: o.macros,
@@ -114,14 +159,16 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       onEvent: (name) => latest.current.onEvent?.(name),
     });
     manager.current = created;
-    void created.start(source);
+    const resumed = startedFor.current?.key === sourceKey && startedFor.current.player === contentPlayer;
+    startedFor.current = { key: sourceKey, player: contentPlayer };
+    void created.start(source, resumed ? { resumeAt: content.getCurrentTime() } : {});
     return () => {
       manager.current = null;
       setSnapshot(IDLE_SNAPSHOT);
       void created.dispose();
     };
     // sourceKey stands for `source`: a new object with the same content must not restart the ads.
-  }, [sourceKey, contentPlayer, adSurface, standbySurface]);
+  }, [sourceKey, contentPlayer, contentSurface, adSurface, standbySurface]);
 
   const inAd = snapshot.state === 'playing';
   const handleBack = options.handleBack ?? true;
@@ -137,6 +184,10 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   }, [inAd, handleBack]);
 
   const skip = useCallback(() => manager.current?.skip() ?? false, []);
+  const togglePause = useCallback(
+    () => (latest.current.adPause ?? true) && (manager.current?.togglePause() ?? false),
+    [],
+  );
   const back = useCallback(async () => {
     await manager.current?.back();
   }, []);
@@ -146,11 +197,12 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   const surfaces = useMemo<AdSurfaces>(
     () => ({
       shown: inAd ? snapshot.adSurface : null,
+      onContentSurface: setContentSurface,
       onAdSurface: setAdSurface,
       onStandbySurface: setStandbySurface,
     }),
     [inAd, snapshot.adSurface],
   );
 
-  return { snapshot, ui, surfaces, skip, back };
+  return { playing: inAd, snapshot, ui, surfaces, skip, togglePause, back };
 }

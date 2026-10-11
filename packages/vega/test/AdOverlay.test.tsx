@@ -48,6 +48,13 @@ describe('AdOverlay', () => {
     expect(skipButton()).toBeUndefined();
   });
 
+  it('holds the D-pad focus during a non-skippable ad, so the app behind does not react', () => {
+    const { renderer } = render(ui());
+    const anchor = renderer.root.findAll((n) => n.props.testID === 'vega-ads-focus' && typeof (n.type as unknown) === 'string')[0];
+    expect(anchor?.props.hasTVPreferredFocus).toBe(true);
+    expect(anchor?.props.accessibilityLabel).toBe('Ad 1 of 3 · 0:12');
+  });
+
   it('shows a disabled Skip countdown that ignores presses', () => {
     const { skipButton, texts, onSkip } = render(ui({ skip: { visible: true, enabled: false, label: 'Skip in 3' } }));
     expect(texts()).toContain('Skip in 3');

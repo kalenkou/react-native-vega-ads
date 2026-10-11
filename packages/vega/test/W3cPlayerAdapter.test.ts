@@ -26,8 +26,9 @@ class RecordingPlayer implements W3cVideoPlayer {
   pause(): void {
     this.calls.push('pause');
   }
-  async setMediaControlFocus(instance: unknown): Promise<void> {
-    this.calls.push(`focus:${String((instance as { name: string }).name)}`);
+  async setMediaControlFocus(instance: unknown, handler?: unknown): Promise<void> {
+    const name = String((instance as { name: string }).name);
+    this.calls.push(handler ? `focus:${name}:${String((handler as { id: string }).id)}` : `focus:${name}`);
   }
   addEventListener(type: string, listener: (event?: unknown) => void): void {
     const set = this.listeners.get(type) ?? new Set();
@@ -128,5 +129,19 @@ describe('W3cPlayerAdapter', () => {
     native.emit('ended');
     native.emit('error');
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('passes a media controls handler when one is given', async () => {
+    const native = new RecordingPlayer();
+    const port = new W3cPlayerAdapter(native, () => instance, () => ({ id: 'app-handler' }));
+    await port.takeMediaControlFocus();
+    expect(native.calls).toEqual(['focus:main-component:app-handler']);
+  });
+
+  it('takes no media controls focus when media controls are off', async () => {
+    const native = new RecordingPlayer();
+    const port = new W3cPlayerAdapter(native, () => instance, () => undefined, false);
+    await port.takeMediaControlFocus();
+    expect(native.calls).toEqual([]);
   });
 });

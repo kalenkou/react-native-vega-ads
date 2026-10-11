@@ -16,7 +16,7 @@ export interface W3cVideoPlayer {
   clearSurfaceHandle(handle: string): void;
   play(): Promise<void>;
   pause(): void;
-  setMediaControlFocus(componentInstance: never): Promise<void>;
+  setMediaControlFocus(componentInstance: never, mediaControlHandler?: never): Promise<void>;
   addEventListener(type: string, listener: () => void): void;
   removeEventListener(type: string, listener: () => void): void;
   deinitialize(): Promise<void>;
@@ -29,10 +29,14 @@ export class W3cPlayerAdapter implements PlayerPort {
   /**
    * @param player a `new VideoPlayer()` from @amazon-devices/react-native-w3cmedia
    * @param componentInstance returns the app's IComponentInstance, needed for media controls
+   * @param mediaControlHandler returns the media controls handler to use; none means the SDK default
+   * @param mediaControls false: never take media controls focus (the app handles the remote keys)
    */
   constructor(
     private readonly player: W3cVideoPlayer,
     private readonly componentInstance: () => unknown,
+    private readonly mediaControlHandler: () => unknown = () => undefined,
+    private readonly mediaControls = true,
   ) {}
 
   initialize(): Promise<void> {
@@ -89,7 +93,13 @@ export class W3cPlayerAdapter implements PlayerPort {
   }
 
   takeMediaControlFocus(): Promise<void> {
-    return this.player.setMediaControlFocus(this.componentInstance() as never);
+    if (!this.mediaControls) {
+      return Promise.resolve();
+    }
+    const handler = this.mediaControlHandler();
+    return handler === undefined
+      ? this.player.setMediaControlFocus(this.componentInstance() as never)
+      : this.player.setMediaControlFocus(this.componentInstance() as never, handler as never);
   }
 
   on(event: PlayerEventName, listener: () => void): () => void {

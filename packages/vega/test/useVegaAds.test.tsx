@@ -5,6 +5,7 @@ import { FakeClock } from '../../vast/test/fakes/FakeClock';
 import { FakeHttp } from '../../vast/test/fakes/FakeHttp';
 import { useVegaAds, UseVegaAdsOptions, VegaAds } from '../src/useVegaAds';
 import { FakeW3cPlayer } from './fakes/FakeW3cPlayer';
+import { W3cPlayerAdapter } from '../src/W3cPlayerAdapter';
 
 const back = BackHandler as unknown as { pressBack(): boolean; listenerCount(): number };
 const inline = readFileSync(`${__dirname}/../../vast/fixtures/vast/inline.xml`, 'utf8');
@@ -69,6 +70,7 @@ function setup(overrides: Partial<UseVegaAdsOptions> = {}) {
   };
   const ads = (): VegaAds => out.current as VegaAds;
   const surfacesReady = async (): Promise<void> => {
+    act(() => ads().surfaces.onContentSurface('c1'));
     act(() => ads().surfaces.onAdSurface('a1'));
     act(() => ads().surfaces.onStandbySurface('b1'));
     await settle();
@@ -93,6 +95,7 @@ function setup(overrides: Partial<UseVegaAdsOptions> = {}) {
 describe('useVegaAds', () => {
   it('waits for the content player and both ad surfaces', async () => {
     const ctx = setup({ contentPlayer: null });
+    act(() => ctx.ads().surfaces.onContentSurface('c1'));
     act(() => ctx.ads().surfaces.onAdSurface('a1'));
     await settle();
     expect(ctx.http.requests).toEqual([]);
@@ -104,6 +107,48 @@ describe('useVegaAds', () => {
     ctx.rerender({ contentPlayer: ctx.content });
     await settle();
     expect(ctx.http.requests).toEqual([PRE]);
+  });
+
+  it('waits for the content surface, so the content never starts without a picture', async () => {
+    const ctx = setup({ source: { breaks: [] } });
+    act(() => ctx.ads().surfaces.onAdSurface('a1'));
+    act(() => ctx.ads().surfaces.onStandbySurface('b1'));
+    await settle();
+    expect(ctx.content.calls).not.toContain('play');
+    act(() => ctx.ads().surfaces.onContentSurface('c1'));
+    await settle();
+    expect(ctx.content.calls).toContain('play');
+  });
+
+  it('does not repeat the pre-roll when the surfaces are recreated', async () => {
+    const ctx = setup();
+    const ad = await ctx.prerollPlaying();
+    act(() => {
+      ad.currentTime = 10;
+      ad.emit('timeupdate');
+      ad.emit('ended');
+    });
+    await settle();
+    ctx.content.currentTime = 33;
+    act(() => ctx.ads().surfaces.onAdSurface(null)); // for example, after the app comes back
+    act(() => ctx.ads().surfaces.onAdSurface('a2'));
+    await settle();
+    expect(ctx.http.requests.filter((url) => url === PRE)).toHaveLength(1);
+  });
+
+  it('tells the app when an ad is on screen', async () => {
+    const ctx = setup();
+    await ctx.surfacesReady();
+    expect(ctx.ads().playing).toBe(false);
+    act(() => {
+      ctx.lastAd().emit('canplay');
+    });
+    await settle();
+    act(() => {
+      ctx.lastAd().emit('playing');
+    });
+    await settle();
+    expect(ctx.ads().playing).toBe(true);
   });
 
   it('waits for a source', async () => {
@@ -163,6 +208,72 @@ describe('useVegaAds', () => {
       result = ctx.ads().skip();
     });
     expect(result).toBe(false);
+  });
+
+  it('togglePause() lets the app remote handler pause the ad (no media controls manifest needed)', async () => {
+    const ctx = setup();
+    const ad = await ctx.prerollPlaying();
+    let result = false;
+    act(() => {
+      result = ctx.ads().togglePause();
+    });
+    expect(result).toBe(true);
+    expect(ad.calls).toContain('pause');
+  });
+
+  it('gives the ad player a media controls handler that blocks seeking (R21)', async () => {
+    const ctx = setup();
+    const ad = await ctx.prerollPlaying();
+    expect(ad.calls).toContain('focus:AdMediaControlHandler');
+  });
+
+  it('gives the content its own media controls handler back after the ad', async () => {
+    const ctx = setup({ contentMediaControlHandler: { id: 'app-handler' } });
+    const ad = await ctx.prerollPlaying();
+    act(() => {
+      ad.currentTime = 10;
+      ad.emit('timeupdate');
+      ad.emit('ended');
+    });
+    await settle();
+    expect(ctx.content.calls).toContain('focus:app-handler');
+  });
+
+  it('adPause: false keeps the ad playing on the app key handler too', async () => {
+    const ctx = setup({ adPause: false });
+    const ad = await ctx.prerollPlaying();
+    let result = true;
+    act(() => {
+      result = ctx.ads().togglePause();
+    });
+    expect(result).toBe(false);
+    expect(ad.calls).not.toContain('pause');
+    // The remote and voice path (media controls) ignores pause too.
+    const handler = ad.mediaControlHandler as { handlePause(): Promise<void>; handled: string[] };
+    await handler.handlePause();
+    expect(handler.handled).toEqual([]);
+  });
+
+  it('accepts any content player through PlayerPort', async () => {
+    const native = new FakeW3cPlayer(600);
+    const port = new W3cPlayerAdapter(native, () => ({ name: 'main' }));
+    const ctx = setup({ source: { breaks: [] }, contentPlayer: port });
+    await ctx.surfacesReady();
+    expect(native.calls).toContain('play');
+  });
+
+  it('mediaControls: false never takes media controls focus (app handles the remote itself)', async () => {
+    const ctx = setup({ mediaControls: false });
+    const ad = await ctx.prerollPlaying();
+    act(() => {
+      ad.currentTime = 10;
+      ad.emit('timeupdate');
+      ad.emit('ended');
+    });
+    await settle();
+    expect(ad.calls.filter((c) => c.startsWith('focus'))).toEqual([]);
+    expect(ctx.content.calls.filter((c) => c.startsWith('focus'))).toEqual([]);
+    expect(ctx.content.calls).toContain('play');
   });
 
   it('Back during an ad returns to the content and is consumed (R23)', async () => {

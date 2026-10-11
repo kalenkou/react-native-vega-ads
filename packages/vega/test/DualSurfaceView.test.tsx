@@ -2,8 +2,10 @@ import TestRenderer, { act, ReactTestInstance } from 'react-test-renderer';
 import { DualSurfaceView } from '../src/DualSurfaceView';
 import type { AdSurfaces } from '../src/useVegaAds';
 
-function surfaces(shown: string | null = null): AdSurfaces & { onAdSurface: jest.Mock; onStandbySurface: jest.Mock } {
-  return { shown, onAdSurface: jest.fn(), onStandbySurface: jest.fn() };
+function surfaces(
+  shown: string | null = null,
+): AdSurfaces & { onAdSurface: jest.Mock; onStandbySurface: jest.Mock; onContentSurface: jest.Mock } {
+  return { shown, onAdSurface: jest.fn(), onStandbySurface: jest.fn(), onContentSurface: jest.fn() };
 }
 
 function render(s: AdSurfaces, onContent = jest.fn(), onContentGone = jest.fn()) {
@@ -41,6 +43,7 @@ describe('DualSurfaceView', () => {
     act(() => surface('vega-ads-ad-a').props.onSurfaceViewCreated('a1'));
     act(() => surface('vega-ads-ad-b').props.onSurfaceViewCreated('b1'));
     expect(onContent).toHaveBeenCalledWith('c1');
+    expect(s.onContentSurface).toHaveBeenCalledWith('c1');
     expect(s.onAdSurface).toHaveBeenCalledWith('a1');
     expect(s.onStandbySurface).toHaveBeenCalledWith('b1');
 
@@ -48,6 +51,7 @@ describe('DualSurfaceView', () => {
     act(() => surface('vega-ads-ad-a').props.onSurfaceViewDestroyed('a1'));
     act(() => surface('vega-ads-ad-b').props.onSurfaceViewDestroyed('b1'));
     expect(onContentGone).toHaveBeenCalledWith('c1');
+    expect(s.onContentSurface).toHaveBeenLastCalledWith(null);
     expect(s.onAdSurface).toHaveBeenLastCalledWith(null);
     expect(s.onStandbySurface).toHaveBeenLastCalledWith(null);
   });
