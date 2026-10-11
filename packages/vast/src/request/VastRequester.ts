@@ -99,8 +99,11 @@ export async function requestVast(source: string | AdSourceRef, deps: VastReques
   const client = new VASTClient();
   const parser = client.getParser() as unknown as {
     on(event: 'VAST-error', listener: (data: { ERRORCODE?: number }) => void): void;
-    trackVastError(urls: unknown[], macros: { ERRORCODE: number }): void;
+    trackVastError(urls: unknown[], macros: { ERRORCODE: number }, ...data: unknown[]): void;
   };
+  // vast-client sends its own error pixels (301, 302, 303...) with ERRORCODE only: add the app macros.
+  const trackVastError = parser.trackVastError.bind(parser);
+  parser.trackVastError = (urls, macros, ...data) => trackVastError(urls, { ...deps.macros, ...macros }, ...data);
   const errorCodes: number[] = [];
   parser.on('VAST-error', (data) => {
     if (typeof data.ERRORCODE === 'number') {

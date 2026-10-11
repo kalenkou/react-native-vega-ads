@@ -210,4 +210,13 @@ describe('requestVast', () => {
     ]);
     expect(result.status).toBe('ok');
   });
+
+  it.each([
+    ['an ad without a linear creative (200)', 'nonlinear-only.xml', 'https://t.test/err-nl?code=200&ifa=abc'],
+    ['an empty VAST (303, sent by vast-client)', 'empty.xml', 'https://t.test/empty?code=303&ifa=abc'],
+  ])('fills the app macros in the Error URL of %s (C1-5)', async (_label, name, expected) => {
+    const body = fixture(name).replace('?code=[ERRORCODE]', '?code=[ERRORCODE]&ifa=[IFA]');
+    await requestVast(INLINE, { http: new FakeHttp().on(INLINE, { body }), clock: new FakeClock(), macros: { IFA: 'abc' } });
+    expect(pixels.requests).toEqual([expected]);
+  });
 });
