@@ -21,6 +21,7 @@ import {
 import { W3cPlayerAdapter, W3cVideoPlayer } from './W3cPlayerAdapter';
 import { fetchHttp, systemClock } from './platform';
 import { createAdMediaControlHandler } from './adMediaControlHandler';
+import { takePreload } from './preloadVegaAds';
 
 export interface UseVegaAdsOptions {
   /** A VMAP URL, or VAST tags with their times. `null` waits (for example, until the title is known). */
@@ -183,7 +184,8 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     const previous = startedFor.current;
     const resumed = previous?.key === sourceKey && previous.player === contentKey && previous.manager.viewingStarted;
     startedFor.current = { key: sourceKey, player: contentKey as W3cVideoPlayer | 'port', manager: created };
-    void created.start(source, resumed ? { resumeAt: content.getCurrentTime() } : {});
+    // A preloadVegaAds() of this schedule (from the title's page) saves the first ad requests.
+    void created.start(source, resumed ? { resumeAt: content.getCurrentTime() } : { preloaded: takePreload(sourceKey) });
     return () => {
       manager.current = null;
       setSnapshot(IDLE_SNAPSHOT);

@@ -131,6 +131,18 @@ export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: 
 
 Remote and Alexa play/pause work through media controls. `onEnd` runs when the content and its post-roll are over. `adId` is optional; without it no ID is sent.
 
+Mid-rolls are marked for your timeline (`ads.timeline.marks`), and "Ad in 5" shows before each one, so a break never comes as a surprise.
+
+Start the ad requests on the title's page, so after Play the pre-roll only has to buffer:
+
+```tsx
+import { preloadVegaAds } from 'react-native-vega-ads';
+
+useEffect(() => preloadVegaAds({ vmapUrl }, { adId: AdIdRetriever }), [vmapUrl]);
+```
+
+The player with the same `ads` uses the answers once, within five minutes; otherwise it asks the ad server itself. Later breaks are requested during playback, as before.
+
 ### Customise any part
 
 Every part of `<VegaAdsPlayer>` can be replaced; the ads keep working.
@@ -244,6 +256,7 @@ useTVEventHandler((event) => {
 | `children` | Your UI over the video, or a function `({ player, ads }) => ...`. |
 | `contentSurface` | `false` when your screen draws the content surface itself. Default `true`. |
 | `renderOverlay` | `(ads) => ...` your own ad label and Skip button instead of `AdOverlay`. |
+| `countdown` | "Ad in N" before each mid-roll (`AdCountdown`). Default `true`. |
 | `style`, `scalingMode` | Layout and w3cmedia scaling mode (default `'fit'`). |
 | other | Any `useVegaAds` option below (`onEvent`, `strings`, `adPause`, ...). |
 
@@ -259,6 +272,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `contentPlayer` | Your initialized content `VideoPlayer` (`autoplay = false`), or any `PlayerPort`. |
 | `macros` | Ad tag macros, for example `adIdMacros(source)` for `IFA` and `LIMITADTRACKING`. |
 | `prefetchSeconds` | How early a break is loaded and buffered. Default 15. |
+| `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |
 | `mediaFile` | Media file choice: `maxHeight`, `targetBitrateKbps`, or your own `select`. |
 | `strings` | Overlay texts. English by default. |
 | `handleBack` | Back during an ad returns to the content. Default `true`. |
@@ -275,10 +289,15 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `ended` | `true` after the content ended and the post-roll, if any, is over. |
 | `snapshot` | Current break state: ad position, total, time, skip state. |
 | `ui` | Data for `AdOverlay`: label, skip button, announcement. |
+| `timeline` | `marks`: the mid-rolls (`id`, `time` in seconds, `done`) for your timeline. `nextBreakIn`: whole seconds to the next mid-roll in its last `countdownSeconds`, only once its ads are loaded; otherwise `null`. |
 | `surfaces` | Pass to `DualSurfaceView` or `AdSurfaceLayers`. |
 | `skip()` | Skip the ad. Returns `false` if skip is not allowed yet. |
 | `togglePause()` | Pause or play the ad from your own on-screen button. Not for the remote key. |
 | `back()` | Leave the break and return to the content. |
+
+### `preloadVegaAds(ads, options)`
+
+Requests the VMAP (or the manual schedule) and the pre-roll VAST before the player exists. `options`: `adId` and `macros`, the same as the player's. The next `VegaAdsPlayer` or `useVegaAds` with an equal `ads` object uses the answers once, if they are at most five minutes old; a failed early request is made again. Up to four titles wait at a time. In core, `preloadAds(schedule, { http, clock, macros })` returns the same data for `AdManager.start(schedule, { preloaded })`.
 
 ### Events (`onEvent`)
 
@@ -304,6 +323,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `DualSurfaceView` | `surfaces`, `contentPlayer?`, `onContentSurfaceCreated?`, `onContentSurfaceDestroyed?`, `scalingMode?` (default `'fit'`), `style?` |
 | `AdSurfaceLayers` | `surfaces`, `scalingMode?` (default `'fit'`), `style?` |
 | `AdOverlay` | `ui`, `onSkip`, `style?` |
+| `AdCountdown` | `nextBreakIn`, `strings?`, `style?`. Takes no D-pad focus; announces the break once for VoiceView. |
 
 ## Architecture
 

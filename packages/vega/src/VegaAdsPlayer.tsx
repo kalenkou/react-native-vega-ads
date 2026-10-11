@@ -1,13 +1,14 @@
 import { type ReactElement, type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
-import { adIdMacros, type AdSchedule, type Macros } from 'react-native-ads-core';
+import type { AdSchedule, Macros } from 'react-native-ads-core';
 import { AdCountdown } from './AdCountdown';
 import { AdOverlay } from './AdOverlay';
 import { AdSurfaceLayers } from './AdSurfaceLayers';
 import { DualSurfaceView } from './DualSurfaceView';
 import { useVegaAds, type UseVegaAdsOptions, type VegaAds } from './useVegaAds';
 import { useVideoPlayer } from './useVideoPlayer';
-import { vegaAdIdSource, type VegaAdIdRetriever } from './vegaAdIdSource';
+import { vegaMacros } from './preloadVegaAds';
+import type { VegaAdIdRetriever } from './vegaAdIdSource';
 import type { W3cVideoPlayer } from './W3cPlayerAdapter';
 
 export interface VegaAdsPlayerState {
@@ -89,10 +90,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
   const created = useVideoPlayer(ownsPlayer ? (source?.uri ?? null) : null, { createVideoPlayer: options.createVideoPlayer });
   const player = ownsPlayer ? created : appPlayer;
   // The ID is read once per retriever: the user's choice does not change during playback.
-  const allMacros = useMemo<Macros | undefined>(
-    () => (adId ? { ...adIdMacros(vegaAdIdSource(adId)), ...macros } : macros),
-    [adId, macros],
-  );
+  const allMacros = useMemo<Macros | undefined>(() => vegaMacros(adId, macros), [adId, macros]);
   const ads = useVegaAds({ ...options, source: player ? (schedule ?? { breaks: [] }) : null, contentPlayer: player, macros: allMacros });
 
   const latestOnEnd = useRef(onEnd);
