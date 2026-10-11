@@ -128,6 +128,9 @@ export class AdBreakSession {
     const responses: LinearAd[][] = [];
     for (const source of sources) {
       const result = await requestVast(source, { http: this.deps.http, clock: this.deps.clock });
+      if (this.state !== 'loading') {
+        return 'empty'; // interrupted while the ad server answered
+      }
       responses.push(result.status === 'ok' ? result.ads : []);
     }
     this.pod = new PodController(responses, { budgetMs: this.deps.budgetMs });
@@ -135,7 +138,12 @@ export class AdBreakSession {
     for (let item = this.pod.next(0); item; item = this.pod.next(0)) {
       const tracker = this.trackerFor(item.ad);
       const url = this.pickFile(item.ad, tracker);
-      if (url && (await this.prebuffer(url))) {
+      const buffered = url !== null && (await this.prebuffer(url));
+      if (this.state !== 'loading') {
+        await this.releasePlayer();
+        return 'empty';
+      }
+      if (buffered) {
         this.current = { item, tracker };
         this.setState('ready');
         return 'ready';

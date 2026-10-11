@@ -464,6 +464,28 @@ describe('AdManager', () => {
     expect(ctx.content.calls).not.toContain('play');
   });
 
+  it('dispose() while the VAST request is in flight leaves no live ad player (C3-7)', async () => {
+    const ctx = setup({});
+    let answer: (body: string) => void = () => undefined;
+    const get = ctx.http.get.bind(ctx.http);
+    ctx.http.get = (url, options) =>
+      url === 'https://ads.test/pre.xml'
+        ? new Promise((resolve) => {
+            answer = (body) => resolve({ status: 200, ok: true, text: () => Promise.resolve(body) });
+          })
+        : get(url, options);
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    await ctx.manager.dispose();
+    answer(fixture('vast/inline.xml'));
+    await settle();
+    ctx.adPlayers.forEach((p) => p.emitCanPlay());
+    await starting;
+    await settle();
+    expect(ctx.adPlayers.every((p) => p.deinitialized)).toBe(true);
+    expect(ctx.content.calls).not.toContain('play');
+  });
+
   it('dispose() during the VMAP request starts nothing', async () => {
     const ctx = setup({});
     ctx.http.hang(VMAP);
