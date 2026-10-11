@@ -250,3 +250,11 @@ The context in this test is written by hand. The model did not block anything at
 | Amazon template (n = 9) | min 1217 ms, mean 2068 ms, max 3306 ms | no marker in the template |
 
 The first-frame target is not met on this stick even by the empty template. The demo adds about 0.3 s to the mean, inside the spread (stdev 800 ms and 913 ms). The fully drawn target is met. JS bundle load: mean 103 ms.
+
+## Second title, with the model's own break context (12.10.2026)
+
+Sintel (H.264 High, 1280×544, -23.0 LUFS after `get_media.sh`) is the second title. make-vmap `--local` with whisper.cpp and Qwen2.5-VL-7B picked two mid-rolls, 2:42.1 and 9:03.1. At 2:42 the model reported `weapons` ("carrying a sword") and `injury` (a line about the girl's blood), so the rules block 1248, 1343 and 1524. `serve.mjs --sintel-context` serves that context unchanged. `sintel-run.sh` (kept outside the repo): install, Right + Enter on the details screen, Left + Enter, wait for the mid-roll.
+
+| Run | Result |
+|---|---|
+| 1 | PASS: "Next: Sintel" switched the details screen (poster, text, credit) and kept the focus on the button; the app preloaded `vmap/sintel.xml`. Sintel played with its own pre-roll. At 2:42 Kettlo (1524, Sporting Goods) got the error pixel with `code=205` and no impression; Brewnord, then Voltaro played |

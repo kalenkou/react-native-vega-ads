@@ -7,12 +7,20 @@ import {colors} from '../theme';
 
 export interface DetailsScreenProps {
   movie: Movie;
+  /** Title of the movie the second button switches to. */
+  next: string;
   onPlay: () => void;
+  onNext: () => void;
 }
 
-/** The movie page: poster, story, one Play button with the D-pad focus. */
-export const DetailsScreen = ({movie, onPlay}: DetailsScreenProps) => {
-  const [focused, setFocused] = useState(false);
+/** The movie page: poster, story, Play (with the D-pad focus) and a button to the next title. */
+export const DetailsScreen = ({
+  movie,
+  next,
+  onPlay,
+  onNext,
+}: DetailsScreenProps) => {
+  const [focused, setFocused] = useState<'play' | 'next' | null>(null);
   useEffect(() => {
     // The first screen is ready: Vega's cool-start KPI ends here.
     (
@@ -36,21 +44,43 @@ export const DetailsScreen = ({movie, onPlay}: DetailsScreenProps) => {
         <Text style={styles.title}>{movie.title}</Text>
         <Text style={styles.meta}>{movie.meta}</Text>
         <Text style={styles.description}>{movie.description}</Text>
-        <TouchableOpacity
-          testID="play"
-          hasTVPreferredFocus
-          activeOpacity={1}
-          accessibilityRole="button"
-          accessibilityLabel={`Play ${movie.title}`}
-          onPress={onPlay}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          style={[styles.button, focused && styles.buttonFocused]}>
-          <Text
-            style={[styles.buttonText, focused && styles.buttonTextFocused]}>
-            ▶ Play
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.buttons}>
+          <TouchableOpacity
+            testID="play"
+            hasTVPreferredFocus
+            activeOpacity={1}
+            accessibilityRole="button"
+            accessibilityLabel={`Play ${movie.title}`}
+            onPress={onPlay}
+            onFocus={() => setFocused('play')}
+            onBlur={() => setFocused(null)}
+            style={[styles.button, focused === 'play' && styles.buttonFocused]}>
+            <Text
+              style={[
+                styles.buttonText,
+                focused === 'play' && styles.buttonTextFocused,
+              ]}>
+              ▶ Play
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="next"
+            activeOpacity={1}
+            accessibilityRole="button"
+            accessibilityLabel={`Next title: ${next}`}
+            onPress={onNext}
+            onFocus={() => setFocused('next')}
+            onBlur={() => setFocused(null)}
+            style={[styles.button, focused === 'next' && styles.buttonFocused]}>
+            <Text
+              style={[
+                styles.buttonText,
+                focused === 'next' && styles.buttonTextFocused,
+              ]}>
+              Next: {next}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.note}>
           Ad breaks wait for shot changes and silent black frames. You can skip
           after 5 s.
@@ -81,9 +111,8 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     marginTop: 32,
   },
+  buttons: {flexDirection: 'row', gap: 24, marginTop: 48},
   button: {
-    alignSelf: 'flex-start',
-    marginTop: 48,
     paddingHorizontal: 40,
     paddingVertical: 16,
     borderRadius: 8,
