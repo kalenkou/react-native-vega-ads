@@ -16,6 +16,7 @@ import {
   installImagePolyfill,
   Macros,
   MediaFileOptions,
+  RepeatOptions,
   SessionSnapshot,
 } from 'react-native-ads-core';
 import { W3cPlayerAdapter, W3cVideoPlayer } from './W3cPlayerAdapter';
@@ -50,6 +51,11 @@ export interface UseVegaAdsOptions {
   prefetchSeconds?: number;
   /** How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. */
   countdownSeconds?: number;
+  /**
+   * On by default: a creative is not shown again within 30 minutes (`{ withinMs }` to change),
+   * and a break has one copy of each creative and one ad per advertiser. `false` turns it off.
+   */
+  avoidRepeats?: false | RepeatOptions;
   mediaFile?: MediaFileOptions;
   /** Overlay texts; English by default. */
   strings?: Partial<AdUiStrings>;
@@ -171,6 +177,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       mediaFile: o.mediaFile,
       prefetchSeconds: o.prefetchSeconds,
       countdownSeconds: o.countdownSeconds,
+      avoidRepeats: o.avoidRepeats,
       onChange: setSnapshot,
       onTimeline: setTimeline,
       onEvent: (name) => {

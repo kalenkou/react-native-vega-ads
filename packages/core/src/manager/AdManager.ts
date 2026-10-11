@@ -2,6 +2,7 @@ import { ClockPort, HttpPort, Macros, MediaFileOptions, ScheduledBreak, VastResu
 import { AdBreakSession, SessionSnapshot } from '../machine/AdBreakSession';
 import { BreakMark, BreakScheduler, Decision } from '../schedule/BreakScheduler';
 import type { PlayerPort } from '../ports';
+import { RepeatGuard, RepeatOptions } from '../pod/RepeatGuard';
 import { PreloadedAds, resolveSchedule, scheduleKey } from './preloadAds';
 
 /** Where the breaks come from: a VMAP document, or a list of VAST tags with their times. */
@@ -28,6 +29,12 @@ export interface AdManagerDeps {
   onTimeline?: (timeline: AdTimeline) => void;
   /** How many seconds before a mid-roll the countdown starts. Default 5. */
   countdownSeconds?: number;
+  /**
+   * Viewer rules for all breaks of this content, on by default: a creative is not shown again
+   * within `withinMs` (default 30 minutes), and a break has one copy of each creative and one ad
+   * per advertiser. A dropped ad sends its `notUsed` pixels. `false` turns the rules off.
+   */
+  avoidRepeats?: false | RepeatOptions;
 }
 
 /** What a player UI shows outside the breaks: marks on its timeline and «Ad in 5». */
@@ -92,8 +99,11 @@ export class AdManager {
   private timeline = '';
   private readonly offs: Array<() => void> = [];
 
+  private readonly repeats: RepeatGuard | undefined;
+
   constructor(deps: AdManagerDeps) {
     this.deps = deps;
+    this.repeats = deps.avoidRepeats === false ? undefined : new RepeatGuard(deps.clock, deps.avoidRepeats);
   }
 
   /**
@@ -338,6 +348,7 @@ export class AdManager {
       standbySurface: this.deps.standbySurface,
       macros: this.deps.macros,
       mediaFile: this.deps.mediaFile,
+      repeats: this.repeats,
       onChange: (snapshot) => this.onSessionChange(id, session, snapshot),
       onEvent: (name) => {
         if (name === 'impression') {

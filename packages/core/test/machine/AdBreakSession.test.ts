@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { AdBreakSession, SessionSnapshot } from '../../src/machine/AdBreakSession';
+import { RepeatGuard } from '../../src/pod/RepeatGuard';
 import { installImagePolyfill } from '../../src/vast';
 import { FakeClock } from '../fakes/FakeClock';
 import { FakeHttp } from '../fakes/FakeHttp';
@@ -27,7 +28,10 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 20; i++) await Promise.resolve();
 }
 
-function setup(body: string, options: { budgetMs?: number; standby?: boolean; maxPlayers?: number } = {}) {
+function setup(
+  body: string,
+  options: { budgetMs?: number; standby?: boolean; maxPlayers?: number; repeats?: RepeatGuard } = {},
+) {
   const http = new FakeHttp().on(TAG, { body });
   const clock = new FakeClock(1_000_000);
   const content = new FakePlayer({ duration: 600 });
@@ -54,6 +58,7 @@ function setup(body: string, options: { budgetMs?: number; standby?: boolean; ma
       return player;
     },
     budgetMs: options.budgetMs,
+    repeats: options.repeats,
     onChange: (snapshot) => states.push(snapshot),
     onEvent: (name) => events.push(name),
   });
@@ -219,6 +224,36 @@ describe('AdBreakSession – pods (R17)', () => {
     expect(player.src).toBe('https://cdn.test/buffet.mp4');
     expect(last(ctx.states)).toMatchObject({ position: 1, total: 2 });
     expect(ctx.events).toContain('error:405');
+  });
+
+  it('leaves out an ad the viewer saw in an earlier break and tells the ad server it was not used', async () => {
+    const repeats = new RepeatGuard(new FakeClock(0));
+    const earlier = setup(fixture('pod-optimized.xml'), { repeats });
+    const first = await loadReady(earlier);
+    await earlier.session.start();
+    await first.flush(); // pod-1 shows its first frame
+
+    const withNotUsed = fixture('pod-optimized.xml').replace(
+      '<Duration>00:00:10</Duration>',
+      '<Duration>00:00:10</Duration><TrackingEvents><Tracking event="notUsed"><![CDATA[https://t.test/notused-pod-1]]></Tracking></TrackingEvents>',
+    );
+    const ctx = setup(withNotUsed, { repeats });
+    sent();
+    const player = await loadReady(ctx);
+    expect(player.src).toBe('https://cdn.test/pod-2.mp4');
+    expect(sent()).toContain('https://t.test/notused-pod-1');
+    expect(ctx.events).toEqual(expect.arrayContaining(['notUsed', 'skipped:repeat']));
+    await ctx.session.start();
+    expect(last(ctx.states)).toMatchObject({ position: 1, total: 1 });
+  });
+
+  it('remembers only ads that showed a frame', async () => {
+    const repeats = new RepeatGuard(new FakeClock(0));
+    const earlier = setup(fixture('pod-optimized.xml'), { repeats });
+    await loadReady(earlier); // prebuffered, never shown
+    const ctx = setup(fixture('pod-optimized.xml'), { repeats });
+    const player = await loadReady(ctx);
+    expect(player.src).toBe('https://cdn.test/pod-1.mp4');
   });
 
   it('stops the pod when the next ad would pass the break budget', async () => {

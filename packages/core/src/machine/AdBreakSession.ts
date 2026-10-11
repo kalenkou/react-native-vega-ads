@@ -1,4 +1,5 @@
 import { PodController, PodItem } from '../pod/PodController';
+import type { RepeatGuard } from '../pod/RepeatGuard';
 import {
   AdSourceRef,
   AdTracker,
@@ -48,6 +49,8 @@ export interface SessionDeps {
   macros?: Macros;
   mediaFile?: MediaFileOptions;
   budgetMs?: number;
+  /** Viewer rules shared by all breaks of the content: no repeats, one ad per advertiser. */
+  repeats?: RepeatGuard;
   canPlayTimeoutMs?: number;
   /**
    * Back-to-back only: start the next ad this many ms before the current one ends.
@@ -65,7 +68,7 @@ export interface SessionDeps {
    */
   silentStallTimeoutMs?: number;
   onChange?: (snapshot: SessionSnapshot) => void;
-  /** IAB events sent, plus `error:<code>` and `breakEnd`. */
+  /** IAB events sent, plus `error:<code>`, `skipped:repeat`, `skipped:advertiser` and `breakEnd`. */
   onEvent?: (name: string) => void;
 }
 
@@ -158,7 +161,7 @@ export class AdBreakSession {
       }
       responses.push(result.status === 'ok' ? result.ads : []);
     }
-    this.pod = new PodController(responses, { budgetMs: this.deps.budgetMs });
+    this.pod = new PodController(this.withoutRepeats(responses), { budgetMs: this.deps.budgetMs });
 
     for (let item = this.pod.next(0); item; item = this.pod.next(0)) {
       const tracker = this.trackerFor(item.ad);
@@ -263,7 +266,28 @@ export class AdBreakSession {
   }
 
   private trackerFor(ad: LinearAd): AdTracker {
-    return new AdTracker(ad, { macros: this.deps.macros, onEvent: (name) => this.deps.onEvent?.(name) });
+    return new AdTracker(ad, {
+      macros: this.deps.macros,
+      onEvent: (name) => {
+        if (name === 'impression') {
+          this.deps.repeats?.shown(ad);
+        }
+        this.deps.onEvent?.(name);
+      },
+    });
+  }
+
+  /** Drops the ads the viewer rules do not allow; the ad server hears `notUsed` for each. */
+  private withoutRepeats(responses: LinearAd[][]): LinearAd[][] {
+    if (!this.deps.repeats) {
+      return responses;
+    }
+    const { responses: kept, dropped } = this.deps.repeats.filter(responses);
+    dropped.forEach(({ ad, reason }) => {
+      this.trackerFor(ad).notUsed();
+      this.deps.onEvent?.(`skipped:${reason}`);
+    });
+    return kept;
   }
 
   private pickFile(ad: LinearAd, tracker: AdTracker): string | null {

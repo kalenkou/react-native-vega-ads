@@ -25,6 +25,8 @@ export interface VastLinearCreative {
   skipDelay: number | null;
   mediaFiles: VastMediaFile[];
   trackingEvents: Record<string, string[]>;
+  /** <UniversalAdId>: the creative's id in a registry that all ad servers share (VAST 4). */
+  universalAdIds?: Array<{ idRegistry: string; value: string }>;
 }
 
 export interface VastAd {
@@ -34,6 +36,8 @@ export interface VastAd {
   errorURLTemplates: unknown[];
   impressionURLTemplates: unknown[];
   creatives: Array<{ type: string }>;
+  /** <Advertiser>, for keeping competitors apart (VAST 4). */
+  advertiser?: { id: string | null; value: string } | null;
 }
 
 /** Where the VAST for one ad request comes from: a URL, or XML embedded in a VMAP. */

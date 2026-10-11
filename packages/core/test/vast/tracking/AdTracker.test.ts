@@ -137,6 +137,33 @@ describe('AdTracker (R1, R2, R8, R20)', () => {
     expect(sent()).toEqual([]);
   });
 
+  it('sends notUsed for an ad that will not play, once, and nothing after it', async () => {
+    const body = INLINE.replace(
+      '<Tracking event="start">',
+      '<Tracking event="notUsed"><![CDATA[https://t.test/notused?ifa=[IFA]]]></Tracking><Tracking event="start">',
+    );
+    const events: string[] = [];
+    const tracker = new AdTracker(await loadAd(body), { macros: { IFA: 'abc' }, onEvent: (name) => events.push(name) });
+    tracker.notUsed();
+    tracker.notUsed();
+    tracker.firstFrame();
+    tracker.error(405);
+    expect(sent()).toEqual(['https://t.test/notused?ifa=abc']);
+    expect(events).toEqual(['notUsed']);
+  });
+
+  it('does not send notUsed for an ad that was shown', async () => {
+    const body = INLINE.replace(
+      '<Tracking event="start">',
+      '<Tracking event="notUsed"><![CDATA[https://t.test/notused]]></Tracking><Tracking event="start">',
+    );
+    const tracker = new AdTracker(await loadAd(body));
+    tracker.firstFrame();
+    sent();
+    tracker.notUsed();
+    expect(sent()).toEqual([]);
+  });
+
   it('fills ad id macros in every URL (R15)', async () => {
     const body = INLINE.replace('https://t.test/impression2?ad=1', 'https://t.test/imp?lmt=[LIMITADTRACKING]&ifa=[IFA]&type=[IFATYPE]');
     const tracker = new AdTracker(await loadAd(body), { macros: { LIMITADTRACKING: '0', IFA: 'abc-123', IFATYPE: 'afai' } });

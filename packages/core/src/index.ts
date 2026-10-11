@@ -8,6 +8,8 @@ export { BreakScheduler } from './schedule/BreakScheduler';
 export type { BreakMark, Decision, SchedulerOptions } from './schedule/BreakScheduler';
 export { PodController } from './pod/PodController';
 export type { PodItem, PodOptions } from './pod/PodController';
+export { RepeatGuard, REPEAT_WINDOW_MS } from './pod/RepeatGuard';
+export type { DroppedAd, RepeatOptions } from './pod/RepeatGuard';
 export { AdBreakSession } from './machine/AdBreakSession';
 export { AdManager, IDLE_SNAPSHOT } from './manager/AdManager';
 export type { AdManagerDeps, AdSchedule, AdTimeline } from './manager/AdManager';

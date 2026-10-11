@@ -113,6 +113,16 @@ export class AdTracker {
     return true;
   }
 
+  /** The ad will not be played, so the ad server can use it elsewhere (VAST 4.1 notUsed). */
+  notUsed(): void {
+    if (this.finished || this.impressed) {
+      return;
+    }
+    this.finished = true;
+    this.tracker.notUsed(this.macros);
+    this.onEvent('notUsed');
+  }
+
   error(code: number): void {
     if (this.finished) {
       return;

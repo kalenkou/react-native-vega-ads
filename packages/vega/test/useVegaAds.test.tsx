@@ -340,6 +340,32 @@ describe('useVegaAds', () => {
     expect(ctx.content.calls).toContain('play');
   });
 
+  it('passes avoidRepeats to the ads: off, the same creative plays again in the next break', async () => {
+    const MID = 'https://ads.test/mid.xml';
+    const run = async (avoidRepeats?: false) => {
+      const ctx = setup({
+        source: { breaks: [{ offset: 'start', vastUrl: PRE }, { offset: 30, vastUrl: MID }] },
+        avoidRepeats,
+      });
+      ctx.http.on(MID, { body: inline });
+      const ad = await ctx.prerollPlaying();
+      act(() => {
+        ad.emit('timeupdate');
+        ad.emit('ended');
+      });
+      await settle();
+      act(() => {
+        ctx.clock.advance(15_000);
+        ctx.content.currentTime = 15;
+        ctx.content.emit('timeupdate');
+      });
+      await settle();
+      return ctx.events;
+    };
+    expect(await run()).toContain('skipped:repeat');
+    expect(await run(false)).not.toContain('skipped:repeat');
+  });
+
   it('tells the app when the content and its post-roll are over', async () => {
     const ctx = setup({ source: { breaks: [] } });
     await ctx.surfacesReady();

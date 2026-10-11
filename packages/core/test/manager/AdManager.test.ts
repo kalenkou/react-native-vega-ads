@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { AdManager, AdSchedule, AdTimeline, IDLE_SNAPSHOT } from '../../src/manager/AdManager';
+import { AdManager, AdManagerDeps, AdSchedule, AdTimeline, IDLE_SNAPSHOT } from '../../src/manager/AdManager';
 import { PreloadedAds, preloadAds } from '../../src/manager/preloadAds';
 import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
 import { installImagePolyfill } from '../../src/vast';
@@ -27,7 +27,7 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 30; i++) await Promise.resolve();
 }
 
-function setup(routes: Record<string, string>) {
+function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats'> = {}) {
   const http = new FakeHttp();
   Object.entries(routes).forEach(([url, body]) => http.on(url, { body }));
   const clock = new FakeClock(1_000_000);
@@ -51,6 +51,7 @@ function setup(routes: Record<string, string>) {
     onChange: (snapshot) => snapshots.push(snapshot),
     onEvent: (name) => events.push(name),
     onTimeline: (timeline) => timelines.push(timeline),
+    ...options,
   });
   const lastAdPlayer = (): FakePlayer => adPlayers[adPlayers.length - 1] as FakePlayer;
   const last = (): SessionSnapshot | undefined => snapshots[snapshots.length - 1];
@@ -156,6 +157,55 @@ describe('AdManager', () => {
     expect(ctx.content.getCurrentTime()).toBe(30);
     expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
     expect(ctx.lastAdPlayer().deinitialized).toBe(true);
+  });
+
+  /** Plays a pre-roll of inline.xml, then reaches a mid-roll at 30 s that brings the same creative. */
+  async function preThenSameMid(avoidRepeats?: false | { withinMs: number }) {
+    const ctx = setup(
+      { 'https://ads.test/pre.xml': fixture('vast/inline.xml'), 'https://ads.test/mid.xml': fixture('vast/inline.xml') },
+      { avoidRepeats },
+    );
+    const starting = ctx.manager.start(
+      manual([
+        { offset: 'start', vastUrl: 'https://ads.test/pre.xml' },
+        { offset: 30, vastUrl: 'https://ads.test/mid.xml' },
+      ]),
+    );
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await playAdToEnd(ctx);
+    const players = ctx.adPlayers.length;
+    ctx.clock.advance(15_000);
+    ctx.content.emitTime(15);
+    await settle();
+    if (ctx.adPlayers.length > players) {
+      ctx.lastAdPlayer().emitCanPlay();
+      await settle();
+    }
+    ctx.content.emitTime(30);
+    await settle();
+    return ctx;
+  }
+
+  it('does not show the viewer a creative again in the next break, and reports it', async () => {
+    const ctx = await preThenSameMid();
+    expect(ctx.content.paused).toBe(false);
+    expect(ctx.events).toContain('skipped:repeat');
+    expect(ctx.events.filter((e) => e === 'impression')).toHaveLength(1);
+  });
+
+  it('shows a repeat when the app turns the rule off, or after the window', async () => {
+    const off = await preThenSameMid(false);
+    expect(off.content.paused).toBe(true);
+    expect(off.events).not.toContain('skipped:repeat');
+
+    const shortWindow = await preThenSameMid({ withinMs: 1 });
+    expect(shortWindow.content.paused).toBe(true);
+
+    const longWindow = await preThenSameMid({ withinMs: 60_000 });
+    expect(longWindow.content.paused).toBe(false);
   });
 
   it('ignores content time while a break plays', async () => {
