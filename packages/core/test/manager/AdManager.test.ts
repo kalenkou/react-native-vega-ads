@@ -430,6 +430,26 @@ describe('AdManager', () => {
     expect(ctx.adPlayers.every((p) => p.deinitialized)).toBe(true);
   });
 
+  it('suspend() while the last ad player is being released: the content stays paused, one breakEnd after wake() (C3-8)', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    const ad = ctx.lastAdPlayer();
+    await ad.flush();
+    ad.emitTime(10);
+    ad.emitEnded(); // the session now awaits the release of the ad player ...
+    void ctx.manager.suspend(); // ... and Home comes in that window
+    await settle();
+    expect(ctx.content.calls).not.toContain('play');
+    await ctx.manager.wake();
+    await settle();
+    expect(ctx.content.calls).toContain('play');
+    expect(ctx.events.filter((e) => e === 'breakEnd')).toHaveLength(1);
+  });
+
   it('dispose() during an ad gives media controls back to the content without playing it', async () => {
     const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
     const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));

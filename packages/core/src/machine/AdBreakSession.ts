@@ -56,6 +56,8 @@ export interface SessionDeps {
   handOverLeadMs?: number;
   /** An ad that shows no frame this long after play() fails with 405 (goal 7). Default 5000. */
   playTimeoutMs?: number;
+  /** A playing ad whose time does not move this long fails with 405. Default 10000. */
+  stallTimeoutMs?: number;
   onChange?: (snapshot: SessionSnapshot) => void;
   /** IAB events sent, plus `error:<code>` and `breakEnd`. */
   onEvent?: (name: string) => void;
@@ -112,6 +114,9 @@ export class AdBreakSession {
   /** The current ad has shown its first frame. */
   private framed = false;
   private watchdog: unknown = null;
+  /** The ad that advance() already moved on from: a second event of the same ad is late. */
+  private advancedFrom: Current | null = null;
+  private previousTimer: unknown = null;
 
   constructor(deps: SessionDeps) {
     this.deps = deps;
@@ -161,7 +166,7 @@ export class AdBreakSession {
     const player = this.player;
     if (this.brokenWhileReady && this.current) {
       this.fail(this.current.tracker, PLAYBACK_ERROR);
-      await this.advance();
+      await this.advance(this.current);
       return;
     }
     this.armWatchdog();
@@ -171,10 +176,11 @@ export class AdBreakSession {
 
   /** Viewer pressed Skip. @returns false when skipping is not allowed yet (R8). */
   skip(): boolean {
-    if (this.state !== 'playing' || !this.current?.tracker.skip()) {
+    const current = this.current;
+    if (this.state !== 'playing' || !current?.tracker.skip()) {
       return false;
     }
-    void this.advance();
+    void this.advance(current);
     return true;
   }
 
@@ -194,7 +200,9 @@ export class AdBreakSession {
       this.disarmWatchdog();
     } else {
       void player.play();
-      if (!this.framed) {
+      if (this.framed) {
+        this.armStallWatchdog();
+      } else {
         this.armWatchdog();
       }
     }
@@ -203,7 +211,8 @@ export class AdBreakSession {
 
   /** Viewer pressed Back: leave the break without skip or close pixels (R23). */
   async cancel(): Promise<void> {
-    if (this.state === 'finished') {
+    // Only an ad on screen can be left; before start() or after the break there is nothing to do.
+    if (this.state !== 'playing') {
       return;
     }
     await this.releasePlayer();
@@ -260,13 +269,22 @@ export class AdBreakSession {
       this.adPaused = true;
       // A pause (remote, voice or app) is not a stuck player.
       this.disarmWatchdog();
+      // HTML media at its end sends pause, then ended: that is not a viewer pause.
+      const duration = player.getDuration();
+      if (duration > 0 && player.getCurrentTime() >= duration - 0.25) {
+        return;
+      }
       this.whilePlaying((c) => c.tracker.paused());
     }));
     player.on('timeupdate', active(() => this.onTime()));
     player.on('timeupdate', finishing(() => this.previous?.tracker.progress(player.getCurrentTime())));
     player.on('ended', active(() => this.whilePlaying((c) => {
+      // An ended before the ad's first frame belongs to the source before it (late event after Skip).
+      if (!this.framed) {
+        return;
+      }
       c.tracker.ended();
-      void this.advance();
+      void this.advance(c);
     })));
     player.on('ended', finishing(() => void this.releasePrevious()));
     player.on('error', active(() => {
@@ -274,8 +292,11 @@ export class AdBreakSession {
         this.brokenWhileReady = true;
       }
       this.whilePlaying((c) => {
+        if (this.advancedFrom === c) {
+          return;
+        }
         this.fail(c.tracker, PLAYBACK_ERROR);
-        void this.advance();
+        void this.advance(c);
       });
     }));
     player.on('error', finishing(() => void this.releasePrevious()));
@@ -297,13 +318,18 @@ export class AdBreakSession {
     const ready = new Promise<boolean>((resolve) => {
       const timer = this.deps.clock.setTimeout(() => {
         off();
+        offError();
         resolve(false);
       }, this.deps.canPlayTimeoutMs ?? 8000);
-      const off = player.on('canplay', () => {
+      const done = (ok: boolean) => () => {
         this.deps.clock.clearTimeout(timer);
         off();
-        resolve(true);
-      });
+        offError();
+        resolve(ok);
+      };
+      const off = player.on('canplay', done(true));
+      // A media error before canplay (missing file, bad codec) fails the ad at once.
+      const offError = player.on('error', done(false));
     });
     player.setSrc(url);
     return ready;
@@ -311,16 +337,25 @@ export class AdBreakSession {
 
   /** Fails the current ad if it shows no frame in time; a dead player must not hold the break. */
   private armWatchdog(): void {
+    this.framed = false;
+    this.setWatchdog(this.deps.playTimeoutMs ?? 5000);
+  }
+
+  /** Fails the current ad if its time stops moving while it plays (a stream that froze). */
+  private armStallWatchdog(): void {
+    this.setWatchdog(this.deps.stallTimeoutMs ?? 10_000);
+  }
+
+  private setWatchdog(ms: number): void {
     this.disarmWatchdog();
     const current = this.current;
-    this.framed = false;
     this.watchdog = this.deps.clock.setTimeout(() => {
       this.watchdog = null;
       if (this.current === current && current && this.state === 'playing') {
         this.fail(current.tracker, PLAYBACK_ERROR);
-        void this.advance();
+        void this.advance(current);
       }
-    }, this.deps.playTimeoutMs ?? 5000);
+    }, ms);
   }
 
   private disarmWatchdog(): void {
@@ -331,9 +366,9 @@ export class AdBreakSession {
   }
 
   private onPlaying(): void {
-    this.disarmWatchdog();
     this.adPaused = false;
     this.framed = true;
+    this.armStallWatchdog();
     this.whilePlaying((c) => {
       if (this.shownSurface !== this.playerSurface) {
         // Fire TV rule: no impression for an ad that is not visible yet. See releasePrevious().
@@ -406,12 +441,18 @@ export class AdBreakSession {
   private onTime(): void {
     this.whilePlaying((c) => {
       const time = this.player?.getCurrentTime() ?? 0;
+      if (this.framed && !this.adPaused) {
+        this.armStallWatchdog();
+      }
       if (!this.firstFrameHidden) {
         c.tracker.progress(time);
       }
       this.emitChange();
-      const remainingMs = (c.item.ad.creative.duration - time) * 1000;
-      if (this.standby?.ready && !this.previous && remainingMs <= (this.deps.handOverLeadMs ?? 500)) {
+      // Trust <Duration>; without it, the length the player reports.
+      const vastDuration = c.item.ad.creative.duration;
+      const duration = vastDuration > 0 ? vastDuration : (this.player?.getDuration() ?? 0);
+      const remainingMs = (duration - time) * 1000;
+      if (duration > 0 && this.standby?.ready && !this.previous && remainingMs <= (this.deps.handOverLeadMs ?? 500)) {
         void this.handOver(c, remainingMs);
       }
     });
@@ -432,6 +473,14 @@ export class AdBreakSession {
     // One sound at a time: the finishing ad keeps playing for its pixels, silently.
     player.setMuted(true);
     this.releasing = new Promise((resolve) => (this.previousReleased = resolve));
+    // A finishing ad that never sends ended must not cover the active one.
+    const previous = this.previous;
+    this.previousTimer = this.deps.clock.setTimeout(() => {
+      this.previousTimer = null;
+      if (this.previous === previous) {
+        void this.releasePrevious();
+      }
+    }, Math.max(0, remainingMs) + 1000);
     await this.switchTo(standby);
   }
 
@@ -441,6 +490,7 @@ export class AdBreakSession {
       return;
     }
     this.previous = null;
+    this.clearPreviousTimer();
     previous.tracker.ended();
     // The finished ad's surface is empty now; the active ad is the one to show.
     this.shownSurface = this.playerSurface;
@@ -461,13 +511,17 @@ export class AdBreakSession {
     }
   }
 
-  /** Next ad of the pod, or back to content when the pod is over. */
-  private async advance(): Promise<void> {
+  /**
+   * Next ad of the pod after `from`, or back to content when the pod is over.
+   * Skip, ended, an error and the watchdog can all ask for the same ad: only the first counts.
+   */
+  private async advance(from: Current): Promise<void> {
     const pod = this.pod;
     const player = this.player;
-    if (!pod || !player) {
+    if (!pod || !player || this.advancedFrom === from || this.current !== from) {
       return;
     }
+    this.advancedFrom = from;
     const elapsed = this.deps.clock.now() - this.startedAt;
     for (let item = pod.next(elapsed); item; item = pod.next(elapsed)) {
       const standby = this.standby;
@@ -480,6 +534,9 @@ export class AdBreakSession {
       }
       if (standby) {
         await standby.player.deinitialize();
+      }
+      if (this.state !== 'playing') {
+        return;
       }
       const tracker = this.trackerFor(item.ad);
       const url = this.pickFile(item.ad, tracker);
@@ -495,6 +552,9 @@ export class AdBreakSession {
       return;
     }
     await this.releasePlayer();
+    if (this.state !== 'playing') {
+      return; // interrupted (Home) or cancelled (Back) while the player was released
+    }
     await this.backToContent();
   }
 
@@ -530,8 +590,16 @@ export class AdBreakSession {
     this.deps.onEvent?.('breakEnd');
   }
 
+  private clearPreviousTimer(): void {
+    if (this.previousTimer !== null) {
+      this.deps.clock.clearTimeout(this.previousTimer);
+      this.previousTimer = null;
+    }
+  }
+
   private async releasePlayer(): Promise<void> {
     this.disarmWatchdog();
+    this.clearPreviousTimer();
     const players = [this.player, this.standby?.player, this.previous?.player];
     this.player = null;
     this.playerSurface = null;

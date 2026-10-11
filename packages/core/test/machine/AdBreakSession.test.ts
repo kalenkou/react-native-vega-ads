@@ -205,7 +205,10 @@ describe('AdBreakSession – pods (R17)', () => {
     const player = await loadReady(ctx);
     await ctx.session.start();
     await player.flush();
-    ctx.clock.advance(10_000);
+    ctx.clock.advance(9_000);
+    player.emitTime(9);
+    ctx.clock.advance(1_000);
+    player.emitTime(10);
     player.emitEnded();
     await settle();
     expect(ctx.session.state).toBe('finished');
@@ -568,7 +571,10 @@ describe('AdBreakSession – stuck players never keep the content paused (goal 7
     const player = await loadReady(ctx);
     await ctx.session.start();
     await player.flush();
-    ctx.clock.advance(60_000);
+    for (let second = 1; second <= 60; second++) {
+      ctx.clock.advance(1_000);
+      player.emitTime(second % 10); // a real player reports its time several times a second
+    }
     await settle();
     expect(ctx.events).not.toContain('error:405');
     expect(ctx.session.state).toBe('playing');
@@ -604,5 +610,156 @@ describe('AdBreakSession – stuck players never keep the content paused (goal 7
     await settle();
     expect(first.calls.filter((c) => c.startsWith('src:'))).toEqual(['src:https://cdn.test/pod-1.mp4', 'src:https://cdn.test/pod-2.mp4']);
     expect(ctx.session.state).toBe('playing');
+  });
+});
+
+describe('AdBreakSession – event order and stuck players (review results-34)', () => {
+  const POD3 = (): string => fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">');
+  const srcs = (p: FakePlayer): string[] => p.calls.filter((c) => c.startsWith('src:'));
+
+  async function playFirst(ctx: ReturnType<typeof setup>): Promise<FakePlayer> {
+    const first = await loadReady(ctx);
+    await ctx.session.start();
+    await first.flush();
+    await settle();
+    return first;
+  }
+
+  it('an ad that stalls after its first frame does not hold the content forever (C3-1)', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await playFirst(ctx);
+    player.emitTime(3); // then nothing: no timeupdate, no error, no ended
+    ctx.clock.advance(10 * 60_000);
+    await settle();
+    expect(ctx.events).toContain('error:405');
+    expect(ctx.session.state).toBe('finished');
+  });
+
+  it('a paused ad is not a stalled ad', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await playFirst(ctx);
+    player.emitTime(3);
+    player.emitPause();
+    ctx.clock.advance(10 * 60_000);
+    await settle();
+    expect(ctx.session.state).toBe('playing');
+  });
+
+  it('skip and ended in the same tick move on by one ad (C3-2)', async () => {
+    const ctx = setup(POD3(), { standby: true });
+    const first = await playFirst(ctx);
+    expect(ctx.adPlayers).toHaveLength(2); // standby created, no canplay yet
+    first.emitTime(5);
+    expect(ctx.session.skip()).toBe(true);
+    first.emitEnded();
+    await settle();
+    expect(srcs(first)).toEqual(['src:https://cdn.test/pod-1.mp4', 'src:https://cdn.test/pod-2.mp4']);
+  });
+
+  it('a late ended of the skipped ad does not complete the next ad (C3-3)', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'));
+    const player = await playFirst(ctx);
+    player.emitTime(5);
+    expect(ctx.session.skip()).toBe(true);
+    await settle();
+    expect(player.src).toBe('https://cdn.test/pod-2.mp4');
+    ctx.events.length = 0;
+    player.emitEnded(); // belongs to pod-1
+    await settle();
+    expect(ctx.events).not.toContain('complete');
+    expect(ctx.session.state).toBe('playing');
+  });
+
+  it('without <Duration> the hand-over waits for the end the player reports (C3-4)', async () => {
+    const noDuration = fixture('pod-optimized.xml').replace(
+      '<Linear skipoffset="00:00:05"><Duration>00:00:10</Duration>',
+      '<Linear skipoffset="00:00:05">',
+    );
+    expect(noDuration).not.toBe(fixture('pod-optimized.xml'));
+    const ctx = setup(noDuration, { standby: true });
+    const first = await playFirst(ctx);
+    const next = ctx.adPlayers[1] as FakePlayer;
+    next.emitCanPlay();
+    await settle();
+    first.emitTime(1.0);
+    await settle();
+    expect(next.calls).not.toContain('play');
+    first.emitTime(9.6);
+    await settle();
+    expect(next.calls).toContain('play');
+  });
+
+  it('the active ad is shown even when the finishing one never sends ended (C3-5)', async () => {
+    const ctx = setup(POD3(), { standby: true });
+    const first = await playFirst(ctx);
+    const second = ctx.adPlayers[1] as FakePlayer;
+    second.emitCanPlay();
+    await settle();
+    first.emitTime(9.6);
+    await settle();
+    await second.flush();
+    first.emitEnded();
+    await settle();
+    const third = ctx.adPlayers[2] as FakePlayer;
+    third.emitCanPlay();
+    await settle();
+    second.emitTime(14.6); // hand-over down to the lower surface
+    await settle();
+    await third.flush();
+    await settle();
+    // second never sends ended (stuck in its last 0.5 s)
+    ctx.clock.advance(2_000);
+    third.emitTime(1.5);
+    await settle();
+    expect(last(ctx.states)).toMatchObject({ position: 3, adSurface: SURFACE });
+    expect(pixels.requests).toContain('https://t.test/imp-buffet');
+    expect(second.deinitialized).toBe(true);
+  });
+
+  it('a media error before canplay fails the ad at once, not after 8 s (C4-1)', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    let result: string | null = null;
+    void ctx.session.load([{ kind: 'url', url: TAG }]).then((r) => (result = r));
+    await settle();
+    (ctx.adPlayers[0] as FakePlayer).emitError('MediaError 4');
+    await settle();
+    expect(result).toBe('empty');
+    expect(ctx.events).toContain('error:400');
+  });
+
+  it('the pause that comes with the natural end sends no pause pixel (C1-2)', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await playFirst(ctx);
+    player.emitTime(10);
+    sent();
+    player.emitPause(); // HTML media at its end: pause, then ended
+    player.emitEnded();
+    await settle();
+    const pixelsSent = sent();
+    expect(pixelsSent).toContain('https://t.test/complete');
+    expect(pixelsSent).not.toContain('https://t.test/pause');
+  });
+});
+
+describe('AdBreakSession – calls in the wrong state', () => {
+  it('cancel() before start() leaves the content alone (C3-6)', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    await contentAt(ctx.content, 42);
+    const player = await loadReady(ctx);
+    await ctx.session.cancel();
+    expect(ctx.content.calls.filter((c) => c.startsWith('seek') || c === 'play')).toEqual([]);
+    expect(player.deinitialized).toBe(false);
+  });
+
+  it('Back while the last ad player is being released sends one breakEnd (C3-12)', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitTime(10);
+    player.emitEnded();
+    void ctx.session.cancel();
+    await settle();
+    expect(ctx.events.filter((e) => e === 'breakEnd')).toHaveLength(1);
   });
 });
