@@ -10,6 +10,8 @@ export interface Movie {
   poster: string;
   /** VMAP with the ad breaks: pre-roll, mid-rolls at shot changes and silent black frames, post-roll. */
   vmapUrl: string;
+  /** Pause ad (IAB CTV Ad Portfolio): a still image while the viewer has paused the movie. */
+  pauseAdUrl: string;
 }
 
 export const MOVIE: Movie = {
@@ -21,4 +23,5 @@ export const MOVIE: Movie = {
   uri: `${MEDIA_BASE}tears_of_steel_720p.mp4`,
   poster: `${MEDIA_BASE}poster.jpg`,
   vmapUrl: `${MEDIA_BASE}vmap/movie.xml`,
+  pauseAdUrl: `${MEDIA_BASE}vast/pause.xml`,
 };

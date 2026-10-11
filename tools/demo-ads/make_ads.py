@@ -4,7 +4,8 @@ Every frame is drawn here, so the creatives carry no third-party footage,
 logos or trademarks. The brands are invented.
 
 Usage: python3 make_ads.py --font Inter.ttf --out DIR
-Needs Pillow and an ffmpeg with libx264 and aac on PATH.
+Needs Pillow and an ffmpeg with libx264 and aac on PATH. With segno installed it also
+draws the QR code of the pause ad.
 """
 
 import argparse
@@ -60,6 +61,12 @@ ADS = [
 ]
 
 SIZES = [(1920, 1080, 4500), (1280, 720, 2500)]
+
+# The pause ad (IAB CTV Ad Portfolio, partial: 600x600, under 350 kB) and where its QR code
+# points: a reserved .example domain, so no real site is advertised.
+PAUSE_AD = {"id": "brewnord", "title": "A pause?", "line": "Time for a slow coffee", "cta": "Scan for the demo offer"}
+PAUSE_SIZE = 600
+QR_URL = "https://brewnord.example/pause"
 
 
 def font(path, size, weight):
@@ -127,6 +134,31 @@ def render(ad, width, height, kbps, font_path, out_dir):
     print(target)
 
 
+def render_pause(font_path, out_dir):
+    ad = next(a for a in ADS if a["id"] == PAUSE_AD["id"])
+    dark, accent = ad["colors"]
+    image = Image.new("RGB", (PAUSE_SIZE, PAUSE_SIZE), dark)
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((330, -120, 720, 270), fill=tuple(c // 3 + d // 2 for c, d in zip(accent, dark)))
+    center = PAUSE_SIZE / 2
+    draw.text((center, 170), ad["brand"], font=font(font_path, 96, 800), fill=accent, anchor="mm")
+    draw.text((center, 290), PAUSE_AD["title"], font=font(font_path, 52, 600), fill=(240, 240, 240), anchor="mm")
+    draw.text((center, 360), PAUSE_AD["line"], font=font(font_path, 40, 500), fill=(240, 240, 240), anchor="mm")
+    draw.text((center, 470), PAUSE_AD["cta"], font=font(font_path, 30, 500), fill=accent, anchor="mm")
+    draw.text((center, 560), "Demo ad · invented brand", font=font(font_path, 22, 400), fill=(150, 150, 150), anchor="mm")
+    target = out_dir / f"{ad['id']}_pause.png"
+    image.save(target, optimize=True)
+    print(target)
+    try:
+        import segno
+    except ImportError:
+        print("segno is not installed: no QR code for the pause ad")
+        return
+    qr = out_dir / f"{ad['id']}_qr.png"
+    segno.make(QR_URL, error="m").save(qr, scale=10, border=2, dark="#000", light="#fff")
+    print(qr)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--font", required=True, type=Path, help="TTF font with an open licence, e.g. Inter")
@@ -136,6 +168,7 @@ def main():
     for ad in ADS:
         for width, height, kbps in SIZES:
             render(ad, width, height, kbps, args.font, args.out)
+    render_pause(args.font, args.out)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import { requestVast } from '../../../packages/core/src/vast/request/VastRequester';
 import { FakeClock } from '../../../packages/core/test/fakes/FakeClock';
 import { FakeHttp } from '../../../packages/core/test/fakes/FakeHttp';
-import { buildVast, VastAdInput } from '../src/buildVast';
+import { buildPauseVast, buildVast, VastAdInput } from '../src/buildVast';
 
 const VAST_URL = 'https://cdn.test/ads/pod.xml';
 const PIXELS = 'https://px.test/';
@@ -79,5 +79,60 @@ describe('buildVast', () => {
     expect(() => buildVast([ad('tos-a', { durationSeconds: 0 })])).toThrow(RangeError);
     expect(() => buildVast([ad('tos-a', { mediaFiles: [] })])).toThrow(RangeError);
     expect(() => buildVast([ad('tos-a', { pixelBaseUrl: 'px.test' })])).toThrow(TypeError);
+  });
+});
+
+describe('buildPauseVast', () => {
+  const pause = {
+    id: 'brew-pause',
+    title: 'Brewnord pause',
+    imageUrl: 'https://cdn.test/ads/brewnord_pause.png',
+    width: 600,
+    height: 600,
+    advertiser: 'Brewnord',
+    qr: { scanUrl: 'https://brewnord.example/pause', imageUrl: 'https://cdn.test/ads/brewnord_qr.png' },
+    pixelBaseUrl: PIXELS,
+  };
+
+  async function loadPause(xml: string) {
+    const { requestPauseAd } = await import('../../../packages/core/src/vast/request/PauseAdRequester');
+    const g = globalThis as Record<string, unknown>;
+    delete g.window;
+    return requestPauseAd(VAST_URL, { http: new FakeHttp().on(VAST_URL, { body: xml }), clock: new FakeClock() });
+  }
+
+  it('writes a VAST 4 NonLinear pause ad that vega-ads reads, with its QR code', async () => {
+    const result = await loadPause(buildPauseVast(pause));
+    expect(result.status === 'ok' && result.ad).toMatchObject({
+      imageUrl: 'https://cdn.test/ads/brewnord_pause.png',
+      width: 600,
+      height: 600,
+      qr: { scanUrl: 'https://brewnord.example/pause', imageUrl: 'https://cdn.test/ads/brewnord_qr.png' },
+    });
+    expect(result.status === 'ok' && result.ad.ad.advertiser).toEqual({ id: null, value: 'Brewnord' });
+  });
+
+  it('points impression and the IAB pause ad events to the collector', () => {
+    const xml = buildPauseVast(pause);
+    for (const event of ['impression', 'creativeView', 'overlayViewDuration', 'close']) {
+      expect(xml).toContain(`${PIXELS}p?ad=brew-pause&e=${event}`);
+    }
+    expect(xml).toContain('<StaticResource creativeType="image/png">');
+  });
+
+  it('leaves the QR code out when there is none, and refuses bad input', async () => {
+    const result = await loadPause(buildPauseVast({ ...pause, qr: undefined }));
+    expect(result.status === 'ok' && result.ad.qr).toBeNull();
+    expect(() => buildPauseVast({ ...pause, id: 'bad id' })).toThrow(TypeError);
+    expect(() => buildPauseVast({ ...pause, imageUrl: 'https://cdn.test/a.gif' })).toThrow(TypeError);
+    expect(() => buildPauseVast({ ...pause, pixelBaseUrl: 'https://px.test' })).toThrow(TypeError);
+  });
+
+  it('takes JPEG images, with or without a query, and a QR code without an image', async () => {
+    const xml = buildPauseVast({ ...pause, imageUrl: 'https://cdn.test/a.JPG?v=2', qr: { scanUrl: 'https://brewnord.example/pause' } });
+    expect(xml).toContain('<StaticResource creativeType="image/jpeg">');
+    expect(xml).not.toContain('QrCodeImageUrl');
+    const result = await loadPause(xml);
+    expect(result.status === 'ok' && result.ad.qr).toEqual({ scanUrl: 'https://brewnord.example/pause', imageUrl: null });
   });
 });

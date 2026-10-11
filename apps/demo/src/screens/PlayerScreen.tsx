@@ -12,7 +12,10 @@ export interface PlayerScreenProps {
   onEvent?: (name: string) => void;
 }
 
-/** Back outside ads closes the player; during ads VegaAdsPlayer returns to the movie first. */
+/**
+ * Back outside ads closes the player. During ads VegaAdsPlayer returns to the movie first, and
+ * on a pause ad it closes the ad first.
+ */
 function useBackToClose(onClose: () => void): void {
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -33,6 +36,7 @@ export const PlayerScreen = ({movie, onClose, onEvent}: PlayerScreenProps) => {
     <VegaAdsPlayer
       source={{uri: movie.uri}}
       ads={{vmapUrl: movie.vmapUrl}}
+      pauseAdUrl={movie.pauseAdUrl}
       adId={AdIdRetriever}
       onEnd={onClose}
       onEvent={onEvent}>

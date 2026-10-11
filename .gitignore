@@ -16,3 +16,6 @@ samconfig.toml
 output/
 # Demo media, downloaded or built by tools/demo-ads/get_media.sh
 tools/demo-ads/media/
+
+# Python bytecode
+__pycache__/

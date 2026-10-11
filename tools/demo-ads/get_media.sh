@@ -4,7 +4,8 @@
 #   DIR/poster.jpg               a frame of the movie for the details screen
 #   DIR/fonts/Inter.ttf          Inter, SIL Open Font License, with OFL.txt
 #   DIR/ads/*.mp4                the five demo ads, drawn by make_ads.py
-# Needs curl, shasum, ffmpeg with libx264 and aac, Python 3 with Pillow.
+#   DIR/ads/brewnord_pause.png, brewnord_qr.png  the pause ad and its QR code
+# Needs curl, shasum, ffmpeg with libx264 and aac, and Python 3 (Pillow and segno go into DIR/.venv).
 # Usage: sh get_media.sh [DIR]
 set -eu
 
@@ -44,14 +45,18 @@ fi
 
 download "$FONT_URL" "$DIR/fonts/Inter.ttf" "$FONT_SHA256"
 download "$OFL_URL" "$DIR/fonts/OFL.txt"
-for ad in kettlo brewnord voltaro ferntop quillary; do
-  for height in 1080 720; do
-    if [ ! -s "$DIR/ads/${ad}_${height}p.mp4" ]; then
-      python3 "$HERE/make_ads.py" --font "$DIR/fonts/Inter.ttf" --out "$DIR/ads"
-      break 2
-    fi
-  done
+if [ ! -x "$DIR/.venv/bin/python" ]; then
+  python3 -m venv "$DIR/.venv"
+  "$DIR/.venv/bin/pip" install -q --disable-pip-version-check pillow==12.3.0 segno==1.6.6
+fi
+need_ads=no
+for file in kettlo_1080p.mp4 kettlo_720p.mp4 brewnord_1080p.mp4 brewnord_720p.mp4 voltaro_1080p.mp4 voltaro_720p.mp4 \
+  ferntop_1080p.mp4 ferntop_720p.mp4 quillary_1080p.mp4 quillary_720p.mp4 brewnord_pause.png brewnord_qr.png; do
+  [ -s "$DIR/ads/$file" ] || need_ads=yes
 done
+if [ "$need_ads" = yes ]; then
+  "$DIR/.venv/bin/python" "$HERE/make_ads.py" --font "$DIR/fonts/Inter.ttf" --out "$DIR/ads"
+fi
 
 echo "done: $DIR"
 ls -l "$DIR" "$DIR/ads"

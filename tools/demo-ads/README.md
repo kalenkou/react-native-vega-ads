@@ -13,9 +13,13 @@ Inter font (SIL Open Font License), no third-party footage or logos.
 | Ferntop | 10 s | after 5 s |
 | Quillary | 12 s | no |
 
+The pause ad is a 600×600 Brewnord card (IAB CTV Ad Portfolio size, about 28 kB) with a
+QR code that points to `https://brewnord.example/pause`, a reserved `.example` domain.
+
 ## Get all the media
 
-Needs curl, ffmpeg with libx264 and aac, and Python 3 with Pillow.
+Needs curl, ffmpeg with libx264 and aac, and Python 3. The script puts Pillow and segno
+(for the QR code) into `media/.venv`.
 
 ```sh
 sh get_media.sh
@@ -26,19 +30,20 @@ It fills `media/` (not committed) in about a minute:
 - `tears_of_steel_720p.mp4` – the movie, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Downloaded from `download.blender.org` and checked by SHA-256. The video is copied as it is; the MP3 sound becomes AAC, which w3cmedia plays.
 - `poster.jpg` – a frame of the movie;
 - `fonts/Inter.ttf` and `fonts/OFL.txt` – [Inter](https://github.com/google/fonts/tree/main/ofl/inter), SIL Open Font License;
-- `ads/` – the five ads, drawn by `make_ads.py`.
+- `ads/` – the five ads, the pause ad card and its QR code, drawn by `make_ads.py`.
 
 Files that are already there are kept, so a second run does nothing.
 
 ## Make the creatives
 
-`get_media.sh` runs this step. To run it alone (Python 3 with Pillow, ffmpeg with libx264 and aac):
+`get_media.sh` runs this step. To run it alone (Python 3 with Pillow, segno for the QR code, ffmpeg with libx264 and aac):
 
 ```sh
 python3 make_ads.py --font media/fonts/Inter.ttf --out media/ads
 ```
 
 Each ad is written in 1080p (H.264 High 4.0) and 720p, AAC stereo, `+faststart`.
+The pause ad is `brewnord_pause.png`; its QR code is `brewnord_qr.png`.
 
 ## Serve them on the local network
 
@@ -54,6 +59,7 @@ The server prints its address and serves:
 - `vast/pod.xml` – Brewnord, Voltaro, Kettlo as a pod. Kettlo comes again, as when two ad sources sell the same creative; the player leaves it out and sends its `notUsed` pixel;
 - `vast/ferntop.xml` – Ferntop, skippable after 5 s (the second mid-roll);
 - `vast/quillary.xml` – Quillary (the post-roll);
+- `vast/pause.xml` – the Brewnord pause ad: a `NonLinear` image with the `tl_qrcode` extension. Its pixels: `impression`, `creativeView`, `overlayViewDuration`, `close`;
 - `vmap/movie.xml` – pre-roll, the mid-rolls (the first one is the pod), post-roll;
 - `vmap/timer.xml` – the same with mid-rolls at fixed times, 2:00 and 6:00, to compare with;
 - `p?ad=…&e=…` – tracking pixels, logged to the console; `stats` – counts;

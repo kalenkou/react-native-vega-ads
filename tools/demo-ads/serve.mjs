@@ -17,7 +17,7 @@ import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { buildVast } = require('../make-vmap/dist/buildVast.js');
+const { buildPauseVast, buildVast } = require('../make-vmap/dist/buildVast.js');
 const { buildVmap } = require('../make-vmap/dist/buildVmap.js');
 
 const { values } = parseArgs({
@@ -102,11 +102,22 @@ const documents = {
   'vast/pod.xml': buildVast([ad('brewnord'), ad('voltaro', 5), ad('kettlo')]),
   'vast/ferntop.xml': buildVast([ad('ferntop', 5)]),
   'vast/quillary.xml': buildVast([ad('quillary')]),
+  // Pause ad (IAB CTV Ad Portfolio): drawn by make_ads.py; the QR code points to a .example address.
+  'vast/pause.xml': buildPauseVast({
+    id: 'brewnord-pause',
+    title: 'Brewnord pause',
+    imageUrl: base + 'ads/brewnord_pause.png',
+    width: 600,
+    height: 600,
+    advertiser: 'Brewnord',
+    qr: { scanUrl: 'https://brewnord.example/pause', imageUrl: base + 'ads/brewnord_qr.png' },
+    pixelBaseUrl: base,
+  }),
   'vmap/movie.xml': vmap(midrollTimes),
   'vmap/timer.xml': vmap([120, 360]),
 };
 
-const types = { '.mp4': 'video/mp4', '.xml': 'application/xml', '.jpg': 'image/jpeg' };
+const types = { '.mp4': 'video/mp4', '.xml': 'application/xml', '.jpg': 'image/jpeg', '.png': 'image/png' };
 const counts = new Map();
 
 function sendFile(request, response, path) {
