@@ -47,6 +47,9 @@ node ../make-vmap/dist/main.js --local media/tears_of_steel_720p.mp4 --vast-url 
 node serve.mjs --dir media --midrolls 139.917,441.208
 ```
 
+`--latency MS` answers every VAST and VMAP request after MS milliseconds, like a real ad
+server, to measure what preloading saves. Media files are not delayed.
+
 Vega's w3cmedia player refuses `http://` media unless the host is listed in the
 app manifest:
 

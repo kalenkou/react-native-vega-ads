@@ -1,9 +1,11 @@
 // Serves the demo ads, the movie and their VAST/VMAP on the local network,
 // and logs tracking pixels. For device tests before the files live on S3.
 //
-// Usage: node serve.mjs --dir MEDIA_DIR [--host LAN_IP] [--port 8080] [--midrolls 139.9,441.2]
+// Usage: node serve.mjs --dir MEDIA_DIR [--host LAN_IP] [--port 8080] [--midrolls 139.9,441.2] [--latency 0]
 // --midrolls: mid-roll times in seconds, for example from `make-vmap --local`; the first one
 // gets a pod of three ads. vmap/timer.xml keeps fixed times (2:00, 6:00) to compare with.
+// --latency MS: answer each VAST/VMAP request after MS milliseconds, like a real ad server
+// (for measuring how much preloading saves; the media files are not delayed).
 // MEDIA_DIR holds the output of make_ads.py (ads/) and the content movie.
 // Needs `npm run build` in tools/make-vmap first.
 
@@ -25,6 +27,7 @@ const { values } = parseArgs({
     port: { type: 'string', default: '8080' },
     movie: { type: 'string', default: 'tears_of_steel_720p.mp4' },
     midrolls: { type: 'string', default: '120,360' },
+    latency: { type: 'string', default: '0' },
   },
 });
 if (!values.dir) {
@@ -68,6 +71,12 @@ function ad(id, skipAfterSeconds) {
       bitrateKbps: Math.round((statSync(join(root, path)).size * 8) / ads[id].seconds / 1000),
     })),
   };
+}
+
+const latency = Number(values.latency);
+if (!(latency >= 0)) {
+  console.error('--latency: milliseconds, 0 or more');
+  process.exit(2);
 }
 
 const midrollTimes = values.midrolls.split(',').map(Number);
@@ -132,7 +141,7 @@ createServer((request, response) => {
   }
   if (documents[path]) {
     console.log(`${time} GET ${path}`);
-    response.writeHead(200, { 'Content-Type': 'application/xml' }).end(documents[path]);
+    setTimeout(() => response.writeHead(200, { 'Content-Type': 'application/xml' }).end(documents[path]), latency);
     return;
   }
   const file = normalize(join(root, path));
