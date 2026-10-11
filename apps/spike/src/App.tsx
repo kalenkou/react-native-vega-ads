@@ -17,6 +17,7 @@ import {checkVmap, loadAd, LoadedAd} from './spike/ads';
 import {runVmapSession} from './spike/sessionRun';
 import {runParseBench} from './spike/parseBench';
 import {HookDemo} from './HookDemo';
+import {PlayerDemo} from './PlayerDemo';
 
 const CONTENT_URL =
   'https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4';
@@ -43,6 +44,7 @@ const HwKeyLog = () => {
 
 export const App = () => {
   const [hookMode, setHookMode] = useState(false);
+  const [playerMode, setPlayerMode] = useState(false);
   const [lines, setLines] = useState<string[]>([]);
   const [adVisible, setAdVisible] = useState(false);
   const mainSurface = useRef<string | null>(null);
@@ -263,6 +265,9 @@ export const App = () => {
     [componentInstance],
   );
 
+  if (playerMode) {
+    return <PlayerDemo onClose={() => setPlayerMode(false)} />;
+  }
   if (hookMode) {
     return <HookDemo />;
   }
@@ -363,6 +368,17 @@ export const App = () => {
               setHookMode(true);
             }}>
             <Text style={styles.buttonText}>Hook demo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              void adPlayer.current?.deinitialize().catch(() => undefined);
+              void mainPlayer.current?.deinitialize().catch(() => undefined);
+              adPlayer.current = null;
+              mainPlayer.current = null;
+              setPlayerMode(true);
+            }}>
+            <Text style={styles.buttonText}>Player demo</Text>
           </TouchableOpacity>
         </View>
         {lines.map((line, index) => (

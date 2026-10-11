@@ -10,7 +10,7 @@ Client-side ad insertion (CSAI) for React Native apps on Amazon Vega OS (Fire TV
 
 Vega apps have no ready, open way to play VAST/VMAP ads:
 
-- **Google IMA is not available on Vega.** Amazon's CSAI guide shows how to switch between two `VideoPlayer` instances. Ad requests, VAST/VMAP, tracking, pods, skip and error handling are left to each app ("App-specific logic"). See [Client-side ad insertion overview](https://developer.amazon.com/docs/vega/0.24/client-side-ad-insertion-overview-vega.html).
+- **No client-side IMA SDK on Vega.** Amazon's [supported libraries](https://developer.amazon.com/docs/vega-api/0.24/supported-libraries.html) list Google IMA DAI and FreeWheel, which are server-side or partner services, and no client-side VAST/VMAP SDK. Amazon's CSAI guide shows how to switch between two `VideoPlayer` instances. Ad requests, VAST/VMAP, tracking, pods, skip and error handling are left to each app ("App-specific logic"). See [Client-side ad insertion overview](https://developer.amazon.com/docs/vega/0.24/client-side-ad-insertion-overview-vega.html).
 - **Player vendors do not cover it.** The Bitmovin Vega sample states: "No client-side ad support, due to the lack of video element reusability on Vega OS" ([sample README](https://github.com/bitmovin/bitmovin-player-web-sample-fire-tv-vega)).
 - **The options that exist are closed.** FreeWheel's Vega AdManager is a beta for FreeWheel customers only ([forum t/5679](https://community.amazondeveloper.com/t/5679)). Logituit Logix Ads Manager runs the IMA HTML5 SDK inside a WebView, VOD only ([forum t/7536](https://community.amazondeveloper.com/t/7536)). Dolby OptiView for Vega uses the same Logix IMA integration, and its sample notes: "Skippable ads are not supported" ([OptiView Vega sample, ads.md](https://github.com/THEOplayer/react-native-optiview-vega-sample/blob/main/doc/ads.md)).
 - **Developers ask for it.** "Dealing with ads these days usually means working with VAST XML data" ([forum t/20419](https://community.amazondeveloper.com/t/20419), 25.09.2025).
@@ -116,51 +116,48 @@ allowed-domains = ["192.168.1.20"]
 
 Keep the usual w3cmedia services (`com.amazon.media.server`, `com.amazon.media.playersession.service` and others) as in any Vega video app. A full example is in [`apps/spike/manifest.toml`](apps/spike/manifest.toml).
 
-### 3. Use the hook
+### 3. Play content with ads
 
-Create your content `VideoPlayer` as usual, with `autoplay = false`. The hook starts it after the pre-roll, or at once if there is none.
+One component creates the content player, draws the video surfaces and the ad overlay, and fills the Fire TV advertising ID:
 
 ```tsx
-import { useEffect, useState } from 'react';
-import { VideoPlayer } from '@amazon-devices/react-native-w3cmedia';
-import { AdOverlay, DualSurfaceView, useVegaAds } from 'react-native-vega-ads';
+import { AdIdRetriever } from '@amazon-devices/kepler-adid-retriever';
+import { VegaAdsPlayer } from 'react-native-vega-ads';
 
-export function PlayerScreen({ contentUrl, vmapUrl }: { contentUrl: string; vmapUrl: string }) {
-  const [player, setPlayer] = useState<VideoPlayer | null>(null);
+export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: string; onClose: () => void }) {
+  return <VegaAdsPlayer source={{ uri }} ads={{ vmapUrl }} adId={AdIdRetriever} onEnd={onClose} />;
+}
+```
 
-  useEffect(() => {
-    const created = new VideoPlayer();
-    let alive = true;
-    void created.initialize().then(() => {
-      if (!alive) {
-        return; // the screen closed while the player was starting
-      }
-      created.autoplay = false;
-      created.src = contentUrl;
-      setPlayer(created);
-    });
-    return () => {
-      alive = false;
-      setPlayer(null);
-      void created.deinitialize();
-    };
-  }, [contentUrl]);
+Remote and Alexa play/pause work through media controls. `onEnd` runs when the content and its post-roll are over. `adId` is optional; without it no ID is sent.
 
+### Your own player UI
+
+When your screen has its own controls, use the hook and the components. `useVideoPlayer` creates the content `VideoPlayer` (initialized, `autoplay` off) and releases it when the screen closes:
+
+```tsx
+import { AdOverlay, DualSurfaceView, useVegaAds, useVideoPlayer } from 'react-native-vega-ads';
+
+export function PlayerScreen({ uri, vmapUrl }: { uri: string; vmapUrl: string }) {
+  const player = useVideoPlayer(uri);
   const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player });
 
   return (
     <>
       <DualSurfaceView surfaces={ads.surfaces} contentPlayer={player} />
+      {!ads.playing && <YourControls player={player} />}
       <AdOverlay ui={ads.ui} onSkip={ads.skip} />
     </>
   );
 }
 ```
 
-Without VMAP, pass a list of breaks:
+The hook starts the content after the pre-roll, or at once if there is none. Hide your controls while `ads.playing` is true.
+
+Without VMAP, pass a list of breaks (`ads={...}` on the component, `source:` in the hook):
 
 ```ts
-source: { breaks: [{ offset: 'start', vastUrl }, { offset: 600, vastUrl }, { offset: 'end', vastUrl }] }
+{ breaks: [{ offset: 'start', vastUrl }, { offset: 600, vastUrl }, { offset: 'end', vastUrl }] }
 ```
 
 With a post-roll, wait for `ads.ended` before you leave the screen at the end of the content.
@@ -206,6 +203,21 @@ useTVEventHandler((event) => {
 ```
 
 ## API reference
+
+### `<VegaAdsPlayer>`
+
+| Prop | Description |
+|---|---|
+| `source` | `{ uri }` of the content, or `null` to wait. |
+| `ads` | `{ vmapUrl }` or `{ breaks: [{ offset, vastUrl }] }`. `null` plays the content without ads. |
+| `adId` | `AdIdRetriever` from `@amazon-devices/kepler-adid-retriever`. Optional. |
+| `onEnd` | Called when the content and its post-roll are over. |
+| `style`, `scalingMode` | Layout and w3cmedia scaling mode (default `'fit'`). |
+| other | Any `useVegaAds` option below (`onEvent`, `strings`, `adPause`, ...). |
+
+### `useVideoPlayer(uri)`
+
+Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` off), `null` before that or while `uri` is `null`. Releases it on unmount or when `uri` changes.
 
 ### `useVegaAds(options)`
 
@@ -268,12 +280,12 @@ Three packages, each for its own user:
 | Package | What it does | Who installs it |
 |---|---|---|
 | `react-native-vega-ads` | Vega integration: `useVegaAds`, surfaces, overlay, media controls, `W3cPlayerAdapter` | Vega apps with ads (this is the one to install) |
-| `react-native-ads-core` | VAST/VMAP requests, media file choice, IAB tracking, break schedule, pods, session state. No player code | apps with another player (write a `PlayerPort` adapter), or only VAST/VMAP and tracking |
+| `react-native-ads-core` | VAST/VMAP requests, media file choice, IAB tracking, break schedule, pods, session state. No player code | installed with `react-native-vega-ads`; on its own when you need only VAST/VMAP and tracking |
 | `react-native-vega-xml` | XML for Vega: `parseXml`, xml2js-style `xmlToObject`, a `DOMParser` polyfill | any Vega app that reads XML (VAST, EPG, RSS, TTML subtitles) |
 
 `core` never imports a player SDK, `fetch` or timers. It talks to the platform through ports: `PlayerPort`, `HttpPort` and `ClockPort`.
 
-To support another player or platform, implement `PlayerPort`:
+Only the Vega adapter (`W3cPlayerAdapter`, w3cmedia) exists today, and only it is tested on a device. The core tests run against a fake player that follows w3cmedia's behaviour as measured on the stick. To try another player or platform, implement `PlayerPort`:
 
 ```ts
 interface PlayerPort {

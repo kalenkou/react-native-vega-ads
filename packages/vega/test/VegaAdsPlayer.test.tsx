@@ -1,0 +1,93 @@
+import { readFileSync } from 'fs';
+import TestRenderer, { act } from 'react-test-renderer';
+import { FakeClock } from '../../core/test/fakes/FakeClock';
+import { FakeHttp } from '../../core/test/fakes/FakeHttp';
+import { VegaAdsPlayer, VegaAdsPlayerProps } from '../src/VegaAdsPlayer';
+import { FakeW3cPlayer } from './fakes/FakeW3cPlayer';
+
+const inline = readFileSync(`${__dirname}/../../core/fixtures/vast/inline.xml`, 'utf8');
+const TAG = 'https://ads.test/pre.xml?lat=[LIMITADTRACKING]';
+
+const g = globalThis as Record<string, unknown>;
+beforeEach(() => {
+  g.window = g;
+  delete g.Image;
+});
+afterEach(() => {
+  delete g.window;
+  delete g.Image;
+});
+
+async function settle(): Promise<void> {
+  await act(async () => {
+    for (let i = 0; i < 30; i++) await Promise.resolve();
+  });
+}
+
+function setup(props: Partial<VegaAdsPlayerProps> = {}) {
+  const http = new FakeHttp().on('https://ads.test/pre.xml?lat=1', { body: inline }).on('https://ads.test/pre.xml?lat=0', { body: inline });
+  const players: FakeW3cPlayer[] = [];
+  const base: VegaAdsPlayerProps = {
+    source: { uri: 'https://cdn.test/movie.mp4' },
+    ads: { breaks: [{ offset: 'start', vastUrl: TAG }] },
+    http,
+    clock: new FakeClock(1_000_000),
+    componentInstance: () => ({ name: 'main' }),
+    createVideoPlayer: () => {
+      const player = new FakeW3cPlayer(players.length === 0 ? 600 : 10);
+      players.push(player);
+      return player;
+    },
+  };
+  let renderer!: TestRenderer.ReactTestRenderer;
+  act(() => {
+    renderer = TestRenderer.create(<VegaAdsPlayer {...base} {...props} />);
+  });
+  /** The three KeplerVideoSurfaceViews report their surfaces, as on the device. */
+  const surfacesReady = (): void => {
+    const views = renderer.root.findAll((node) => (node.type as unknown) === 'KeplerVideoSurfaceView');
+    act(() => views.forEach((view, index) => (view.props.onSurfaceViewCreated as (h: string) => void)(`s${index}`)));
+  };
+  return { http, players, renderer, surfacesReady };
+}
+
+describe('VegaAdsPlayer', () => {
+  it('creates the content player, draws the surfaces and loads the pre-roll on its own', async () => {
+    const ctx = setup();
+    await settle();
+    ctx.surfacesReady();
+    await settle();
+    expect(ctx.players[0]?.src).toBe('https://cdn.test/movie.mp4');
+    expect(ctx.players[0]?.autoplay).toBe(false);
+    expect(ctx.http.requests.some((url) => url.startsWith('https://ads.test/pre.xml'))).toBe(true);
+  });
+
+  it('fills the advertising ID macros from AdIdRetriever (user opted out: LIMITADTRACKING=1)', async () => {
+    const adId = { isAdvertisingTrackingEnabled: () => false, fetchAdvertisingId: () => 'secret-id' };
+    const ctx = setup({ adId });
+    await settle();
+    ctx.surfacesReady();
+    await settle();
+    expect(ctx.http.requests).toContain('https://ads.test/pre.xml?lat=1');
+    expect(ctx.http.requests.join(' ')).not.toContain('secret-id');
+  });
+
+  it('calls onEnd when the content has ended and there is no post-roll', async () => {
+    const onEnd = jest.fn();
+    const ctx = setup({ ads: { breaks: [] }, onEnd });
+    await settle();
+    ctx.surfacesReady();
+    await settle();
+    act(() => ctx.players[0]?.emit('ended'));
+    await settle();
+    expect(onEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases the content player when the screen closes', async () => {
+    const ctx = setup();
+    await settle();
+    act(() => ctx.renderer.unmount());
+    await settle();
+    expect(ctx.players[0]?.deinitialized).toBe(true);
+  });
+});
