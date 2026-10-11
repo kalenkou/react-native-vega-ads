@@ -3,5 +3,9 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/test'],
-  collectCoverageFrom: ['src/**/*.ts', '!src/**/index.ts', '!src/ports.ts'],
+  moduleNameMapper: { '^@vega-ads/core$': '<rootDir>/../core/src' },
+  collectCoverage: true,
+  coverageReporters: ['text-summary'],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/index.ts'],
+  coverageThreshold: { global: { lines: 90, branches: 85 } },
 };

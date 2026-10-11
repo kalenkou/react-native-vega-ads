@@ -4,5 +4,15 @@
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "scripts": { "test": "jest" }
+  "scripts": {
+    "build": "tsc -b",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@vega-ads/core": "0.0.0"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ]
 }
