@@ -5,6 +5,7 @@ export class FakeW3cPlayer implements W3cVideoPlayer {
   readonly calls: string[] = [];
   autoplay = true;
   muted = false;
+  volume = 1;
   src = '';
   currentTime = 0;
   duration: number;

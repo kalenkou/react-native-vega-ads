@@ -39,6 +39,7 @@ On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no offi
 - No black frame on content → ad → content. The content resumes at the same position.
 - No repeats, on by default: a creative is not shown again within 30 minutes, and a break has one copy of each creative and one ad per advertiser. The same creative is found by its Universal Ad ID or by its media file URLs, also when it comes from another ad source under another ad id. A dropped ad sends its `notUsed` pixels (VAST 4.1), so the ad server can use it elsewhere. Without more setup the rules hold for one piece of content. With `avoidRepeats.memory` (one AsyncStorage key, for example) they hold for the household across titles and app launches. Only creative ids, media URLs and times are stored, on the device; no viewer ID is needed.
 - Pause ads (IAB CTV Ad Portfolio): when the viewer pauses the content, a still image from a VAST `<NonLinear>` shows beside the picture after 1.5 s, without sound, and goes away when the content plays or the viewer presses Back. Never when a break pauses the content. A QR code comes from the IAB `tl_qrcode` extension. Tracking: impression, `creativeView`, `overlayViewDuration`, `close`. Tested on a Fire TV Stick: all four pixels arrive, Back closes the ad and the app stays on the player. `pauseAdStyle` keeps it clear of your controls, for example `{ top: 100, bottom: 220 }`.
+- Never louder than the movie: with `contentLoudness` (the content's integrated loudness in LUFS, EBU R128), an ad that is louder is turned down to it through the player volume, never up. VAST 4.x has no loudness field, so the ad's own loudness comes in a creative extension, `<CreativeExtension type="loudness"><IntegratedLoudness unit="LUFS">-16.0</IntegratedLoudness></CreativeExtension>`; `make-vmap`'s `buildVast` writes it. Event `loudness:<dB>`.
 - Short breaks, if you want them: `maxBreakAds` and `maxBreakSeconds` cap every break on the device (an ad that would end later is not started) and go to the ad server as the VAST 4.2 macros `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. Ads left out send their `notUsed` pixels.
 - IAB tracking: impression, start, quartiles, complete, pause, resume, skip, error codes.
 - Macros for the Fire TV advertising ID and the user's tracking choice (`IFA`, `LIMITADTRACKING`).
@@ -296,6 +297,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `prefetchSeconds` | How early a break is loaded and buffered. Default 15. |
 | `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |
 | `pauseAdUrl`, `pauseAdDelayMs` | VAST tag of a pause ad (`<NonLinear>` image), and how long the content stays paused before it shows. Default 1500 ms. |
+| `contentLoudness` | The content's integrated loudness in LUFS, for example from `ffmpeg -i movie.mp4 -af ebur128 -f null -`. Ads with a louder `loudness` creative extension are turned down to it. |
 | `maxBreakAds`, `maxBreakSeconds` | Caps for every break, also sent as `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. Preloaded pre-roll requests use the macros you pass to `preloadVegaAds`. |
 | `avoidRepeats` | `{ withinMs, memory }`: how long a shown creative is not shown again (default 30 minutes), and where to remember it across titles and launches: `{ read, write }` of one string, for example `{ read: () => AsyncStorage.getItem('vega-ads.seen'), write: (v) => AsyncStorage.setItem('vega-ads.seen', v) }` with `@amazon-devices/react-native-async-storage__async-storage`. At most 500 creatives are kept. `false` turns the no-repeat rules off. |
 | `mediaFile` | Media file choice: `maxHeight`, `targetBitrateKbps`, or your own `select`. |
@@ -334,6 +336,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 | `start`, `firstQuartile`, `midpoint`, `thirdQuartile`, `complete` | IAB progress of the ad | `STARTED`, `FIRST_QUARTILE`, `MIDPOINT`, `THIRD_QUARTILE`, `COMPLETED` |
 | `pause`, `resume` | the viewer paused or resumed the ad | `PAUSED`, `RESUMED` |
 | `skip` | the viewer pressed Skip | `SKIPPED` |
+| `loudness:<dB>` | an ad was turned down by that many dB (negative) to the content's loudness | – |
 | `skipped:repeat`, `skipped:advertiser`, `skipped:budget` | an ad was left out of a break: the viewer saw it, the break already has it or its advertiser, or it does not fit `maxBreakAds` / `maxBreakSeconds` | – |
 | `notUsed` | the `notUsed` pixels of that ad were sent | – |
 | `pauseAd:impression`, `pauseAd:creativeView`, `pauseAd:overlayViewDuration`, `pauseAd:close` | the pause ad showed, left the screen, or the viewer closed it | – |

@@ -30,7 +30,7 @@ async function settle(): Promise<void> {
 
 function setup(
   body: string,
-  options: { budgetMs?: number; maxAds?: number; standby?: boolean; maxPlayers?: number; repeats?: RepeatGuard } = {},
+  options: { budgetMs?: number; maxAds?: number; standby?: boolean; maxPlayers?: number; repeats?: RepeatGuard; contentLoudness?: number } = {},
 ) {
   const http = new FakeHttp().on(TAG, { body });
   const clock = new FakeClock(1_000_000);
@@ -60,6 +60,7 @@ function setup(
     budgetMs: options.budgetMs,
     maxAds: options.maxAds,
     repeats: options.repeats,
+    contentLoudness: options.contentLoudness,
     onChange: (snapshot) => states.push(snapshot),
     onEvent: (name) => events.push(name),
   });
@@ -974,5 +975,45 @@ describe('AdBreakSession – ad request macros', () => {
     void session.load([{ kind: 'url', url: tag }]);
     await settle();
     expect(http.requests).toEqual(['https://ads.test/tag.xml?lat=1&ifa=']);
+  });
+});
+
+describe('AdBreakSession loudness', () => {
+  /** pod-optimized.xml with the first ad at -16 LUFS and the second at -14 LUFS. */
+  function loudPod(): string {
+    const ext = (lufs: string) =>
+      `</Linear><CreativeExtensions><CreativeExtension type="loudness"><IntegratedLoudness unit="LUFS">${lufs}</IntegratedLoudness></CreativeExtension></CreativeExtensions></Creative>`;
+    return fixture('pod-optimized.xml')
+      .replace(/(pod-2\.mp4\]\]><\/MediaFile>\s*<\/MediaFiles>)<\/Linear><\/Creative>/, `$1${ext('-14')}`)
+      .replace(/(pod-1\.mp4\]\]><\/MediaFile>\s*<\/MediaFiles>)<\/Linear><\/Creative>/, `$1${ext('-16')}`);
+  }
+
+  it('turns the next pod ad down on the standby player too', async () => {
+    const ctx = setup(loudPod(), { standby: true, contentLoudness: -24 });
+    const first = await loadReady(ctx);
+    await ctx.session.start();
+    await first.flush();
+    await settle();
+    expect(first.calls.filter((c) => c.startsWith('volume'))).toEqual(['volume:0.398']);
+    expect((ctx.adPlayers[1] as FakePlayer).calls.filter((c) => c.startsWith('volume') || c.startsWith('src'))).toEqual([
+      'volume:0.316',
+      'src:https://cdn.test/pod-2.mp4',
+    ]);
+  });
+
+  it('sets the volume again for each ad on one player, back to full for an ad without loudness', async () => {
+    const pod = loudPod().replace(/<CreativeExtensions>.*?-14.*?<\/CreativeExtensions>/, '');
+    const ctx = setup(pod, { contentLoudness: -24 });
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitEnded(); // ad 2 loads on the same player
+    await settle();
+    expect(player.calls.filter((c) => c.startsWith('volume') || c.startsWith('src'))).toEqual([
+      'volume:0.398',
+      'src:https://cdn.test/pod-1.mp4',
+      'volume:1',
+      'src:https://cdn.test/pod-2.mp4',
+    ]);
   });
 });

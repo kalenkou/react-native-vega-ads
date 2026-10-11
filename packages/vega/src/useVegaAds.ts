@@ -62,6 +62,11 @@ export interface UseVegaAdsOptions {
   /** A break never runs longer than this; also sent as `[BREAKMAXDURATION]`. */
   maxBreakSeconds?: number;
   /**
+   * The content's integrated loudness in LUFS (EBU R128), measured when it was packaged. Ads
+   * louder than it (their `loudness` creative extension) are turned down to it, never up.
+   */
+  contentLoudness?: number;
+  /**
    * VAST tag of a pause ad (IAB CTV Ad Portfolio, a `<NonLinear>` image): shown when the viewer
    * pauses the content, never when a break pauses it. Draw it with `<PauseAd view={ads.pauseAd} />`.
    */
@@ -197,6 +202,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       avoidRepeats: o.avoidRepeats,
       maxBreakAds: o.maxBreakAds,
       maxBreakSeconds: o.maxBreakSeconds,
+      contentLoudness: o.contentLoudness,
       pauseAdUrl: o.pauseAdUrl,
       pauseAdDelayMs: o.pauseAdDelayMs,
       onPauseAd: setPauseAd,

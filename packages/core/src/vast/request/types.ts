@@ -17,6 +17,14 @@ export interface VastMediaFile {
   apiFramework: string | null;
 }
 
+/** An `<Extension>` or `<CreativeExtension>` and its children, as vast-client parses them. */
+export interface VastExtension {
+  name: string | null;
+  value: string | null;
+  attributes: Record<string, string>;
+  children: VastExtension[];
+}
+
 export interface VastLinearCreative {
   type: 'linear';
   id: string | null;
@@ -27,6 +35,7 @@ export interface VastLinearCreative {
   trackingEvents: Record<string, string[]>;
   /** <UniversalAdId>: the creative's id in a registry that all ad servers share (VAST 4). */
   universalAdIds?: Array<{ idRegistry: string; value: string }>;
+  creativeExtensions?: VastExtension[];
 }
 
 export interface VastAd {

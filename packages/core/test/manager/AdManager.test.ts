@@ -27,7 +27,7 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 30; i++) await Promise.resolve();
 }
 
-function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats' | 'maxBreakAds' | 'maxBreakSeconds' | 'pauseAdUrl' | 'onPauseAd'> = {}) {
+function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats' | 'maxBreakAds' | 'maxBreakSeconds' | 'pauseAdUrl' | 'onPauseAd' | 'contentLoudness'> = {}) {
   const http = new FakeHttp();
   Object.entries(routes).forEach(([url, body]) => http.on(url, { body }));
   const clock = new FakeClock(1_000_000);
@@ -236,6 +236,44 @@ describe('AdManager', () => {
     release();
     await settle();
     expect(ctx.adPlayers).toHaveLength(0);
+  });
+
+  describe('never louder than the content', () => {
+    async function preRoll(file: string, options: Pick<AdManagerDeps, 'contentLoudness'>) {
+      const ctx = setup({ 'https://ads.test/pre.xml': fixture(file) }, options);
+      const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      await settle();
+      return ctx;
+    }
+
+    it('turns a louder ad down to the content loudness before it plays', async () => {
+      const ctx = await preRoll('vast/inline-loud.xml', { contentLoudness: -24 });
+      // -16 LUFS ad, -24 LUFS content: 8 dB down, 10^(-8/20).
+      expect(ctx.lastAdPlayer().calls.filter((c) => c.startsWith('volume') || c.startsWith('src'))).toEqual([
+        'volume:0.398',
+        'src:https://cdn.test/ad-720.mp4',
+      ]);
+      expect(ctx.events).toContain('loudness:-8.0');
+    });
+
+    it('never turns a quieter ad up', async () => {
+      const ctx = await preRoll('vast/inline-loud.xml', { contentLoudness: -12 });
+      expect(ctx.lastAdPlayer().calls).toContain('volume:1');
+      expect(ctx.events.filter((e) => e.startsWith('loudness'))).toEqual([]);
+    });
+
+    it('plays the ad at full volume when its loudness is unknown', async () => {
+      const ctx = await preRoll('vast/inline.xml', { contentLoudness: -24 });
+      expect(ctx.lastAdPlayer().calls).toContain('volume:1');
+    });
+
+    it('leaves the volume alone without the content loudness', async () => {
+      const ctx = await preRoll('vast/inline-loud.xml', {});
+      expect(ctx.lastAdPlayer().calls.filter((c) => c.startsWith('volume'))).toEqual([]);
+    });
   });
 
   it('keeps breaks within maxBreakAds and maxBreakSeconds, and tells the ad server the limits', async () => {

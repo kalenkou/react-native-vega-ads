@@ -5,6 +5,7 @@ class RecordingPlayer implements W3cVideoPlayer {
   calls: string[] = [];
   autoplay = true;
   muted = false;
+  volume = 1;
   src = '';
   currentTime = 0;
   duration = NaN;
@@ -79,6 +80,12 @@ describe('W3cPlayerAdapter', () => {
     expect(native.muted).toBe(true);
     port.setMuted(false);
     expect(native.muted).toBe(false);
+  });
+
+  it('sets the volume through the volume property', () => {
+    const { native, port } = make();
+    port.setVolume?.(0.398);
+    expect(native.volume).toBe(0.398);
   });
 
   it('plays and pauses', async () => {

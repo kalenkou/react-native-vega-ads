@@ -373,6 +373,14 @@ describe('useVegaAds', () => {
     expect(ctx.http.requests).toEqual(['https://ads.test/pre.xml?ads=2&dur=90']);
   });
 
+  it('turns ads louder than the content down to its loudness', async () => {
+    const loud = readFileSync(`${__dirname}/../../core/fixtures/vast/inline-loud.xml`, 'utf8');
+    const ctx = setup({ source: { breaks: [{ offset: 'start', vastUrl: 'https://ads.test/loud.xml' }] }, contentLoudness: -24 });
+    ctx.http.on('https://ads.test/loud.xml', { body: loud });
+    await ctx.surfacesReady();
+    expect(ctx.lastAd().volume).toBe(0.398);
+  });
+
   it('shows a pause ad when the viewer pauses the content, and Back closes it', async () => {
     const PAUSE = 'https://ads.test/pause.xml';
     const ctx = setup({ source: { breaks: [] }, pauseAdUrl: PAUSE });

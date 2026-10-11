@@ -15,6 +15,8 @@ export interface PlayerPort {
   setSrc(url: string): void;
   /** Silences the player without pausing it. */
   setMuted(muted: boolean): void;
+  /** 0..1, as HTMLMediaElement.volume. Optional: without it ads play at the volume they have. */
+  setVolume?(volume: number): void;
   /** Resolves as soon as the command is accepted, not when frames are shown. */
   play(): Promise<void>;
   pause(): void;

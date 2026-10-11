@@ -44,6 +44,12 @@ export interface AdManagerDeps {
    */
   maxBreakSeconds?: number;
   /**
+   * The content's integrated loudness in LUFS (EBU R128), measured when it was packaged, for
+   * example with `ffmpeg -af ebur128`. Ads that say they are louder (a `loudness` creative
+   * extension) are turned down to it, never up. Without it ads play at their own volume.
+   */
+  contentLoudness?: number;
+  /**
    * VAST tag of a pause ad (IAB CTV Ad Portfolio): a `<NonLinear>` image shown when the viewer
    * pauses the content, never when a break pauses it. Requested ahead of time.
    */
@@ -413,6 +419,7 @@ export class AdManager {
       budgetMs: this.maxSeconds === undefined ? undefined : this.maxSeconds * 1000,
       maxAds: this.maxAds === undefined ? undefined : Math.floor(this.maxAds),
       repeats: this.repeats,
+      contentLoudness: this.deps.contentLoudness,
       onChange: (snapshot) => this.onSessionChange(id, session, snapshot),
       onEvent: (name) => {
         if (name === 'impression') {

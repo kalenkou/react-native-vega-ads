@@ -7,6 +7,8 @@ import type { PlayerEventName, PlayerPort } from 'react-native-ads-core';
 export interface W3cVideoPlayer {
   autoplay: boolean;
   muted: boolean;
+  /** 0..1 (HTMLMediaElement). */
+  volume: number;
   src: string;
   currentTime: number;
   readonly duration: number;
@@ -61,6 +63,10 @@ export class W3cPlayerAdapter implements PlayerPort {
 
   setMuted(muted: boolean): void {
     this.player.muted = muted;
+  }
+
+  setVolume(volume: number): void {
+    this.player.volume = volume;
   }
 
   play(): Promise<void> {

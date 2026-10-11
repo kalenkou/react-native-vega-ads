@@ -53,6 +53,10 @@ export class FakePlayer implements PlayerPort {
     this.src = url;
   }
 
+  setVolume(volume: number): void {
+    this.calls.push(`volume:${volume}`);
+  }
+
   setMuted(muted: boolean): void {
     this.muted = muted;
   }

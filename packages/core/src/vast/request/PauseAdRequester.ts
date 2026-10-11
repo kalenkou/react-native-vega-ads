@@ -1,5 +1,5 @@
 import type { VASTClient } from '@dailymotion/vast-client';
-import type { AdSourceRef, VastAd } from './types';
+import type { AdSourceRef, VastAd, VastExtension as Extension } from './types';
 import { loadVast, TRAFFICKING_ERROR, VastRequestDeps, VastResult } from './VastRequester';
 
 /** The NonLinear image of a pause ad, as vast-client parses it. */
@@ -15,13 +15,6 @@ interface NonLinearCreative {
   type: 'nonlinear';
   variations: NonLinearVariation[];
   creativeExtensions?: Extension[];
-}
-
-interface Extension {
-  name: string | null;
-  value: string | null;
-  attributes: Record<string, string>;
-  children: Extension[];
 }
 
 /**

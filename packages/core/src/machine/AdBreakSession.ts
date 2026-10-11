@@ -1,11 +1,13 @@
 import { PodController, PodItem } from '../pod/PodController';
 import type { RepeatGuard } from '../pod/RepeatGuard';
 import {
+  adLoudness,
   AdSourceRef,
   AdTracker,
   ClockPort,
   HttpPort,
   LinearAd,
+  loudnessGain,
   Macros,
   MediaFileOptions,
   requestVast,
@@ -49,6 +51,11 @@ export interface SessionDeps {
   macros?: Macros;
   mediaFile?: MediaFileOptions;
   budgetMs?: number;
+  /**
+   * The content's integrated loudness in LUFS. An ad that says it is louder (`loudness`
+   * creative extension) is turned down to it; event `loudness:<dB>`.
+   */
+  contentLoudness?: number;
   /** Play at most this many ads in the break. */
   maxAds?: number;
   /** Viewer rules shared by all breaks of the content: no repeats, one ad per advertiser. */
@@ -177,7 +184,7 @@ export class AdBreakSession {
     for (let item = this.pod.next(0); item; item = this.pod.next(0)) {
       const tracker = this.trackerFor(item.ad);
       const url = this.pickFile(item.ad, tracker);
-      const buffered = url !== null && (await this.prebuffer(url));
+      const buffered = url !== null && (await this.prebuffer(item.ad, url));
       if (this.state !== 'loading') {
         await this.releasePlayer();
         return 'empty';
@@ -388,7 +395,21 @@ export class AdBreakSession {
     return this.player;
   }
 
-  private async prebuffer(url: string): Promise<boolean> {
+  /** Gives the player the ad's file, at a volume no louder than the content. */
+  private loadAd(player: PlayerPort, ad: LinearAd, url: string): void {
+    const content = this.deps.contentLoudness;
+    if (content !== undefined && player.setVolume) {
+      const loudness = adLoudness(ad);
+      const gain = loudness === null ? 1 : loudnessGain(loudness, content);
+      player.setVolume(gain);
+      if (gain < 1 && loudness !== null) {
+        this.deps.onEvent?.(`loudness:${(content - loudness).toFixed(1)}`);
+      }
+    }
+    player.setSrc(url);
+  }
+
+  private async prebuffer(ad: LinearAd, url: string): Promise<boolean> {
     const player = await this.ensurePlayer();
     player.setAutoplay(false);
     const ready = new Promise<boolean>((resolve) => {
@@ -407,7 +428,7 @@ export class AdBreakSession {
       // A media error before canplay (missing file, bad codec) fails the ad at once.
       const offError = player.on('error', done(false));
     });
-    player.setSrc(url);
+    this.loadAd(player, ad, url);
     return ready;
   }
 
@@ -534,7 +555,7 @@ export class AdBreakSession {
         void standby.player.deinitialize();
       }
     });
-    standby.player.setSrc(url);
+    this.loadAd(standby.player, item.ad, url);
   }
 
   private onTime(): void {
@@ -656,7 +677,7 @@ export class AdBreakSession {
       }
       this.current = { item, tracker };
       player.setAutoplay(true);
-      player.setSrc(url);
+      this.loadAd(player, item.ad, url);
       this.emitChange();
       this.armWatchdog();
       await player.play();
