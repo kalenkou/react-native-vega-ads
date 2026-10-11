@@ -56,8 +56,13 @@ export interface SessionDeps {
   handOverLeadMs?: number;
   /** An ad that shows no frame this long after play() fails with 405 (goal 7). Default 5000. */
   playTimeoutMs?: number;
-  /** A playing ad whose time does not move this long fails with 405. Default 10000. */
+  /** A buffering ad (`waiting`) whose time does not move this long fails with 405. Default 10000. */
   stallTimeoutMs?: number;
+  /**
+   * A playing ad whose time stops with no media event at all fails with 405 after this long.
+   * Default 30000: on Fire TV the picture stops silently while the viewer talks to Alexa.
+   */
+  silentStallTimeoutMs?: number;
   onChange?: (snapshot: SessionSnapshot) => void;
   /** IAB events sent, plus `error:<code>` and `breakEnd`. */
   onEvent?: (name: string) => void;
@@ -115,6 +120,8 @@ export class AdBreakSession {
   private adPaused = false;
   /** The current ad has shown its first frame. */
   private framed = false;
+  /** The ad player reported `waiting` and has not moved since. */
+  private buffering = false;
   private watchdog: unknown = null;
   /** The ad that advance() already moved on from: a second event of the same ad is late. */
   private advancedFrom: Current | null = null;
@@ -285,6 +292,12 @@ export class AdBreakSession {
       }
       this.whilePlaying((c) => c.tracker.paused());
     }));
+    player.on('waiting', active(() => {
+      this.buffering = true;
+      if (this.framed && !this.adPaused) {
+        this.armStallWatchdog();
+      }
+    }));
     player.on('timeupdate', active(() => this.onTime()));
     player.on('timeupdate', finishing(() => this.previous?.tracker.progress(player.getCurrentTime())));
     player.on('ended', active(() => this.whilePlaying((c) => {
@@ -347,12 +360,16 @@ export class AdBreakSession {
   /** Fails the current ad if it shows no frame in time; a dead player must not hold the break. */
   private armWatchdog(): void {
     this.framed = false;
+    this.buffering = false;
     this.setWatchdog(this.deps.playTimeoutMs ?? 5000);
   }
 
-  /** Fails the current ad if its time stops moving while it plays (a stream that froze). */
+  /**
+   * Fails the current ad if its time stops moving while it plays. A buffering player gets the
+   * short timeout; a silent stop (no event, as during an Alexa request) gets the long one.
+   */
   private armStallWatchdog(): void {
-    this.setWatchdog(this.deps.stallTimeoutMs ?? 10_000);
+    this.setWatchdog(this.buffering ? (this.deps.stallTimeoutMs ?? 10_000) : (this.deps.silentStallTimeoutMs ?? 30_000));
   }
 
   private setWatchdog(ms: number): void {
@@ -469,6 +486,7 @@ export class AdBreakSession {
   private onTime(): void {
     this.whilePlaying((c) => {
       const time = this.player?.getCurrentTime() ?? 0;
+      this.buffering = false;
       if (this.framed && !this.adPaused) {
         this.armStallWatchdog();
       }

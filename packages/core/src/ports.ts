@@ -3,7 +3,7 @@
  * The core never imports a player SDK, fetch or timers directly.
  */
 
-export type PlayerEventName = 'canplay' | 'playing' | 'pause' | 'timeupdate' | 'ended' | 'error';
+export type PlayerEventName = 'canplay' | 'playing' | 'pause' | 'waiting' | 'timeupdate' | 'ended' | 'error';
 
 export interface PlayerPort {
   /** Must resolve before any other call (w3cmedia rule). */

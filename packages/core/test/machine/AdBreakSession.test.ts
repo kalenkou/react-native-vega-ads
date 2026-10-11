@@ -658,6 +658,46 @@ describe('AdBreakSession – event order and stuck players (review results-34)',
     expect(ctx.session.state).toBe('finished');
   });
 
+  it('an ad that buffers without progress fails after 10 s', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await playFirst(ctx);
+    player.emitTime(3);
+    player.emitWaiting();
+    ctx.clock.advance(9_900);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    ctx.clock.advance(200);
+    await settle();
+    expect(ctx.events).toContain('error:405');
+  });
+
+  // On Fire TV the picture stops with no media event while the viewer talks to Alexa (6-13 s seen).
+  it('an ad frozen with no event at all (voice assistant) gets 30 s before it counts as stalled', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await playFirst(ctx);
+    player.emitTime(3);
+    ctx.clock.advance(20_000);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    player.emitTime(3.2); // the system gives the player back
+    ctx.clock.advance(20_000);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    ctx.clock.advance(10_100);
+    await settle();
+    expect(ctx.events).toContain('error:405');
+  });
+
+  it('progress after buffering goes back to the long timeout', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await playFirst(ctx);
+    player.emitWaiting();
+    player.emitTime(3);
+    ctx.clock.advance(15_000);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+  });
+
   it('a paused ad is not a stalled ad', async () => {
     const ctx = setup(fixture('inline.xml'));
     const player = await playFirst(ctx);

@@ -131,6 +131,11 @@ export class FakePlayer implements PlayerPort {
     this.emit('pause');
   }
 
+  /** The player ran out of data and is buffering. */
+  emitWaiting(): void {
+    this.emit('waiting');
+  }
+
   emitEnded(): void {
     this.emit('ended');
   }
