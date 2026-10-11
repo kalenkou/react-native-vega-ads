@@ -30,7 +30,7 @@ async function settle(): Promise<void> {
 
 function setup(
   body: string,
-  options: { budgetMs?: number; standby?: boolean; maxPlayers?: number; repeats?: RepeatGuard } = {},
+  options: { budgetMs?: number; maxAds?: number; standby?: boolean; maxPlayers?: number; repeats?: RepeatGuard } = {},
 ) {
   const http = new FakeHttp().on(TAG, { body });
   const clock = new FakeClock(1_000_000);
@@ -58,6 +58,7 @@ function setup(
       return player;
     },
     budgetMs: options.budgetMs,
+    maxAds: options.maxAds,
     repeats: options.repeats,
     onChange: (snapshot) => states.push(snapshot),
     onEvent: (name) => events.push(name),
@@ -256,6 +257,18 @@ describe('AdBreakSession – pods (R17)', () => {
     expect(player.src).toBe('https://cdn.test/pod-1.mp4');
   });
 
+  it('plays at most maxAds ads and tells the ad server the rest were not used', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { maxAds: 1 });
+    const player = await loadReady(ctx);
+    expect(ctx.events).toEqual(expect.arrayContaining(['notUsed', 'skipped:budget']));
+    await ctx.session.start();
+    expect(last(ctx.states)).toMatchObject({ position: 1, total: 1 });
+    await player.flush();
+    player.emitEnded();
+    await settle();
+    expect(ctx.session.state).toBe('finished');
+  });
+
   it('stops the pod when the next ad would pass the break budget', async () => {
     const ctx = setup(fixture('pod-optimized.xml'), { budgetMs: 20_000 });
     const player = await loadReady(ctx);
@@ -268,6 +281,7 @@ describe('AdBreakSession – pods (R17)', () => {
     player.emitEnded();
     await settle();
     expect(ctx.session.state).toBe('finished');
+    expect(ctx.events).toEqual(expect.arrayContaining(['notUsed', 'skipped:budget']));
   });
 });
 

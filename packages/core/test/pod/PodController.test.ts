@@ -101,6 +101,27 @@ describe('PodController (R17)', () => {
     expect(pod.next(10_000)?.ad.ad.id).toBe('short');
   });
 
+  it('reports each ad the budget leaves out, once, and not when peeking', () => {
+    const skipped: string[] = [];
+    const pod = new PodController([[ad('a', 1, 10), ad('long', 2, 30), ad('short', 3, 5), ad('last', 4, 10)]], {
+      budgetMs: 20_000,
+      onSkipped: (linear) => skipped.push(linear.ad.id as string),
+    });
+    pod.next(0);
+    pod.peek(10_000);
+    expect(skipped).toEqual([]);
+    expect(pod.next(10_000)?.ad.ad.id).toBe('short');
+    expect(pod.next(15_000)).toBeNull();
+    expect(skipped).toEqual(['long', 'last']);
+  });
+
+  it('keeps at most maxAds ads and hands back the rest', () => {
+    const pod = new PodController([[ad('a', 1), ad('b', 2), ad('c', 3)], [ad('d')]], { maxAds: 2 });
+    expect(pod.total).toBe(2);
+    expect(ids(drain(pod))).toEqual(['a', 'b']);
+    expect(pod.cut.map((linear) => linear.ad.id)).toEqual(['c', 'd']);
+  });
+
   it('allows ads with unknown duration within the budget', () => {
     const pod = new PodController([[ad('unknown', null, -1)]], { budgetMs: 5_000 });
     expect(pod.next(0)?.ad.ad.id).toBe('unknown');

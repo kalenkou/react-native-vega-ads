@@ -38,6 +38,7 @@ On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no offi
 - Two ad players: the next ad is prebuffered while the current one plays.
 - No black frame on content → ad → content. The content resumes at the same position.
 - No repeats, on by default: a creative is not shown again within 30 minutes, and a break has one copy of each creative and one ad per advertiser. The same creative is found by its Universal Ad ID or by its media file URLs, also when it comes from another ad source under another ad id. A dropped ad sends its `notUsed` pixels (VAST 4.1), so the ad server can use it elsewhere. The rules live in memory for one piece of content; no viewer ID is needed.
+- Short breaks, if you want them: `maxBreakAds` and `maxBreakSeconds` cap every break on the device (an ad that would end later is not started) and go to the ad server as the VAST 4.2 macros `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. Ads left out send their `notUsed` pixels.
 - IAB tracking: impression, start, quartiles, complete, pause, resume, skip, error codes.
 - Macros for the Fire TV advertising ID and the user's tracking choice (`IFA`, `LIMITADTRACKING`).
 - Remote and Alexa play/pause during ads. Seek, skip and speed commands are blocked during an ad.
@@ -293,6 +294,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `macros` | Ad tag macros, for example `adIdMacros(source)` for `IFA` and `LIMITADTRACKING`. |
 | `prefetchSeconds` | How early a break is loaded and buffered. Default 15. |
 | `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |
+| `maxBreakAds`, `maxBreakSeconds` | Caps for every break, also sent as `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. Preloaded pre-roll requests use the macros you pass to `preloadVegaAds`. |
 | `avoidRepeats` | `{ withinMs }`: how long a shown creative is not shown again. Default 30 minutes. `false` turns the no-repeat rules off. |
 | `mediaFile` | Media file choice: `maxHeight`, `targetBitrateKbps`, or your own `select`. |
 | `strings` | Overlay texts. English by default. |
@@ -328,7 +330,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 | `start`, `firstQuartile`, `midpoint`, `thirdQuartile`, `complete` | IAB progress of the ad | `STARTED`, `FIRST_QUARTILE`, `MIDPOINT`, `THIRD_QUARTILE`, `COMPLETED` |
 | `pause`, `resume` | the viewer paused or resumed the ad | `PAUSED`, `RESUMED` |
 | `skip` | the viewer pressed Skip | `SKIPPED` |
-| `skipped:repeat`, `skipped:advertiser` | an ad was left out of a break: the viewer saw it, or the break already has it or its advertiser | – |
+| `skipped:repeat`, `skipped:advertiser`, `skipped:budget` | an ad was left out of a break: the viewer saw it, the break already has it or its advertiser, or it does not fit `maxBreakAds` / `maxBreakSeconds` | – |
 | `notUsed` | the `notUsed` pixels of that ad were sent | – |
 | `error:<code>` | an ad failed; `<code>` is the VAST error code (for example 400, 403, 405) | `ERROR` |
 | `breakEnd` | the break is over and the content resumes | `AD_BREAK_ENDED`, `CONTENT_RESUME_REQUESTED` |

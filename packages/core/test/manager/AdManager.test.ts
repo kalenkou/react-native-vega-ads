@@ -27,7 +27,7 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 30; i++) await Promise.resolve();
 }
 
-function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats'> = {}) {
+function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats' | 'maxBreakAds' | 'maxBreakSeconds'> = {}) {
   const http = new FakeHttp();
   Object.entries(routes).forEach(([url, body]) => http.on(url, { body }));
   const clock = new FakeClock(1_000_000);
@@ -188,6 +188,55 @@ describe('AdManager', () => {
     await settle();
     return ctx;
   }
+
+  it('keeps breaks within maxBreakAds and maxBreakSeconds, and tells the ad server the limits', async () => {
+    const tag = 'https://ads.test/pod.xml?ads=[BREAKMAXADS]&dur=[BREAKMAXDURATION]';
+    const asked = 'https://ads.test/pod.xml?ads=1&dur=60';
+    const ctx = setup({ [asked]: fixture('vast/pod-optimized.xml') }, { maxBreakAds: 1, maxBreakSeconds: 60 });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: tag }]));
+    await settle();
+    expect(ctx.http.requests).toEqual([asked]);
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    expect(ctx.last()).toMatchObject({ position: 1, total: 1 });
+    expect(ctx.events).toContain('skipped:budget');
+  });
+
+  it('stops a break that would run past maxBreakSeconds', async () => {
+    const ctx = setup({ 'https://ads.test/pod.xml': fixture('vast/pod-optimized.xml') }, { maxBreakSeconds: 20 });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pod.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    const player = ctx.lastAdPlayer();
+    await player.flush();
+    ctx.clock.advance(10_000);
+    player.emitTime(10);
+    player.emitEnded();
+    await settle();
+    // pod-1 is 10 s; pod-2 (15 s) would end at 25 s, past the 20 s limit.
+    expect(ctx.events).toContain('skipped:budget');
+    expect(ctx.content.calls).toContain('play');
+  });
+
+  it('ignores limits that are not positive finite numbers', async () => {
+    const tag = 'https://ads.test/pod.xml?ads=[BREAKMAXADS]&dur=[BREAKMAXDURATION]';
+    const ctx = setup(
+      { [tag]: fixture('vast/pod-optimized.xml') },
+      { maxBreakAds: 0, maxBreakSeconds: Number.POSITIVE_INFINITY },
+    );
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: tag }]));
+    await settle();
+    expect(ctx.http.requests).toEqual([tag]); // unknown macros stay as they are
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    expect(ctx.last()).toMatchObject({ position: 1, total: 2 });
+  });
 
   it('does not show the viewer a creative again in the next break, and reports it', async () => {
     const ctx = await preThenSameMid();

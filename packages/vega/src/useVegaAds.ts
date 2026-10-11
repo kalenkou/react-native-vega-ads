@@ -56,6 +56,10 @@ export interface UseVegaAdsOptions {
    * and a break has one copy of each creative and one ad per advertiser. `false` turns it off.
    */
   avoidRepeats?: false | RepeatOptions;
+  /** At most this many ads in a break; also sent as `[BREAKMAXADS]`. */
+  maxBreakAds?: number;
+  /** A break never runs longer than this; also sent as `[BREAKMAXDURATION]`. */
+  maxBreakSeconds?: number;
   mediaFile?: MediaFileOptions;
   /** Overlay texts; English by default. */
   strings?: Partial<AdUiStrings>;
@@ -178,6 +182,8 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       prefetchSeconds: o.prefetchSeconds,
       countdownSeconds: o.countdownSeconds,
       avoidRepeats: o.avoidRepeats,
+      maxBreakAds: o.maxBreakAds,
+      maxBreakSeconds: o.maxBreakSeconds,
       onChange: setSnapshot,
       onTimeline: setTimeline,
       onEvent: (name) => {

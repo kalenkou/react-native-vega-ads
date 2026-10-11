@@ -10,6 +10,10 @@ export interface PodItem {
 export interface PodOptions {
   /** Do not start an ad that would end after this many ms from the break start (R10). */
   budgetMs?: number;
+  /** Play at most this many ads; the rest of the slots go to `cut`. */
+  maxAds?: number;
+  /** Called with each pod ad that next() passes over because it does not fit the budget. */
+  onSkipped?: (ad: LinearAd) => void;
 }
 
 interface Slot {
@@ -26,29 +30,36 @@ interface Slot {
  */
 export class PodController {
   readonly total: number;
+  /** Ads left out because the break allows only `maxAds`. */
+  readonly cut: LinearAd[];
   private readonly slots: Slot[];
   private readonly buffets: LinearAd[][];
   private readonly budgetMs: number | undefined;
+  private onSkipped: (ad: LinearAd) => void;
   private index = -1;
   private current: Slot | null = null;
   private replaceCurrent = false;
 
   constructor(responses: LinearAd[][], options: PodOptions = {}) {
     this.budgetMs = options.budgetMs;
-    this.slots = [];
+    this.onSkipped = options.onSkipped ?? (() => undefined);
+    const slots: Slot[] = [];
     this.buffets = responses.map((ads, source) => {
       const pod = ads.filter((a) => a.sequence !== null).sort((a, b) => (a.sequence as number) - (b.sequence as number));
       const standalone = ads.filter((a) => a.sequence === null);
       if (pod.length > 0) {
-        pod.forEach((a) => this.slots.push({ ad: a, source }));
+        pod.forEach((a) => slots.push({ ad: a, source }));
         return standalone;
       }
       const [first, ...rest] = standalone;
       if (first) {
-        this.slots.push({ ad: first, source });
+        slots.push({ ad: first, source });
       }
       return rest;
     });
+    const keep = options.maxAds === undefined ? slots.length : options.maxAds;
+    this.slots = slots.slice(0, keep);
+    this.cut = slots.slice(keep).map((slot) => slot.ad);
     this.total = this.slots.length;
   }
 
@@ -69,6 +80,7 @@ export class PodController {
         this.current = slot;
         return { ad: slot.ad, position: this.index + 1, total: this.total };
       }
+      this.onSkipped(slot.ad);
     }
     this.current = null;
     return null;
@@ -77,7 +89,7 @@ export class PodController {
   /** What next() would return now, without moving on. Used to prebuffer the next ad. */
   peek(elapsedMs = 0): PodItem | null {
     const copy = Object.create(PodController.prototype) as PodController;
-    Object.assign(copy, this, { buffets: this.buffets.map((buffet) => [...buffet]) });
+    Object.assign(copy, this, { buffets: this.buffets.map((buffet) => [...buffet]), onSkipped: () => undefined });
     return copy.next(elapsedMs);
   }
 

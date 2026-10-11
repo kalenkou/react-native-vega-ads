@@ -49,6 +49,8 @@ export interface SessionDeps {
   macros?: Macros;
   mediaFile?: MediaFileOptions;
   budgetMs?: number;
+  /** Play at most this many ads in the break. */
+  maxAds?: number;
   /** Viewer rules shared by all breaks of the content: no repeats, one ad per advertiser. */
   repeats?: RepeatGuard;
   canPlayTimeoutMs?: number;
@@ -68,7 +70,7 @@ export interface SessionDeps {
    */
   silentStallTimeoutMs?: number;
   onChange?: (snapshot: SessionSnapshot) => void;
-  /** IAB events sent, plus `error:<code>`, `skipped:repeat`, `skipped:advertiser` and `breakEnd`. */
+  /** IAB events sent, plus `error:<code>`, `skipped:repeat|advertiser|budget` and `breakEnd`. */
   onEvent?: (name: string) => void;
 }
 
@@ -161,7 +163,12 @@ export class AdBreakSession {
       }
       responses.push(result.status === 'ok' ? result.ads : []);
     }
-    this.pod = new PodController(this.withoutRepeats(responses), { budgetMs: this.deps.budgetMs });
+    this.pod = new PodController(this.withoutRepeats(responses), {
+      budgetMs: this.deps.budgetMs,
+      maxAds: this.deps.maxAds,
+      onSkipped: (ad) => this.notUsed(ad, 'budget'),
+    });
+    this.pod.cut.forEach((ad) => this.notUsed(ad, 'budget'));
 
     for (let item = this.pod.next(0); item; item = this.pod.next(0)) {
       const tracker = this.trackerFor(item.ad);
@@ -283,11 +290,14 @@ export class AdBreakSession {
       return responses;
     }
     const { responses: kept, dropped } = this.deps.repeats.filter(responses);
-    dropped.forEach(({ ad, reason }) => {
-      this.trackerFor(ad).notUsed();
-      this.deps.onEvent?.(`skipped:${reason}`);
-    });
+    dropped.forEach(({ ad, reason }) => this.notUsed(ad, reason));
     return kept;
+  }
+
+  /** The ad will not play in this break: the ad server hears `notUsed`, the app `skipped:<reason>`. */
+  private notUsed(ad: LinearAd, reason: string): void {
+    this.trackerFor(ad).notUsed();
+    this.deps.onEvent?.(`skipped:${reason}`);
   }
 
   private pickFile(ad: LinearAd, tracker: AdTracker): string | null {

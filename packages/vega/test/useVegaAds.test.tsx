@@ -366,6 +366,13 @@ describe('useVegaAds', () => {
     expect(await run(false)).not.toContain('skipped:repeat');
   });
 
+  it('passes the break limits to the ads and to the ad server', async () => {
+    const tag = 'https://ads.test/pre.xml?ads=[BREAKMAXADS]&dur=[BREAKMAXDURATION]';
+    const ctx = setup({ source: { breaks: [{ offset: 'start', vastUrl: tag }] }, maxBreakAds: 2, maxBreakSeconds: 90 });
+    await ctx.surfacesReady();
+    expect(ctx.http.requests).toEqual(['https://ads.test/pre.xml?ads=2&dur=90']);
+  });
+
   it('tells the app when the content and its post-roll are over', async () => {
     const ctx = setup({ source: { breaks: [] } });
     await ctx.surfacesReady();

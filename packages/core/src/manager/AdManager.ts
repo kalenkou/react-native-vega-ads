@@ -35,7 +35,17 @@ export interface AdManagerDeps {
    * per advertiser. A dropped ad sends its `notUsed` pixels. `false` turns the rules off.
    */
   avoidRepeats?: false | RepeatOptions;
+  /** At most this many ads in a break. Sent to the ad server as `[BREAKMAXADS]` (VAST 4.2). */
+  maxBreakAds?: number;
+  /**
+   * A break never runs longer than this: an ad that would end later is not started. Sent to the
+   * ad server as `[BREAKMAXDURATION]` (VAST 4.2). Ads left out send their `notUsed` pixels.
+   */
+  maxBreakSeconds?: number;
 }
+
+const positive = (value: number | undefined): number | undefined =>
+  value !== undefined && Number.isFinite(value) && value > 0 ? value : undefined;
 
 /** What a player UI shows outside the breaks: marks on its timeline and «Ad in 5». */
 export interface AdTimeline {
@@ -100,10 +110,20 @@ export class AdManager {
   private readonly offs: Array<() => void> = [];
 
   private readonly repeats: RepeatGuard | undefined;
+  private readonly maxAds: number | undefined;
+  private readonly maxSeconds: number | undefined;
+  /** The app's macros plus the break limits, for every ad request and pixel. */
+  private readonly macros: Macros | undefined;
 
   constructor(deps: AdManagerDeps) {
     this.deps = deps;
     this.repeats = deps.avoidRepeats === false ? undefined : new RepeatGuard(deps.clock, deps.avoidRepeats);
+    this.maxAds = positive(deps.maxBreakAds);
+    this.maxSeconds = positive(deps.maxBreakSeconds);
+    const limits: Macros = {};
+    if (this.maxAds !== undefined) limits.BREAKMAXADS = String(Math.floor(this.maxAds));
+    if (this.maxSeconds !== undefined) limits.BREAKMAXDURATION = String(Math.floor(this.maxSeconds));
+    this.macros = deps.macros || Object.keys(limits).length > 0 ? { ...deps.macros, ...limits } : undefined;
   }
 
   /**
@@ -346,8 +366,10 @@ export class AdManager {
       createAdPlayer: this.deps.createAdPlayer,
       adSurface: this.deps.adSurface,
       standbySurface: this.deps.standbySurface,
-      macros: this.deps.macros,
+      macros: this.macros,
       mediaFile: this.deps.mediaFile,
+      budgetMs: this.maxSeconds === undefined ? undefined : this.maxSeconds * 1000,
+      maxAds: this.maxAds === undefined ? undefined : Math.floor(this.maxAds),
       repeats: this.repeats,
       onChange: (snapshot) => this.onSessionChange(id, session, snapshot),
       onEvent: (name) => {
