@@ -1,5 +1,5 @@
 import TestRenderer, { act } from 'react-test-renderer';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 import type { PauseAdView } from 'react-native-ads-core';
 import { PauseAd } from '../src/PauseAd';
 
@@ -47,6 +47,13 @@ describe('PauseAd', () => {
     const view = render(VIEW);
     expect(view.images().map((i) => i.props.source.uri)).toEqual(['https://cdn.test/pause.png', 'https://cdn.test/qr.png']);
     expect(view.texts()).toContain('Scan to learn more');
+  });
+
+  it('puts the QR code beside the image, so the card is no taller than the image', () => {
+    const view = render(VIEW);
+    const row = view.renderer.root.findAll((n) => (n.type as unknown) === 'View' && StyleSheet.flatten(n.props.style)?.flexDirection === 'row-reverse');
+    expect(row).toHaveLength(1);
+    expect(row[0]?.findAll((n) => (n.type as unknown) === 'Image')).toHaveLength(2);
   });
 
   it('scales a large image down to fit the side of the screen, keeping its shape', () => {

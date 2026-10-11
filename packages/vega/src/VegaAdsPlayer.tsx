@@ -58,6 +58,8 @@ export interface VegaAdsPlayerProps extends Omit<UseVegaAdsOptions, 'source' | '
    * `ads.timeline.nextBreakIn`. Default true.
    */
   countdown?: boolean;
+  /** Where the pause ad goes, for example `{ bottom: 200 }` to keep it clear of your controls. */
+  pauseAdStyle?: StyleProp<ViewStyle>;
   /** w3cmedia scaling mode. Default 'fit'. */
   scalingMode?: string;
   style?: StyleProp<ViewStyle>;
@@ -84,6 +86,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
     contentSurface = true,
     renderOverlay,
     countdown = true,
+    pauseAdStyle,
     scalingMode,
     style,
     macros,
@@ -127,7 +130,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
         </>
       )}
       {countdown && !ads.playing && <AdCountdown nextBreakIn={ads.timeline.nextBreakIn} strings={options.strings} />}
-      <PauseAd view={ads.pauseAd} strings={options.strings} />
+      <PauseAd view={ads.pauseAd} strings={options.strings} style={pauseAdStyle} />
       {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} />}
     </View>
   );

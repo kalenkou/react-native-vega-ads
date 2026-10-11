@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import {BackHandler} from 'react-native';
+import {BackHandler, StyleSheet} from 'react-native';
 import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
 import {VegaAdsPlayer} from 'react-native-vega-ads';
 import type {Movie} from '../catalog';
@@ -37,6 +37,7 @@ export const PlayerScreen = ({movie, onClose, onEvent}: PlayerScreenProps) => {
       source={{uri: movie.uri}}
       ads={{vmapUrl: movie.vmapUrl}}
       pauseAdUrl={movie.pauseAdUrl}
+      pauseAdStyle={styles.pauseAd}
       adId={AdIdRetriever}
       onEnd={onClose}
       onEvent={onEvent}>
@@ -46,3 +47,8 @@ export const PlayerScreen = ({movie, onClose, onEvent}: PlayerScreenProps) => {
     </VegaAdsPlayer>
   );
 };
+
+const styles = StyleSheet.create({
+  // Between the title and the controls of PlayerChrome.
+  pauseAd: {top: 100, bottom: 220},
+});

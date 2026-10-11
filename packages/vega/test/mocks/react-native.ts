@@ -10,6 +10,12 @@ export const TouchableOpacity = 'TouchableOpacity';
 export const StyleSheet = {
   create: <T>(styles: T): T => styles,
   absoluteFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  flatten: (style: unknown): Record<string, unknown> | undefined => {
+    if (Array.isArray(style)) {
+      return Object.assign({}, ...style.map((s) => StyleSheet.flatten(s) ?? {}));
+    }
+    return style ? (style as Record<string, unknown>) : undefined;
+  },
 };
 
 export const Dimensions = {

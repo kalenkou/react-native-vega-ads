@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import TestRenderer, { act } from 'react-test-renderer';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { FakeClock } from '../../core/test/fakes/FakeClock';
 import { FakeHttp } from '../../core/test/fakes/FakeHttp';
 import { FakePlayer } from '../../core/test/fakes/FakePlayer';
@@ -203,5 +203,21 @@ describe('VegaAdsPlayer – customising', () => {
     await settle();
     const images = ctx.renderer.root.findAll((n) => (n.type as unknown) === 'Image');
     expect(images.map((i) => i.props.source.uri)).toContain('https://cdn.test/pause.png');
+  });
+
+  it('places the pause ad where the app asks, clear of its controls', async () => {
+    const PAUSE = 'https://ads.test/pause.xml';
+    const clock = new FakeClock(1_000_000);
+    const ctx = setup({ ads: { breaks: [] }, pauseAdUrl: PAUSE, pauseAdStyle: { bottom: 200 }, clock });
+    ctx.http.on(PAUSE, { body: readFileSync(`${__dirname}/../../core/fixtures/vast/pause.xml`, 'utf8') });
+    ctx.surfacesReady();
+    await settle();
+    act(() => {
+      ctx.players[0]?.emit('pause');
+      clock.advance(1_500);
+    });
+    await settle();
+    const card = ctx.renderer.root.findAll((n) => (n.type as unknown) === 'View' && n.props.pointerEvents === 'none');
+    expect(card.map((n) => StyleSheet.flatten(n.props.style))).toContainEqual(expect.objectContaining({ position: 'absolute', bottom: 200 }));
   });
 });
