@@ -14,6 +14,7 @@ import {useKeplerAppStateManager} from '@amazon-devices/react-native-kepler';
 import {log, subscribe} from './spike/log';
 import {installImagePolyfill, reportRuntime} from './spike/runtime';
 import {checkVmap, loadAd, LoadedAd} from './spike/ads';
+import {runVmapSession} from './spike/sessionRun';
 
 const CONTENT_URL =
   'https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4';
@@ -26,6 +27,8 @@ export const App = () => {
   const [adVisible, setAdVisible] = useState(false);
   const mainSurface = useRef<string | null>(null);
   const adSurface = useRef<string | null>(null);
+  const adSurfaceB = useRef<string | null>(null);
+  const [shownAdSurface, setShownAdSurface] = useState<string | null>(null);
   const mainPlayer = useRef<VideoPlayer | null>(null);
   const adPlayer = useRef<VideoPlayer | null>(null);
   const loadedAd = useRef<LoadedAd | null>(null);
@@ -208,6 +211,34 @@ export const App = () => {
     [prepareAd, startBreak, focusMediaControls],
   );
 
+  const runSession = useCallback(async () => {
+    if (!mainSurface.current || !adSurface.current) {
+      log('surfaces not ready yet');
+      return;
+    }
+    breaksLeft.current = 0;
+    await adPlayer.current?.deinitialize().catch(() => undefined);
+    adPlayer.current = null;
+    await mainPlayer.current?.deinitialize().catch(() => undefined);
+    const main = new VideoPlayer();
+    await main.initialize();
+    main.setSurfaceHandle(mainSurface.current);
+    main.autoplay = false;
+    main.addEventListener('playing', () =>
+      log(`content: playing at ${main.currentTime.toFixed(2)} s`),
+    );
+    main.src = CONTENT_URL;
+    mainPlayer.current = main;
+    log('run: VMAP session (core)');
+    await runVmapSession({
+      content: main,
+      adSurface: adSurface.current,
+      standbySurface: adSurfaceB.current ?? undefined,
+      componentInstance: () => componentInstance,
+      onAdSurface: setShownAdSurface,
+    });
+  }, [componentInstance]);
+
   return (
     <View style={styles.root}>
       <View style={[styles.surface, styles.mainSurface]}>
@@ -226,7 +257,9 @@ export const App = () => {
         style={[
           styles.surface,
           styles.adSurface,
-          {left: adVisible ? 0 : OFFSCREEN_LEFT},
+          {
+            left: adVisible || shownAdSurface !== null ? 0 : OFFSCREEN_LEFT,
+          },
         ]}>
         <KeplerVideoSurfaceView
           scalingmode="fit"
@@ -236,6 +269,28 @@ export const App = () => {
           }}
           onSurfaceViewDestroyed={() => {
             adSurface.current = null;
+          }}
+        />
+      </View>
+      <View
+        style={[
+          styles.surface,
+          styles.adSurfaceB,
+          {
+            left:
+              shownAdSurface !== null && shownAdSurface === adSurfaceB.current
+                ? 0
+                : OFFSCREEN_LEFT,
+          },
+        ]}>
+        <KeplerVideoSurfaceView
+          scalingmode="fit"
+          onSurfaceViewCreated={(handle: string) => {
+            adSurfaceB.current = handle;
+            log('ad surface B created');
+          }}
+          onSurfaceViewDestroyed={() => {
+            adSurfaceB.current = null;
           }}
         />
       </View>
@@ -250,6 +305,11 @@ export const App = () => {
           <TouchableOpacity style={styles.button} onPress={() => void run(10)}>
             <Text style={styles.buttonText}>10 breaks (memory)</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => void runSession()}>
+            <Text style={styles.buttonText}>VMAP session</Text>
+          </TouchableOpacity>
         </View>
         {lines.map((line, index) => (
           <Text key={`${index}-${line}`} style={styles.line}>
@@ -257,7 +317,9 @@ export const App = () => {
           </Text>
         ))}
       </View>
-      {adVisible && <Text style={styles.adBadge}>Ad</Text>}
+      {(adVisible || shownAdSurface !== null) && (
+        <Text style={styles.adBadge}>Ad</Text>
+      )}
     </View>
   );
 };
@@ -267,6 +329,7 @@ const styles = StyleSheet.create({
   surface: {position: 'absolute', top: 0, bottom: 0, right: 0},
   mainSurface: {left: 0, zIndex: 1},
   adSurface: {zIndex: 2},
+  adSurfaceB: {zIndex: 3},
   panel: {
     position: 'absolute',
     right: 20,

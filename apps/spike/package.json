@@ -17,7 +17,7 @@
     "build:app": "npm-run-all build:release",
     "build": "npm-run-all build:release",
     "release": "npm-run-all lint test build:app",
-    "use-core": "npm run build --prefix ../../packages/core && npm pack ../../packages/core --pack-destination /tmp && npm install --no-save /tmp/vega-ads-core-0.0.0.tgz"
+    "use-core": "npm run build --prefix ../../packages/core && npm run build --prefix ../../packages/vega && npm pack ../../packages/core ../../packages/vega --pack-destination /tmp && npm install --no-save /tmp/vega-ads-core-0.0.0.tgz /tmp/vega-ads-vega-0.0.0.tgz"
   },
   "dependencies": {
     "@amazon-devices/react-native-kepler": "^2.0.0",

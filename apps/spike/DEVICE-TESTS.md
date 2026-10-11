@@ -28,3 +28,18 @@ Spike uses `@vega-ads/core` (packed with `npm pack`, installed with `npm run use
 | `requestVast` + `selectMediaFile` on Google single inline tag | ready in 461 ms, 10 s, 720p, skipAfter=null; switch 101 ms; resume drift 0.00 s → PASS |
 
 Screens captured on the device with `gwsi-tool-screenshooter /tmp/x.png` and `vega exec vda pull /tmp/x.png .` (no phone needed).
+
+## Full core session on the device (11.10.2026)
+
+Button "VMAP session": Google sample VMAP `premidpostoptimizedpod` → `BreakScheduler` → `AdBreakSession` → two w3cmedia players via `W3cPlayerAdapter` (packed `@vega-ads/core` + `@vega-ads/vega`). Keys pressed with `inputd-cli`, screens read with `gwsi-tool-screenshooter`.
+
+| Check | Result |
+|---|---|
+| Pre-roll | impression → start → quartiles → complete → resuming → finished; content starts at 0.00 s → PASS |
+| Mid-roll prefetch | pod of 3 ready in 1615 ms, 15 s before the break → PASS |
+| Switch content → ad | 56 ms → PASS |
+| Optimized pod | "Ad 1 of 3" … "Ad 3 of 3", impression and quartiles per ad, all pixels 200 → PASS |
+| Resume | content playing at 15.22 s (break at 15 s) → PASS |
+| Gap between pod ads | ~1 s from `complete` of ad 2 to impression of ad 3 (same player, new `src`) → **TO FIX**: prebuffer the next ad in a second ad player |
+| Gap between pod ads, two ad players (A/B surfaces, next ad prebuffered while the current plays) | `complete` → first frame of next ad: 412 ms, then 496 ms (was 1018 ms). The previous ad's last frame stays on screen until the next ad renders; the surface swaps on its first frame (log "@B" → "@A"). Phone video (11.10.2026): ~0.4–0.6 s of the paused **content frame** between pod ads – on Vega an ad surface turns empty after `ended`, so the content below shows through. |
+| Early hand-over (next ad starts 500 ms before the current ends, old ad plays to its end) | next ad's first frame 85 ms **before** the previous ad's `ended`; `complete` still sent after the real end → PASS (logs); phone video re-check: TODO |
