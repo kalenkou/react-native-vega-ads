@@ -21,6 +21,11 @@ export interface VastAdInput {
   advertiser?: string;
   /** `<UniversalAdId>` of the creative; "unknown" when left out (VAST 4.1+ requires the element). */
   universalAdId?: { idRegistry: string; value: string };
+  /**
+   * Integrated loudness in LUFS (EBU R128), for example from `ffmpeg -af ebur128`. Written as a
+   * `loudness` creative extension; vega-ads turns the ad down to the content's loudness.
+   */
+  loudnessLufs?: number;
 }
 
 const AD_ID = /^[A-Za-z0-9_.-]{1,64}$/;
@@ -57,6 +62,9 @@ function check(input: VastAdInput): void {
   if (!/^https?:\/\/.+\/$/.test(input.pixelBaseUrl)) {
     throw new TypeError(`The pixel base URL must be http(s) and end with "/": "${input.pixelBaseUrl}"`);
   }
+  if (input.loudnessLufs !== undefined && !Number.isFinite(input.loudnessLufs)) {
+    throw new RangeError(`The loudness of ad "${input.id}" must be a number of LUFS`);
+  }
 }
 
 function inlineAd(input: VastAdInput, sequence: number | null): string {
@@ -88,6 +96,15 @@ function inlineAd(input: VastAdInput, sequence: number | null): string {
     ...files,
     '            </MediaFiles>',
     '          </Linear>',
+    ...(input.loudnessLufs === undefined
+      ? []
+      : [
+          '          <CreativeExtensions>',
+          '            <CreativeExtension type="loudness">',
+          `              <IntegratedLoudness unit="LUFS">${input.loudnessLufs.toFixed(1)}</IntegratedLoudness>`,
+          '            </CreativeExtension>',
+          '          </CreativeExtensions>',
+        ]),
     '        </Creative>',
     '      </Creatives>',
     '    </InLine>',

@@ -12,6 +12,8 @@ export interface Movie {
   vmapUrl: string;
   /** Pause ad (IAB CTV Ad Portfolio): a still image while the viewer has paused the movie. */
   pauseAdUrl: string;
+  /** Integrated loudness of the movie, LUFS (EBU R128): louder ads are turned down to it. */
+  contentLoudness: number;
 }
 
 export const MOVIE: Movie = {
@@ -24,4 +26,6 @@ export const MOVIE: Movie = {
   poster: `${MEDIA_BASE}poster.jpg`,
   vmapUrl: `${MEDIA_BASE}vmap/movie.xml`,
   pauseAdUrl: `${MEDIA_BASE}vast/pause.xml`,
+  // tools/demo-ads/get_media.sh brings the sound to -24 LUFS and measures it (loudness.json).
+  contentLoudness: -23.7,
 };

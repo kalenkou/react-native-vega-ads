@@ -1,6 +1,7 @@
 import { requestVast } from '../../../packages/core/src/vast/request/VastRequester';
 import { FakeClock } from '../../../packages/core/test/fakes/FakeClock';
 import { FakeHttp } from '../../../packages/core/test/fakes/FakeHttp';
+import { adLoudness } from '../../../packages/core/src/vast/loudness';
 import { buildPauseVast, buildVast, VastAdInput } from '../src/buildVast';
 
 const VAST_URL = 'https://cdn.test/ads/pod.xml';
@@ -61,6 +62,13 @@ describe('buildVast', () => {
     expect(unnamed?.ad.advertiser ?? null).toBeNull();
     // VAST 4.1+: UniversalAdId is required; "unknown" when there is none.
     expect(unnamed?.creative.universalAdIds).toEqual([{ idRegistry: 'unknown', value: 'unknown' }]);
+  });
+
+  it('writes the measured loudness, so the player can keep the ad no louder than the content', async () => {
+    const [loud, plain] = await load(buildVast([ad('tos-a', { loudnessLufs: -16.04 }), ad('tos-b')], { buffet: true }));
+    expect(adLoudness(loud!)).toBe(-16);
+    expect(adLoudness(plain!)).toBeNull();
+    expect(() => buildVast([ad('tos-a', { loudnessLufs: NaN })])).toThrow(RangeError);
   });
 
   it('writes a pod in sequence order when given several ads', async () => {

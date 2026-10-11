@@ -27,10 +27,11 @@ sh get_media.sh
 
 It fills `media/` (not committed) in about a minute:
 
-- `tears_of_steel_720p.mp4` – the movie, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Downloaded from `download.blender.org` and checked by SHA-256. The video is copied as it is; the MP3 sound becomes AAC, which w3cmedia plays.
+- `tears_of_steel_720p.mp4` – the movie, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Downloaded from `download.blender.org` and checked by SHA-256. The video is copied as it is; the MP3 sound becomes AAC, which w3cmedia plays, at -24 LUFS (the TV level of ATSC A/85; the web release is about -12 LUFS).
 - `poster.jpg` – a frame of the movie;
 - `fonts/Inter.ttf` and `fonts/OFL.txt` – [Inter](https://github.com/google/fonts/tree/main/ofl/inter), SIL Open Font License;
-- `ads/` – the five ads, the pause ad card and its QR code, drawn by `make_ads.py`.
+- `ads/` – the five ads, the pause ad card and its QR code, drawn by `make_ads.py`;
+- `loudness.json` – the integrated loudness of the movie and the ads (LUFS, EBU R128), measured with ffmpeg. The server writes it into each ad's VAST.
 
 Files that are already there are kept, so a second run does nothing.
 
@@ -42,7 +43,7 @@ Files that are already there are kept, so a second run does nothing.
 python3 make_ads.py --font media/fonts/Inter.ttf --out media/ads
 ```
 
-Each ad is written in 1080p (H.264 High 4.0) and 720p, AAC stereo, `+faststart`.
+Each ad is written in 1080p (H.264 High 4.0) and 720p, AAC stereo, `+faststart`, at -16 LUFS: as loud as many web ads, 8 dB above the movie, so the player has to turn them down.
 The pause ad is `brewnord_pause.png`; its QR code is `brewnord_qr.png`.
 
 ## Serve them on the local network

@@ -5,6 +5,7 @@
 #   DIR/fonts/Inter.ttf          Inter, SIL Open Font License, with OFL.txt
 #   DIR/ads/*.mp4                the five demo ads, drawn by make_ads.py
 #   DIR/ads/brewnord_pause.png, brewnord_qr.png  the pause ad and its QR code
+#   DIR/loudness.json            integrated loudness (LUFS, EBU R128) of the movie and the ads
 # Needs curl, shasum, ffmpeg with libx264 and aac, and Python 3 (Pillow and segno go into DIR/.venv).
 # Usage: sh get_media.sh [DIR]
 set -eu
@@ -35,8 +36,13 @@ mkdir -p "$DIR/fonts" "$DIR/ads"
 download "$MOVIE_URL" "$DIR/tears_of_steel_720p.mov" "$MOVIE_SHA256"
 if [ ! -s "$DIR/tears_of_steel_720p.mp4" ]; then
   # The video stays as it is (H.264 Main); w3cmedia needs AAC instead of MP3, and the index first.
+  # The sound is brought to -24 LUFS, the TV level of ATSC A/85 and the IAB CTV guidelines
+  # (the web release is about -12 LUFS, far louder than TV programmes).
   ffmpeg -hide_banner -loglevel error -y -i "$DIR/tears_of_steel_720p.mov" \
-    -c:v copy -c:a aac -b:a 160k -movflags +faststart "$DIR/tears_of_steel_720p.mp4"
+    -c:v copy -af loudnorm=I=-24:TP=-2:LRA=15 -ar 48000 -c:a aac -b:a 160k -movflags +faststart \
+    "$DIR/tears_of_steel_720p.part.mp4"
+  mv "$DIR/tears_of_steel_720p.part.mp4" "$DIR/tears_of_steel_720p.mp4"
+  rm -f "$DIR/loudness.json"
 fi
 if [ ! -s "$DIR/poster.jpg" ]; then
   ffmpeg -hide_banner -loglevel error -y -ss 00:06:25 -i "$DIR/tears_of_steel_720p.mp4" \
@@ -56,6 +62,23 @@ for file in kettlo_1080p.mp4 kettlo_720p.mp4 brewnord_1080p.mp4 brewnord_720p.mp
 done
 if [ "$need_ads" = yes ]; then
   "$DIR/.venv/bin/python" "$HERE/make_ads.py" --font "$DIR/fonts/Inter.ttf" --out "$DIR/ads"
+  rm -f "$DIR/loudness.json"
+fi
+
+# lufs FILE: the integrated loudness that ffmpeg's EBU R128 meter reports.
+lufs() {
+  ffmpeg -hide_banner -nostats -i "$1" -af ebur128 -f null - 2>&1 | awk '/I:/ { value = $2 } END { print value }'
+}
+if [ ! -s "$DIR/loudness.json" ]; then
+  echo "measure loudness"
+  {
+    printf '{\n  "tears_of_steel_720p.mp4": %s' "$(lufs "$DIR/tears_of_steel_720p.mp4")"
+    for ad in kettlo brewnord voltaro ferntop quillary; do
+      printf ',\n  "ads/%s_720p.mp4": %s' "$ad" "$(lufs "$DIR/ads/${ad}_720p.mp4")"
+    done
+    printf '\n}\n'
+  } > "$DIR/loudness.json.part"
+  mv "$DIR/loudness.json.part" "$DIR/loudness.json"
 fi
 
 echo "done: $DIR"

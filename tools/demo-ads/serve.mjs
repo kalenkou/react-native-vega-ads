@@ -9,7 +9,7 @@
 // MEDIA_DIR holds the output of make_ads.py (ads/) and the content movie.
 // Needs `npm run build` in tools/make-vmap first.
 
-import { createReadStream, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { networkInterfaces } from 'node:os';
 import { extname, join, normalize, sep } from 'node:path';
@@ -55,6 +55,10 @@ const ads = {
   quillary: { title: 'Quillary', seconds: 12 },
 };
 
+// Measured by get_media.sh (EBU R128). Without the file the ads carry no loudness and play as they are.
+const loudnessFile = join(root, 'loudness.json');
+const loudness = existsSync(loudnessFile) ? JSON.parse(readFileSync(loudnessFile, 'utf8')) : {};
+
 function ad(id, skipAfterSeconds) {
   const sizes = [
     [1920, 1080, 'ads/' + id + '_1080p.mp4'],
@@ -68,6 +72,7 @@ function ad(id, skipAfterSeconds) {
     pixelBaseUrl: base,
     advertiser: ads[id].title,
     universalAdId: { idRegistry: 'vega-ads-demo', value: id },
+    loudnessLufs: loudness['ads/' + id + '_720p.mp4'],
     mediaFiles: sizes.map(([width, height, path]) => ({
       url: base + path,
       width,

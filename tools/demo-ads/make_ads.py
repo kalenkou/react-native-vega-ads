@@ -62,6 +62,9 @@ ADS = [
 
 SIZES = [(1920, 1080, 4500), (1280, 720, 2500)]
 
+# Integrated loudness of the ads, LUFS (EBU R128).
+AD_LOUDNESS = -16
+
 # The pause ad (IAB CTV Ad Portfolio, partial: 600x600, under 350 kB) and where its QR code
 # points: a reserved .example domain, so no real site is advertised.
 PAUSE_AD = {"id": "brewnord", "title": "A pause?", "line": "Time for a slow coffee", "cta": "Scan for the demo offer"}
@@ -114,7 +117,9 @@ def render(ad, width, height, kbps, font_path, out_dir):
     tone = ad["tone"]
     audio = (
         f"sine=f={tone}:d={seconds}[a];sine=f={tone * 1.5}:d={seconds}[b];"
-        f"[a][b]amix=inputs=2,volume=0.25,afade=t=in:d=0.5,afade=t=out:st={seconds - 0.8}:d=0.8"
+        f"[a][b]amix=inputs=2,volume=0.25,afade=t=in:d=0.5,afade=t=out:st={seconds - 0.8}:d=0.8,"
+        # As loud as many web ads: 8 dB above the TV level of the movie, so the player has work to do.
+        f"loudnorm=I={AD_LOUDNESS}:TP=-1.5:LRA=7"
     )
     command = [
         "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
