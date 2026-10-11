@@ -104,3 +104,30 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Severity:** medium (ads cut short after a voice request; wrong error reporting to ad servers).
 - **Workaround:** two stall timeouts: 10 s after a `waiting` event (real buffering), 30 s when the time stops with no event at all (voice request).
 - **Suggestion:** emit `pause`/`playing` (or a documented interruption event) when Alexa takes and returns the media session.
+
+## FL-12 · The video sample's DRM title never asks for the hardware-secure path (11.10.2026)
+- **Task:** use Amazon's Vega video sample as a reference for DRM playback next to a clear ad player.
+- **Steps:** read how the sample's Shaka player picks the Widevine robustness for a title marked secure (`src/w3cmedia/shakaplayer/ShakaPlayer.ts`, line 418), and how titles are marked (`src/types/VideoSource.ts` line 31, `src/data/local/premiumCollection.ts` line 51).
+- **Expected:** a title with `secure: true` gets the hardware-secure robustness.
+- **Actual:** the player compares `content.secure` with the string `'true'`, but the type and the data use the boolean `true`. The comparison is always false, so the sample's DRM title runs with the software robustness. The docs for the sample describe `secure` as the string `"true"`. Found by reading the code; not confirmed in a device log.
+- **Severity:** medium (a developer who copies the sample believes they test the secure path, and does not).
+- **Workaround:** none in `react-native-vega-ads` (it does not use the sample's player); an app should check the robustness it really gets.
+- **Suggestion:** compare with the boolean, or accept both, and make the docs and the type agree.
+
+## FL-13 · Vega Virtual Device: the documented media keys differ from the SDK's keyboard mapping (11.10.2026)
+- **Task:** test remote play/pause and seek of an ad on the Vega Virtual Device with the Mac keyboard.
+- **Steps:** compare the media keys listed on https://developer.amazon.com/docs/vega/0.24/run-apps.html (F3 rewind, F4 play/pause, F5 fast forward) with the mapping in SDK 0.24.12112 `vvd/images/tv/vmtools/scripts/vvrp_agent_run.sh`, lines 66–76.
+- **Expected:** the same keys in both.
+- **Actual:** the script maps F2 to volume down, F3 to volume up, F4 to menu, F5 to previous, F6 to rewind, F7 to play/pause, F8 to fast forward and F9 to next. Following the docs, F4 opens the menu instead of pausing.
+- **Severity:** low (lost time; a tester may think media controls do not work on the virtual device).
+- **Workaround:** use the script's keys, or `inputd-cli button_press KEY_PLAYPAUSE` over `vega exec vda`.
+- **Suggestion:** generate the docs table from the mapping, or fix one of them.
+
+## FL-14 · No table of Alexa phrases to media controls commands for Vega (11.10.2026)
+- **Task:** decide which Alexa phrases an ad player must handle (for example "skip" during an ad) through Vega media controls.
+- **Steps:** search the Vega 0.21–0.24 docs for which phrase reaches which `IMediaPlaybackServer` command.
+- **Expected:** a table such as phrase → command (`handlePlay`, `handlePause`, `handleNext`, `handleSkipForward`...), with locales.
+- **Actual:** no such table for Vega. The only one is for Fire TV on Android (Video Skills Kit, 2021), where "skip" leads to Next in some locales. On Vega, "Alexa, next" and "Alexa, skip" did not reach `handleNext` during an ad (FL-10), and the docs do not say whether that is expected.
+- **Severity:** medium (voice is a main input on Fire TV; developers have to guess and test phrase by phrase).
+- **Workaround:** support the remote keys only, and say so (as `react-native-vega-ads` does).
+- **Suggestion:** publish the phrase → command table for Vega, and which commands are delivered while a second player (an ad) has media controls focus.

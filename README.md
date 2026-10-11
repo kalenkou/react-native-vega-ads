@@ -373,7 +373,8 @@ The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read 
 
 - [`tools/demo-ads`](tools/demo-ads) draws three demo ad creatives (invented brands, no third-party footage) and serves them with VAST, VMAP and a pixel log on the local network.
 - [`tools/pixel-collector`](tools/pixel-collector) collects tracking pixels on AWS Lambda and DynamoDB.
-- [`tools/make-vmap`](tools/make-vmap) finds mid-roll points in a video with Amazon Rekognition (shot cuts, black frames, credits) and writes a VMAP file for `react-native-vega-ads`.
+- [`tools/make-vmap`](tools/make-vmap) finds mid-roll points in a video and writes a VMAP file for `react-native-vega-ads`: with Amazon Rekognition (shot cuts, black frames, credits), or on your computer with ffmpeg (shot cuts, silent black frames) and, optionally, whisper.cpp, so no break cuts a line of dialogue.
+- [`apps/demo`](apps/demo) is a small Vega app on `<VegaAdsPlayer>`: a movie page that preloads the ads, and a player with break marks, "Ad in 5", Skip and Back.
 
 ## Development
 
@@ -410,6 +411,11 @@ While building `react-native-vega-ads`, I logged platform issues with steps, exp
 - Without the media controls entries, a legacy player session still pauses a playing player on play/pause, and undoes an app's own resume.
 - The w3cmedia player refuses `http://` media; the manifest's cleartext list fixes it, but it is documented only for WebView.
 - On a cold launch, `setMediaControlFocus` blocks the JS thread for 1–2 s. Called right after `play()`, it delayed the impression; `react-native-vega-ads` now takes media controls focus after the first frame.
+- "Alexa, next" and "Alexa, skip" never reach the app during an ad, so voice Skip cannot be offered.
+- During an Alexa request the video stops with no media event; an app cannot tell it from a stalled stream.
+- The video sample's DRM title never asks for the hardware-secure path: it compares a boolean with the string `'true'`.
+- The Vega Virtual Device docs list other media keys than the SDK's keyboard mapping.
+- There is no table of Alexa phrases to media controls commands for Vega.
 
 ## Credits
 
