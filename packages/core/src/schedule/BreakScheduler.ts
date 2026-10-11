@@ -53,6 +53,20 @@ export class BreakScheduler {
     return pre ? this.startNow(pre) : [];
   }
 
+  /**
+   * Continue an interrupted viewing at `time`: the pre-roll and the breaks before `time`
+   * count as played, and the jump to `time` is not a seek (no snap-back).
+   */
+  resumeAt(time: number): void {
+    this.begun = true;
+    this.lastTime = time;
+    for (const entry of this.entries) {
+      if (entry.offset.kind === 'start' || (entry.time !== null && entry.time <= time)) {
+        entry.done = true;
+      }
+    }
+  }
+
   setDuration(seconds: number): void {
     this.duration = seconds;
     for (const entry of this.entries) {

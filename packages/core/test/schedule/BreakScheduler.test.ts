@@ -35,6 +35,30 @@ describe('BreakScheduler (R10, R24)', () => {
     expect(scheduler.isDone('unknown')).toBe(true);
   });
 
+  it('resumes at a content time: earlier breaks count as played, no pre-roll, no snap-back', () => {
+    const scheduler = new BreakScheduler([
+      { id: 'pre', offset: start },
+      { id: 'a', offset: at(30) },
+      { id: 'b', offset: at(200) },
+    ]);
+    scheduler.resumeAt(120);
+    expect(scheduler.begin()).toEqual([]);
+    expect(scheduler.isDone('pre')).toBe(true);
+    expect(scheduler.isDone('a')).toBe(true);
+    expect(scheduler.onTime(121)).toEqual([]);
+    expect(play(scheduler, 185, 200)).toEqual([
+      { type: 'prefetch', breakId: 'b' },
+      { type: 'start', breakId: 'b' },
+    ]);
+  });
+
+  it('a percent break before the resume point counts as played once the duration is known', () => {
+    const scheduler = new BreakScheduler([{ id: 'p', offset: pct(10) }]);
+    scheduler.resumeAt(120);
+    scheduler.setDuration(600); // 10% = 60 s, behind the viewer
+    expect(scheduler.isDone('p')).toBe(true);
+  });
+
   it('does nothing at begin without a pre-roll', () => {
     expect(new BreakScheduler([{ id: 'mid', offset: at(60) }]).begin()).toEqual([]);
   });

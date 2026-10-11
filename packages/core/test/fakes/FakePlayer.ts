@@ -125,6 +125,12 @@ export class FakePlayer implements PlayerPort {
     this.emit('timeupdate');
   }
 
+  /** A pause done by the platform (media controls, voice), not through pause(). */
+  emitPause(): void {
+    this.paused = true;
+    this.emit('pause');
+  }
+
   emitEnded(): void {
     this.emit('ended');
   }

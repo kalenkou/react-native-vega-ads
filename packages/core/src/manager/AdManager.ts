@@ -61,8 +61,23 @@ export class AdManager {
     this.deps = deps;
   }
 
-  /** Reads the schedule, plays the pre-roll if there is one, otherwise starts the content. */
-  async start(schedule: AdSchedule): Promise<void> {
+  /**
+   * Reads the schedule, plays the pre-roll if there is one, otherwise starts the content.
+   * `resumeAt` continues a viewing that was interrupted: no pre-roll, no earlier breaks.
+   * Never rejects: on failure the content plays and `error:start` is reported.
+   */
+  async start(schedule: AdSchedule, options: { resumeAt?: number } = {}): Promise<void> {
+    try {
+      await this.run(schedule, options.resumeAt);
+    } catch {
+      this.deps.onEvent?.('error:start');
+      if (!this.disposed) {
+        await this.playContent().catch(() => undefined);
+      }
+    }
+  }
+
+  private async run(schedule: AdSchedule, resumeAt: number | undefined): Promise<void> {
     const breaks = await this.resolve(schedule);
     if (this.disposed) {
       return;
@@ -75,6 +90,9 @@ export class AdManager {
       content.on('timeupdate', () => this.onContentTime()),
       content.on('ended', () => this.apply(scheduler.onEnded())),
     );
+    if (resumeAt !== undefined) {
+      scheduler.resumeAt(resumeAt);
+    }
     const first = scheduler.begin();
     if (!first.some((d) => d.type === 'start')) {
       await this.playContent();
@@ -85,6 +103,11 @@ export class AdManager {
   /** Viewer pressed Skip. */
   skip(): boolean {
     return this.active?.skip() ?? false;
+  }
+
+  /** Play/pause of the ad on screen, for the app's own remote handler. */
+  togglePause(): boolean {
+    return this.active?.togglePause() ?? false;
   }
 
   /** Viewer pressed Back during an ad: back to the content (R23). */

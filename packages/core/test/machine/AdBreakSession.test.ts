@@ -440,6 +440,76 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
   });
 });
 
+describe('AdBreakSession – remote play/pause from the app key handler', () => {
+  it('pauses and resumes the ad on togglePause, with pixels', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    sent();
+    expect(ctx.session.togglePause()).toBe(true);
+    await player.flush();
+    expect(player.paused).toBe(true);
+    expect(ctx.session.togglePause()).toBe(true);
+    await player.flush();
+    expect(player.paused).toBe(false);
+    expect(ctx.session.togglePause()).toBe(true);
+    await player.flush();
+    expect(player.paused).toBe(true);
+    expect(sent()).toEqual(['https://t.test/pause', 'https://t.test/resume', 'https://t.test/pause']);
+    expect(ctx.content.paused).toBe(true);
+  });
+
+  it('toggles by intent: two quick presses pause and resume, even before the pause event', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.calls.length = 0;
+    ctx.session.togglePause();
+    ctx.session.togglePause(); // the native pause event has not come yet
+    expect(player.calls).toEqual(['pause', 'play']);
+  });
+
+  it('a viewer pause before the first frame is not a stuck player', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitEnded(); // ad 2 loads on the same player
+    await settle();
+    ctx.session.togglePause();
+    ctx.clock.advance(5_000);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    expect(player.src).toBe('https://cdn.test/pod-2.mp4');
+    ctx.session.togglePause(); // resumes; still no frame -> the watchdog runs again
+    ctx.clock.advance(5_000);
+    await settle();
+    expect(ctx.events).toContain('error:405');
+  });
+
+  it('a system pause (media controls, voice) before the first frame is not a stuck player either', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitEnded();
+    await settle();
+    player.emitPause(); // the media controls handler pauses the player before its first frame
+    ctx.clock.advance(5_000);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+  });
+
+  it('does nothing outside the ad', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    expect(ctx.session.togglePause()).toBe(false);
+    expect(player.calls).not.toContain('pause');
+  });
+});
+
 describe('AdBreakSession – stuck players never keep the content paused (goal 7, R7)', () => {
   it('sends 405 and returns to content when the ad shows no frame in time', async () => {
     const ctx = setup(fixture('inline.xml'));

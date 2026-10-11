@@ -106,6 +106,10 @@ export class AdBreakSession {
   private impressed = false;
   /** The active player reported an error before the break started. */
   private brokenWhileReady = false;
+  /** The ad is paused: set at once by togglePause (intent), and by the player's pause/playing events. */
+  private adPaused = false;
+  /** The current ad has shown its first frame. */
+  private framed = false;
   private watchdog: unknown = null;
 
   constructor(deps: SessionDeps) {
@@ -169,6 +173,29 @@ export class AdBreakSession {
     return true;
   }
 
+  /**
+   * Play/pause from the app's own remote handler (for apps without the media
+   * controls manifest entries). @returns false outside the ad.
+   */
+  togglePause(): boolean {
+    const player = this.player;
+    if (this.state !== 'playing' || !player) {
+      return false;
+    }
+    // Decide by intent, not by the late native event: two quick presses must pause and resume.
+    this.adPaused = !this.adPaused;
+    if (this.adPaused) {
+      player.pause();
+      this.disarmWatchdog();
+    } else {
+      void player.play();
+      if (!this.framed) {
+        this.armWatchdog();
+      }
+    }
+    return true;
+  }
+
   /** Viewer pressed Back: leave the break without skip or close pixels (R23). */
   async cancel(): Promise<void> {
     if (this.state === 'finished') {
@@ -224,7 +251,12 @@ export class AdBreakSession {
       }
     };
     player.on('playing', active(() => this.onPlaying()));
-    player.on('pause', active(() => this.whilePlaying((c) => c.tracker.paused())));
+    player.on('pause', active(() => {
+      this.adPaused = true;
+      // A pause (remote, voice or app) is not a stuck player.
+      this.disarmWatchdog();
+      this.whilePlaying((c) => c.tracker.paused());
+    }));
     player.on('timeupdate', active(() => this.onTime()));
     player.on('timeupdate', finishing(() => this.previous?.tracker.progress(player.getCurrentTime())));
     player.on('ended', active(() => this.whilePlaying((c) => {
@@ -276,6 +308,7 @@ export class AdBreakSession {
   private armWatchdog(): void {
     this.disarmWatchdog();
     const current = this.current;
+    this.framed = false;
     this.watchdog = this.deps.clock.setTimeout(() => {
       this.watchdog = null;
       if (this.current === current && current && this.state === 'playing') {
@@ -294,6 +327,8 @@ export class AdBreakSession {
 
   private onPlaying(): void {
     this.disarmWatchdog();
+    this.adPaused = false;
+    this.framed = true;
     this.whilePlaying((c) => {
       if (this.shownSurface !== this.playerSurface) {
         // Fire TV rule: no impression for an ad that is not visible yet. See releasePrevious().

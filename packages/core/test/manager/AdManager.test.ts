@@ -201,6 +201,41 @@ describe('AdManager', () => {
     expect(prefetched.deinitialized).toBe(true);
   });
 
+  it('resumes without repeating the pre-roll or passed breaks', async () => {
+    const ctx = setup({
+      'https://ads.test/pre.xml': fixture('vast/inline.xml'),
+      'https://ads.test/mid.xml': fixture('vast/inline.xml'),
+    });
+    await ctx.manager.start(
+      manual([
+        { offset: 'start', vastUrl: 'https://ads.test/pre.xml' },
+        { offset: 30, vastUrl: 'https://ads.test/mid.xml' },
+      ]),
+      { resumeAt: 45 },
+    );
+    expect(ctx.http.requests).toEqual([]);
+    expect(ctx.content.calls).toContain('play');
+    ctx.content.emitTime(46);
+    await settle();
+    expect(ctx.http.requests).toEqual([]);
+  });
+
+  it('starts the content and reports the error when starting the schedule fails', async () => {
+    const ctx = setup({});
+    let first = true;
+    const play = ctx.content.play.bind(ctx.content);
+    ctx.content.play = () => {
+      if (first) {
+        first = false;
+        return Promise.reject(new Error('player busy'));
+      }
+      return play();
+    };
+    await expect(ctx.manager.start(manual([]))).resolves.toBeUndefined();
+    expect(ctx.events).toContain('error:start');
+    expect(ctx.content.calls).toContain('play');
+  });
+
   it('plays the post-roll when the content ends', async () => {
     const ctx = setup({ 'https://ads.test/post.xml': fixture('vast/inline.xml') });
     await ctx.manager.start(manual([{ offset: 'end', vastUrl: 'https://ads.test/post.xml' }]));
@@ -212,6 +247,20 @@ describe('AdManager', () => {
     await settle();
     await ctx.lastAdPlayer().flush();
     expect(ctx.last()?.state).toBe('playing');
+  });
+
+  it('togglePause() pauses the ad on screen and is false between breaks', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    expect(ctx.manager.togglePause()).toBe(true);
+    expect(ctx.lastAdPlayer().paused).toBe(true);
+    await playAdToEnd(ctx);
+    expect(ctx.manager.togglePause()).toBe(false);
   });
 
   it('skip() passes to the active break and is false without one', async () => {
