@@ -1,0 +1,22 @@
+{
+  "name": "@vega-ads/make-vmap",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Finds ad break points in a video with Amazon Rekognition segment detection and writes a VMAP 1.0 file",
+  "license": "Apache-2.0",
+  "bin": {
+    "make-vmap": "dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-rekognition": "3.1140.0",
+    "@aws-sdk/client-s3": "3.1140.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@xmldom/xmldom": "0.8.15"
+  }
+}
