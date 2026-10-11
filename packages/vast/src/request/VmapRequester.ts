@@ -144,6 +144,10 @@ export async function requestVmap(url: string, deps: UrlHandlerDeps): Promise<Vm
       }
       continue;
     }
+    // An AdBreak without AdSource is valid VMAP (e.g. tracking only): nothing to play, no error.
+    if (!adBreak.adSource) {
+      continue;
+    }
     const source = sourceOf(adBreak);
     if (!source) {
       track(adBreak, 'error', VMAP_TEMPLATE_TYPE_NOT_SUPPORTED);

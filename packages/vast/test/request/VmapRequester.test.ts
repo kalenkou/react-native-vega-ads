@@ -141,6 +141,22 @@ describe('requestVmap (R18)', () => {
     ]);
   });
 
+  it('skips an AdBreak without AdSource quietly, with no 1005 (C2-8)', async () => {
+    const doc = `<?xml version="1.0"?>
+<vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
+  <vmap:AdBreak timeOffset="00:00:30" breakType="linear" breakId="tracking-only">
+    <vmap:TrackingEvents><vmap:Tracking event="error"><![CDATA[https://t.test/vmap/none/error?code=[ERRORCODE]]]></vmap:Tracking></vmap:TrackingEvents>
+  </vmap:AdBreak>
+  <vmap:AdBreak timeOffset="00:01:00" breakType="linear" breakId="ok">
+    <vmap:AdSource id="k"><vmap:AdTagURI templateType="vast4"><![CDATA[https://ads.test/k.xml]]></vmap:AdTagURI></vmap:AdSource>
+  </vmap:AdBreak>
+</vmap:VMAP>`;
+    const result = await load(doc);
+    if (result.status !== 'ok') throw new Error(result.status);
+    expect(result.breaks.map((b) => b.id)).toEqual(['ok']);
+    expect(pixels.requests).toEqual([]);
+  });
+
   it('uses a custom XML parser for the VMAP document', async () => {
     const parseXml = jest.fn((text: string) => defaultParseXml(text));
     const http = new FakeHttp().on(URL, { body: fixture('pre-mid-post.xml') });
