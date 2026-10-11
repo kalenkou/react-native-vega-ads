@@ -619,6 +619,8 @@ export class AdBreakSession {
         await player.deinitialize();
       }
     }
+    // The finishing player is gone too: whoever waits for it must not wait forever.
+    this.previousReleased();
   }
 
   private setState(state: SessionState): void {

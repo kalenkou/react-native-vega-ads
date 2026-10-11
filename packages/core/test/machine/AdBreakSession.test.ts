@@ -716,6 +716,24 @@ describe('AdBreakSession – event order and stuck players (review results-34)',
     expect(second.deinitialized).toBe(true);
   });
 
+  it('releasing the players during a hand-over settles the wait for the finishing one (C3-11)', async () => {
+    const ctx = setup(POD3(), { standby: true });
+    const first = await playFirst(ctx);
+    const second = ctx.adPlayers[1] as FakePlayer;
+    second.emitCanPlay();
+    await settle();
+    first.emitTime(9.6); // hand-over: first is the finishing player
+    await settle();
+    await second.flush();
+    await settle();
+    await ctx.session.interrupt(); // Home before first sends ended
+    let settled = false;
+    void (ctx.session as unknown as { releasing: Promise<void> }).releasing.then(() => (settled = true));
+    await settle();
+    expect(first.deinitialized).toBe(true);
+    expect(settled).toBe(true);
+  });
+
   it('a media error before canplay fails the ad at once, not after 8 s (C4-1)', async () => {
     const ctx = setup(fixture('inline.xml'));
     let result: string | null = null;
