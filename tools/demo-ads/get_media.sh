@@ -3,7 +3,7 @@
 #   DIR/tears_of_steel_720p.mp4  the movie, (CC) Blender Foundation, CC BY 3.0
 #   DIR/poster.jpg               a frame of the movie for the details screen
 #   DIR/fonts/Inter.ttf          Inter, SIL Open Font License, with OFL.txt
-#   DIR/ads/*.mp4                the three demo ads, drawn by make_ads.py
+#   DIR/ads/*.mp4                the five demo ads, drawn by make_ads.py
 # Needs curl, shasum, ffmpeg with libx264 and aac, Python 3 with Pillow.
 # Usage: sh get_media.sh [DIR]
 set -eu
@@ -44,7 +44,7 @@ fi
 
 download "$FONT_URL" "$DIR/fonts/Inter.ttf" "$FONT_SHA256"
 download "$OFL_URL" "$DIR/fonts/OFL.txt"
-for ad in kettlo brewnord voltaro; do
+for ad in kettlo brewnord voltaro ferntop quillary; do
   for height in 1080 720; do
     if [ ! -s "$DIR/ads/${ad}_${height}p.mp4" ]; then
       python3 "$HERE/make_ads.py" --font "$DIR/fonts/Inter.ttf" --out "$DIR/ads"

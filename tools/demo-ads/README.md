@@ -10,6 +10,8 @@ Inter font (SIL Open Font License), no third-party footage or logos.
 | Kettlo | 10 s | after 5 s (single ad) |
 | Brewnord | 15 s | no |
 | Voltaro | 12 s | after 5 s |
+| Ferntop | 10 s | after 5 s |
+| Quillary | 12 s | no |
 
 ## Get all the media
 
@@ -24,7 +26,7 @@ It fills `media/` (not committed) in about a minute:
 - `tears_of_steel_720p.mp4` – the movie, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Downloaded from `download.blender.org` and checked by SHA-256. The video is copied as it is; the MP3 sound becomes AAC, which w3cmedia plays.
 - `poster.jpg` – a frame of the movie;
 - `fonts/Inter.ttf` and `fonts/OFL.txt` – [Inter](https://github.com/google/fonts/tree/main/ofl/inter), SIL Open Font License;
-- `ads/` – the three ads, drawn by `make_ads.py`.
+- `ads/` – the five ads, drawn by `make_ads.py`.
 
 Files that are already there are kept, so a second run does nothing.
 
@@ -48,8 +50,10 @@ node serve.mjs --dir media
 `media/` holds `ads/` and the content movie (default `tears_of_steel_720p.mp4`).
 The server prints its address and serves:
 
-- `vast/single.xml` – Kettlo, skippable after 5 s;
-- `vast/pod.xml` – Brewnord, Voltaro, Kettlo as a pod;
+- `vast/single.xml` – Kettlo, skippable after 5 s (the pre-roll);
+- `vast/pod.xml` – Brewnord, Voltaro, Kettlo as a pod. Kettlo comes again, as when two ad sources sell the same creative; the player leaves it out and sends its `notUsed` pixel;
+- `vast/ferntop.xml` – Ferntop, skippable after 5 s (the second mid-roll);
+- `vast/quillary.xml` – Quillary (the post-roll);
 - `vmap/movie.xml` – pre-roll, the mid-rolls (the first one is the pod), post-roll;
 - `vmap/timer.xml` – the same with mid-rolls at fixed times, 2:00 and 6:00, to compare with;
 - `p?ad=…&e=…` – tracking pixels, logged to the console; `stats` – counts;

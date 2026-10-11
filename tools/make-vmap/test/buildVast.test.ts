@@ -43,9 +43,24 @@ describe('buildVast', () => {
     expect((parsed?.ad.impressionURLTemplates as Array<{ url: string }>).map((t) => t.url)).toEqual(['https://px.test/p?ad=tos-a&e=impression']);
     expect(parsed?.ad.errorURLTemplates).toEqual(['https://px.test/p?ad=tos-a&e=error&code=[ERRORCODE]']);
     const tracking = parsed?.creative.trackingEvents ?? {};
-    for (const event of ['start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete', 'pause', 'resume', 'skip']) {
+    for (const event of ['start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete', 'pause', 'resume', 'skip', 'notUsed']) {
       expect(tracking[event]).toEqual([`https://px.test/p?ad=tos-a&e=${event}`]);
     }
+  });
+
+  it('names the advertiser and the creative, so players can keep repeats and competitors apart', async () => {
+    const [named, unnamed] = await load(
+      buildVast([
+        ad('tos-a', { advertiser: 'Leafline & Co', universalAdId: { idRegistry: 'demo.example', value: 'TOS-A-15' } }),
+        ad('tos-b'),
+      ]),
+    );
+    expect(named?.ad.advertiser).toEqual({ id: null, value: 'Leafline & Co' });
+    expect(buildVast([ad('tos-a', { advertiser: 'A <b> & C' })])).toContain('<Advertiser>A &lt;b&gt; &amp; C</Advertiser>');
+    expect(named?.creative.universalAdIds).toEqual([{ idRegistry: 'demo.example', value: 'TOS-A-15' }]);
+    expect(unnamed?.ad.advertiser ?? null).toBeNull();
+    // VAST 4.1+: UniversalAdId is required; "unknown" when there is none.
+    expect(unnamed?.creative.universalAdIds).toEqual([{ idRegistry: 'unknown', value: 'unknown' }]);
   });
 
   it('writes a pod in sequence order when given several ads', async () => {

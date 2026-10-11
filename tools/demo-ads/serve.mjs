@@ -51,6 +51,8 @@ const ads = {
   kettlo: { title: 'Kettlo', seconds: 10 },
   brewnord: { title: 'Brewnord', seconds: 15 },
   voltaro: { title: 'Voltaro', seconds: 12 },
+  ferntop: { title: 'Ferntop', seconds: 10 },
+  quillary: { title: 'Quillary', seconds: 12 },
 };
 
 function ad(id, skipAfterSeconds) {
@@ -64,6 +66,8 @@ function ad(id, skipAfterSeconds) {
     durationSeconds: ads[id].seconds,
     skipAfterSeconds,
     pixelBaseUrl: base,
+    advertiser: ads[id].title,
+    universalAdId: { idRegistry: 'vega-ads-demo', value: id },
     mediaFiles: sizes.map(([width, height, path]) => ({
       url: base + path,
       width,
@@ -88,13 +92,16 @@ if (midrollTimes.some((time) => !(time > 0))) {
 const vmap = (times) =>
   buildVmap({
     preroll: base + 'vast/single.xml',
-    midrolls: times.map((time, index) => ({ time, vastUrl: base + (index === 0 ? 'vast/pod.xml' : 'vast/single.xml') })),
-    postroll: base + 'vast/single.xml',
+    midrolls: times.map((time, index) => ({ time, vastUrl: base + (index === 0 ? 'vast/pod.xml' : 'vast/ferntop.xml') })),
+    postroll: base + 'vast/quillary.xml',
   });
 
 const documents = {
   'vast/single.xml': buildVast([ad('kettlo', 5)]),
+  // Kettlo again, as when two ad sources sell the same creative: the player leaves it out.
   'vast/pod.xml': buildVast([ad('brewnord'), ad('voltaro', 5), ad('kettlo')]),
+  'vast/ferntop.xml': buildVast([ad('ferntop', 5)]),
+  'vast/quillary.xml': buildVast([ad('quillary')]),
   'vmap/movie.xml': vmap(midrollTimes),
   'vmap/timer.xml': vmap([120, 360]),
 };

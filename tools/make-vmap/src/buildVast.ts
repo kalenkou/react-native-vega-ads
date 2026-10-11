@@ -17,10 +17,14 @@ export interface VastAdInput {
   skipAfterSeconds?: number;
   /** Base URL of the pixel collector (tools/pixel-collector), ending with `/`. */
   pixelBaseUrl: string;
+  /** `<Advertiser>`: players keep one ad per advertiser in a break. */
+  advertiser?: string;
+  /** `<UniversalAdId>` of the creative; "unknown" when left out (VAST 4.1+ requires the element). */
+  universalAdId?: { idRegistry: string; value: string };
 }
 
 const AD_ID = /^[A-Za-z0-9_.-]{1,64}$/;
-const TRACKING_EVENTS = ['start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete', 'pause', 'resume', 'skip'];
+const TRACKING_EVENTS = ['start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete', 'pause', 'resume', 'skip', 'notUsed'];
 
 function escapeXml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -58,6 +62,7 @@ function check(input: VastAdInput): void {
 function inlineAd(input: VastAdInput, sequence: number | null): string {
   check(input);
   const pixel = (event: string, extra = '') => cdata(`${input.pixelBaseUrl}p?ad=${input.id}&e=${event}${extra}`);
+  const uaid = input.universalAdId ?? { idRegistry: 'unknown', value: 'unknown' };
   const skip = input.skipAfterSeconds === undefined ? '' : ` skipoffset="${vastTime(input.skipAfterSeconds)}"`;
   const files = input.mediaFiles.map(
     (file) =>
@@ -68,10 +73,12 @@ function inlineAd(input: VastAdInput, sequence: number | null): string {
     '    <InLine>',
     '      <AdSystem>vega-ads demo</AdSystem>',
     `      <AdTitle>${escapeXml(input.title)}</AdTitle>`,
+    ...(input.advertiser === undefined ? [] : [`      <Advertiser>${escapeXml(input.advertiser)}</Advertiser>`]),
     `      <Impression>${pixel('impression')}</Impression>`,
     `      <Error>${pixel('error', '&code=[ERRORCODE]')}</Error>`,
     '      <Creatives>',
     `        <Creative id="${input.id}-video">`,
+    `          <UniversalAdId idRegistry="${escapeXml(uaid.idRegistry)}">${escapeXml(uaid.value)}</UniversalAdId>`,
     `          <Linear${skip}>`,
     `            <Duration>${vastTime(input.durationSeconds)}</Duration>`,
     '            <TrackingEvents>',

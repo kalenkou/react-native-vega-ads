@@ -3,7 +3,8 @@
 A small Vega OS app: one movie with ads that do not annoy. It shows what
 `react-native-vega-ads` gives a real app with `<VegaAdsPlayer>` and a few lines of code:
 
-- a pre-roll, a pod of three ads and a single ad as mid-rolls, a post-roll;
+- a pre-roll, a pod and a single ad as mid-rolls, a post-roll;
+- no ad twice: the pod's answer repeats the pre-roll's ad, and the player leaves it out ("Ad 1 of 2");
 - mid-rolls at quiet points of the movie, found by [`make-vmap`](../../tools/make-vmap), not on a timer;
 - the breaks marked on the timeline, so the viewer knows where they are;
 - "Ad in 5" before a mid-roll, so a break never comes as a surprise;

@@ -41,6 +41,22 @@ ADS = [
         "colors": ((8, 40, 56), (64, 224, 196)),
         "tone": 329.6,
     },
+    {
+        "id": "ferntop",
+        "brand": "Ferntop",
+        "line": "Trail shoes for wet mornings",
+        "seconds": 10,
+        "colors": ((18, 40, 24), (140, 200, 90)),
+        "tone": 293.7,
+    },
+    {
+        "id": "quillary",
+        "brand": "QUILLARY",
+        "line": "Notebooks that open flat",
+        "seconds": 12,
+        "colors": ((40, 20, 44), (230, 150, 220)),
+        "tone": 246.9,
+    },
 ]
 
 SIZES = [(1920, 1080, 4500), (1280, 720, 2500)]
