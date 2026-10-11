@@ -155,7 +155,8 @@ export async function requestVmap(url: string, deps: UrlHandlerDeps): Promise<Vm
     scheduled.sources.push({
       id: adBreak.adSource?.id ?? null,
       source,
-      allowMultipleAds: adBreak.adSource?.allowMultipleAds === 'true',
+      // VMAP default is "allowed"; only an explicit "false" turns it off.
+      allowMultipleAds: adBreak.adSource?.allowMultipleAds !== 'false',
       track: (event, errorCode) => track(adBreak, event, errorCode),
     });
     breaks.set(key, scheduled);

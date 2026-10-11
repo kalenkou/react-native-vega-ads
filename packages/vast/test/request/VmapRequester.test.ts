@@ -101,6 +101,18 @@ describe('requestVmap (R18)', () => {
     expect(result.breaks.map((b) => b.id)).toEqual(['t30', 't60']);
   });
 
+  it('allows multiple ads when the AdSource leaves allowMultipleAds out (C2-9)', async () => {
+    const doc = `<?xml version="1.0"?>
+<vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
+  <vmap:AdBreak timeOffset="start" breakType="linear" breakId="pre">
+    <vmap:AdSource id="pre"><vmap:AdTagURI templateType="vast3"><![CDATA[https://ads.test/pre.xml]]></vmap:AdTagURI></vmap:AdSource>
+  </vmap:AdBreak>
+</vmap:VMAP>`;
+    const result = await load(doc);
+    if (result.status !== 'ok') throw new Error(result.status);
+    expect(result.breaks[0]?.sources[0]?.allowMultipleAds).toBe(true);
+  });
+
   it('joins AdBreaks that share an offset into one break (standard pod, R17)', async () => {
     const result = await load(fixture('standard-pod.xml'));
     if (result.status !== 'ok') throw new Error(result.status);
