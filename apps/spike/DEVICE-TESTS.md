@@ -229,3 +229,13 @@ The movie is brought to -23.7 LUFS and the ads to -16 LUFS by `tools/demo-ads/ge
 | 4 | The pre-roll played to `complete` every time. The media pipeline logged `MPB UNF callback: setVolume success volume 0.412000` and the GStreamer audio sink `Setting volume` before the first frame: 0.412 is -7.7 dB, the difference between the ad and the movie. The JS line `[ads] loudness:-7.7` never reached the system log, like other lines in FL-02 |
 
 Not checked yet: by ear, that the ad sounds as loud as the movie and the movie is not turned down after the break.
+
+## Break context: a blocked category is left out (12.10.2026)
+
+`serve.mjs --context` with a hand-written context for the first mid-roll (2:19.9): signal `vehicle crash`, `BlockedAdCategories` 1551 1571. The pod is Brewnord (1133), Voltaro (1571) and Kettlo (1524). `category-run.sh` (kept outside the repo): install, Play, wait for the first mid-roll.
+
+| Run | Result |
+|---|---|
+| 1 | PASS: at the mid-roll the player fetched `pod.xml`, sent Voltaro's error pixel with `code=205` within 80 ms and never an impression for it; Kettlo got `notUsed` (seen in the pre-roll); Brewnord played to `complete` and the movie went on |
+
+The context in this test is written by hand. The model did not block anything at these two breaks of Tears of Steel; see `tools/make-vmap/eval/` for what it finds.

@@ -2,10 +2,13 @@
 // and logs tracking pixels. For device tests before the files live on S3.
 //
 // Usage: node serve.mjs --dir MEDIA_DIR [--host LAN_IP] [--port 8080] [--midrolls 139.9,441.2] [--latency 0]
+//        [--context FILE]
 // --midrolls: mid-roll times in seconds, for example from `make-vmap --local`; the first one
 // gets a pod of three ads. vmap/timer.xml keeps fixed times (2:00, 6:00) to compare with.
 // --latency MS: answer each VAST/VMAP request after MS milliseconds, like a real ad server
 // (for measuring how much preloading saves; the media files are not delayed).
+// --context FILE: a JSON array with the context of each mid-roll in vmap/movie.xml, in order
+// (null for none): { mood, scene, signals, blockedAdCategories }, the BreakContext of make-vmap.
 // MEDIA_DIR holds the output of make_ads.py (ads/) and the content movie.
 // Needs `npm run build` in tools/make-vmap first.
 
@@ -28,6 +31,7 @@ const { values } = parseArgs({
     movie: { type: 'string', default: 'tears_of_steel_720p.mp4' },
     midrolls: { type: 'string', default: '120,360' },
     latency: { type: 'string', default: '0' },
+    context: { type: 'string' },
   },
 });
 if (!values.dir) {
@@ -96,10 +100,16 @@ if (midrollTimes.some((time) => !(time > 0))) {
   process.exit(2);
 }
 
-const vmap = (times) =>
+const contexts = values.context ? JSON.parse(readFileSync(values.context, 'utf8')) : [];
+
+const vmap = (times, withContext = []) =>
   buildVmap({
     preroll: base + 'vast/single.xml',
-    midrolls: times.map((time, index) => ({ time, vastUrl: base + (index === 0 ? 'vast/pod.xml' : 'vast/ferntop.xml') })),
+    midrolls: times.map((time, index) => ({
+      time,
+      vastUrl: base + (index === 0 ? 'vast/pod.xml' : 'vast/ferntop.xml'),
+      context: withContext[index] ?? undefined,
+    })),
     postroll: base + 'vast/quillary.xml',
   });
 
@@ -122,7 +132,7 @@ const documents = {
     qr: { scanUrl: 'https://brewnord.example/pause', imageUrl: base + 'ads/brewnord_qr.png' },
     pixelBaseUrl: base,
   }),
-  'vmap/movie.xml': vmap(midrollTimes),
+  'vmap/movie.xml': vmap(midrollTimes, contexts),
   'vmap/timer.xml': vmap([120, 360]),
 };
 
