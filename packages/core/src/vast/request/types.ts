@@ -47,6 +47,8 @@ export interface VastAd {
   creatives: Array<{ type: string }>;
   /** <Advertiser>, for keeping competitors apart (VAST 4). */
   advertiser?: { id: string | null; value: string } | null;
+  /** <Category>: what the ad sells, as IAB Ad Product Taxonomy codes (VAST 4.1). */
+  categories?: Array<{ authority: string | null; value: string }>;
 }
 
 /** Where the VAST for one ad request comes from: a URL, or XML embedded in a VMAP. */

@@ -77,10 +77,17 @@ export interface SessionDeps {
    */
   silentStallTimeoutMs?: number;
   onChange?: (snapshot: SessionSnapshot) => void;
-  /** IAB events sent, plus `error:<code>`, `skipped:repeat|advertiser|budget` and `breakEnd`. */
+  /**
+   * Ad categories that must not play in this break (`ScheduledBreak.blockedAdCategories`). An ad
+   * with one of them is left out with VAST error 205 and the event `skipped:category`.
+   */
+  blockedAdCategories?: readonly string[];
+  /** IAB events sent, plus `error:<code>`, `skipped:repeat|advertiser|category|budget` and `breakEnd`. */
   onEvent?: (name: string) => void;
 }
 
+/** VAST 4.1: "Inline Category violates Wrapper BlockedAdCategories"; here the break blocks it. */
+const CATEGORY_BLOCKED = 205;
 const MEDIA_LOAD_ERROR = 400;
 const MEDIA_NOT_SUPPORTED = 403;
 const PLAYBACK_ERROR = 405;
@@ -174,7 +181,7 @@ export class AdBreakSession {
     if (this.state !== 'loading') {
       return 'empty';
     }
-    this.pod = new PodController(this.withoutRepeats(responses), {
+    this.pod = new PodController(this.withoutRepeats(this.withoutBlocked(responses)), {
       budgetMs: this.deps.budgetMs,
       maxAds: this.deps.maxAds,
       onSkipped: (ad) => this.notUsed(ad, 'budget'),
@@ -293,6 +300,24 @@ export class AdBreakSession {
         this.deps.onEvent?.(name);
       },
     });
+  }
+
+  /** Drops the ads of a category the break blocks; the ad server hears error 205 for each. */
+  private withoutBlocked(responses: LinearAd[][]): LinearAd[][] {
+    const blocked = new Set(this.deps.blockedAdCategories ?? []);
+    if (blocked.size === 0) {
+      return responses;
+    }
+    return responses.map((ads) =>
+      ads.filter((linear) => {
+        if (!(linear.ad.categories ?? []).some((category) => blocked.has(category.value))) {
+          return true;
+        }
+        this.trackerFor(linear).error(CATEGORY_BLOCKED);
+        this.deps.onEvent?.('skipped:category');
+        return false;
+      }),
+    );
   }
 
   /** Drops the ads the viewer rules do not allow; the ad server hears `notUsed` for each. */

@@ -28,6 +28,18 @@ export interface ScheduledBreak {
   offset: BreakOffset;
   /** More than one source means a standard pod: one break, several ad requests. */
   sources: BreakSource[];
+  /**
+   * Ad categories (IAB Ad Product Taxonomy codes, as in VAST `<Category>`) that must not play in
+   * this break, for example because of the scene before it. From the `vega-ads:context` extension.
+   */
+  blockedAdCategories?: string[];
+}
+
+/** The `<BlockedAdCategories>` of a break's `vega-ads:context` extension, space or comma separated. */
+function blockedCategoriesOf(adBreak: VMAPAdBreak): string[] {
+  const context = (adBreak.extensions ?? []).find((ext) => ext.attributes.type === 'vega-ads:context');
+  const value = context?.children.BlockedAdCategories?.value;
+  return typeof value === 'string' ? value.split(/[\s,]+/).filter(Boolean) : [];
 }
 
 export type VmapResult =
@@ -156,6 +168,10 @@ export async function requestVmap(url: string, deps: UrlHandlerDeps): Promise<Vm
 
     const key = offsetKey(offset);
     const scheduled = breaks.get(key) ?? { id: adBreak.breakId || key, offset, sources: [] };
+    const blocked = blockedCategoriesOf(adBreak);
+    if (blocked.length > 0) {
+      scheduled.blockedAdCategories = [...new Set([...(scheduled.blockedAdCategories ?? []), ...blocked])];
+    }
     scheduled.sources.push({
       id: adBreak.adSource?.id ?? null,
       source,

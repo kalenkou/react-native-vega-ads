@@ -186,3 +186,27 @@ describe('requestVmap (R18)', () => {
     await expect(load('<VAST version="4.2"/>')).resolves.toEqual({ status: 'failed', errorCode: 1000 });
   });
 });
+
+describe('requestVmap break context', () => {
+  const adBreak = (tag: string, extensions: string) => `
+  <vmap:AdBreak timeOffset="00:02:00" breakType="linear">
+    <vmap:AdSource><vmap:AdTagURI templateType="vast4"><![CDATA[https://ads.test/${tag}.xml]]></vmap:AdTagURI></vmap:AdSource>
+    <vmap:Extensions>${extensions}</vmap:Extensions>
+  </vmap:AdBreak>`;
+  const doc = (...breaks: string[]) =>
+    `<?xml version="1.0"?><vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">${breaks.join('')}</vmap:VMAP>`;
+  const context = (codes: string) =>
+    `<vmap:Extension type="vega-ads:context"><BlockedAdCategories authority="https://iabtechlab.com">${codes}</BlockedAdCategories></vmap:Extension>`;
+
+  it('reads the blocked ad categories of a break, space or comma separated, from all its sources', async () => {
+    const result = await load(doc(adBreak('a', context('1551 1571')), adBreak('b', context('1571,1133'))));
+    expect(result.status === 'ok' && result.breaks[0]?.blockedAdCategories).toEqual(['1551', '1571', '1133']);
+  });
+
+  it('ignores other extensions', async () => {
+    const other = '<vmap:Extension type="other"><BlockedAdCategories>1551</BlockedAdCategories></vmap:Extension>';
+    const result = await load(doc(adBreak('a', other)));
+    expect(result.status === 'ok' && result.breaks[0]?.blockedAdCategories).toBeUndefined();
+  });
+});
+

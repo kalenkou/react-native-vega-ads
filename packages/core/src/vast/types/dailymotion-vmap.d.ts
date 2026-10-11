@@ -8,6 +8,13 @@ declare module '@dailymotion/vmap' {
     customData: Node | null;
   }
 
+  /** An `<Extension>` as the library reads it: children by element name. */
+  export interface VMAPExtensionNode {
+    attributes: Record<string, string>;
+    children: Record<string, VMAPExtensionNode>;
+    value: unknown;
+  }
+
   export interface VMAPAdBreak {
     timeOffset: string | null;
     breakType: string | null;
@@ -15,6 +22,7 @@ declare module '@dailymotion/vmap' {
     repeatAfter: string | null;
     adSource: VMAPAdSource | null;
     trackingEvents: Array<{ event: string; uri: string }>;
+    extensions: VMAPExtensionNode[];
     track(event: string, errorCode?: number): void;
     /** Sends one pixel (an Image request in a browser-like global). */
     tracker(uri: string): void;

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="4.2">
+  <Ad id="car" sequence="1"><InLine><AdSystem>fx</AdSystem><AdTitle>car</AdTitle>
+    <Category authority="https://iabtechlab.com">1571</Category>
+    <Impression><![CDATA[https://t.test/imp-car]]></Impression>
+    <Error><![CDATA[https://t.test/err-car?code=[ERRORCODE]]]></Error>
+    <Creatives><Creative><Linear><Duration>00:00:10</Duration><MediaFiles>
+      <MediaFile delivery="progressive" type="video/mp4" width="1280" height="720" bitrate="2500"><![CDATA[https://cdn.test/car.mp4]]></MediaFile>
+    </MediaFiles></Linear></Creative></Creatives></InLine></Ad>
+  <Ad id="coffee" sequence="2"><InLine><AdSystem>fx</AdSystem><AdTitle>coffee</AdTitle>
+    <Category authority="https://iabtechlab.com">1133</Category>
+    <Impression><![CDATA[https://t.test/imp-coffee]]></Impression>
+    <Creatives><Creative><Linear><Duration>00:00:10</Duration><MediaFiles>
+      <MediaFile delivery="progressive" type="video/mp4" width="1280" height="720" bitrate="2500"><![CDATA[https://cdn.test/coffee.mp4]]></MediaFile>
+    </MediaFiles></Linear></Creative></Creatives></InLine></Ad>
+</VAST>

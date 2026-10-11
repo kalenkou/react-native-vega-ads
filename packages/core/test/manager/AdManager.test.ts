@@ -800,6 +800,46 @@ describe('AdManager', () => {
     expect(pixels.requests).toContain('https://t.test/vmap/pre/end');
   });
 
+  describe('break context', () => {
+    it('leaves out ads of a category the break blocks: error 205 to the ad server, skipped:category to the app', async () => {
+      const pixels = new FakeHttp();
+      delete g.Image;
+      installImagePolyfill(pixels, g);
+      const ctx = setup({ [VMAP]: fixture('vmap/context.xml'), 'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml') });
+      const starting = ctx.manager.start({ vmapUrl: VMAP });
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      await settle();
+      expect(ctx.lastAdPlayer().src).toBe('https://cdn.test/coffee.mp4');
+      expect(ctx.events).toContain('skipped:category');
+      expect(pixels.requests).toContain('https://t.test/err-car?code=205');
+      await ctx.lastAdPlayer().flush();
+      expect(ctx.last()).toMatchObject({ position: 1, total: 1 });
+    });
+
+    it('takes blocked categories for a break given by hand', async () => {
+      const ctx = setup({ 'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml') });
+      const starting = ctx.manager.start({
+        breaks: [{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml', blockedAdCategories: ['1571'] }],
+      });
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      expect(ctx.lastAdPlayer().src).toBe('https://cdn.test/coffee.mp4');
+    });
+
+    it('plays every ad of a break without context', async () => {
+      const ctx = setup({ 'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml') });
+      const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml' }]));
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      expect(ctx.lastAdPlayer().src).toBe('https://cdn.test/car.mp4');
+      expect(ctx.events).not.toContain('skipped:category');
+    });
+  });
+
   it('sends the VMAP error pixel with 1009 when a break has no ads (C2-2)', async () => {
     const pixels = new FakeHttp();
     delete g.Image;
