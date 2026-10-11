@@ -10,6 +10,11 @@ export interface AdUiStrings {
   /** Before a break: "Ad in 5". */
   adIn: (seconds: number) => string;
   announceAdIn: (seconds: number) => string;
+  /** On a pause ad: how to close it. */
+  pauseAdHint: string;
+  /** Next to a pause ad's QR code. */
+  scanQr: string;
+  announcePauseAd: string;
 }
 
 export const defaultAdUiStrings: AdUiStrings = {
@@ -21,6 +26,9 @@ export const defaultAdUiStrings: AdUiStrings = {
   announceSkipIn: (seconds) => `you can skip in ${seconds} seconds`,
   adIn: (seconds) => `Ad in ${seconds}`,
   announceAdIn: (seconds) => `Ad break in ${seconds} seconds`,
+  pauseAdHint: 'Back closes the ad',
+  scanQr: 'Scan to learn more',
+  announcePauseAd: 'Ad while paused. Press Back to close it.',
 };
 
 export interface AdUiState {

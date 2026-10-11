@@ -16,6 +16,7 @@ import {
   installImagePolyfill,
   Macros,
   MediaFileOptions,
+  PauseAdView,
   RepeatOptions,
   SessionSnapshot,
 } from 'react-native-ads-core';
@@ -60,6 +61,13 @@ export interface UseVegaAdsOptions {
   maxBreakAds?: number;
   /** A break never runs longer than this; also sent as `[BREAKMAXDURATION]`. */
   maxBreakSeconds?: number;
+  /**
+   * VAST tag of a pause ad (IAB CTV Ad Portfolio, a `<NonLinear>` image): shown when the viewer
+   * pauses the content, never when a break pauses it. Draw it with `<PauseAd view={ads.pauseAd} />`.
+   */
+  pauseAdUrl?: string;
+  /** How long the content stays paused before the pause ad shows. Default 1500 ms. */
+  pauseAdDelayMs?: number;
   mediaFile?: MediaFileOptions;
   /** Overlay texts; English by default. */
   strings?: Partial<AdUiStrings>;
@@ -95,6 +103,10 @@ export interface VegaAds {
   /** Mid-rolls to mark on your timeline, and the countdown to the next one (AdCountdown). */
   timeline: AdTimeline;
   surfaces: AdSurfaces;
+  /** The pause ad to show (`<PauseAd>`), or null. Back closes it while `handleBack` is on. */
+  pauseAd: PauseAdView | null;
+  /** Close the pause ad. False when none is on screen. */
+  closePauseAd: () => boolean;
   /** Viewer pressed Skip. False when skipping is not allowed yet. */
   skip: () => boolean;
   /**
@@ -133,6 +145,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   const [snapshot, setSnapshot] = useState<SessionSnapshot>(IDLE_SNAPSHOT);
   const [ended, setEnded] = useState(false);
   const [timeline, setTimeline] = useState<AdTimeline>(NO_TIMELINE);
+  const [pauseAd, setPauseAd] = useState<PauseAdView | null>(null);
   const manager = useRef<AdManager | null>(null);
   /** Which source and player already started, so a restart (new surfaces) resumes instead of replaying. */
   const startedFor = useRef<{ key: string; player: W3cVideoPlayer | 'port'; manager: AdManager } | null>(null);
@@ -184,6 +197,9 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       avoidRepeats: o.avoidRepeats,
       maxBreakAds: o.maxBreakAds,
       maxBreakSeconds: o.maxBreakSeconds,
+      pauseAdUrl: o.pauseAdUrl,
+      pauseAdDelayMs: o.pauseAdDelayMs,
+      onPauseAd: setPauseAd,
       onChange: setSnapshot,
       onTimeline: setTimeline,
       onEvent: (name) => {
@@ -203,6 +219,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       manager.current = null;
       setSnapshot(IDLE_SNAPSHOT);
       setTimeline(NO_TIMELINE);
+      setPauseAd(null);
       setEnded(false);
       void created.dispose();
     };
@@ -235,6 +252,16 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     return () => subscription.remove();
   }, [inAd, handleBack]);
 
+  const pauseAdShown = pauseAd !== null;
+  useEffect(() => {
+    if (!pauseAdShown || !handleBack) {
+      return undefined;
+    }
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => manager.current?.closePauseAd() ?? false);
+    return () => subscription.remove();
+  }, [pauseAdShown, handleBack]);
+  const closePauseAd = useCallback(() => manager.current?.closePauseAd() ?? false, []);
+
   const skip = useCallback(() => manager.current?.skip() ?? false, []);
   const togglePause = useCallback(
     () => (latest.current.adPause ?? true) && (manager.current?.togglePause() ?? false),
@@ -256,5 +283,5 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     [inAd, snapshot.adSurface],
   );
 
-  return { playing: inAd, ended, snapshot, ui, timeline, surfaces, skip, togglePause, back };
+  return { playing: inAd, ended, snapshot, ui, timeline, surfaces, pauseAd, closePauseAd, skip, togglePause, back };
 }

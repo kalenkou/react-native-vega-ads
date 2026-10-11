@@ -188,4 +188,20 @@ describe('VegaAdsPlayer – customising', () => {
     expect(await run({})).toContain('Ad in 3');
     expect(await run({ countdown: false })).not.toContain('Ad in 3');
   });
+
+  it('draws the pause ad when the viewer pauses the content', async () => {
+    const PAUSE = 'https://ads.test/pause.xml';
+    const clock = new FakeClock(1_000_000);
+    const ctx = setup({ ads: { breaks: [] }, pauseAdUrl: PAUSE, clock });
+    ctx.http.on(PAUSE, { body: readFileSync(`${__dirname}/../../core/fixtures/vast/pause.xml`, 'utf8') });
+    ctx.surfacesReady();
+    await settle();
+    act(() => {
+      ctx.players[0]?.emit('pause');
+      clock.advance(1_500);
+    });
+    await settle();
+    const images = ctx.renderer.root.findAll((n) => (n.type as unknown) === 'Image');
+    expect(images.map((i) => i.props.source.uri)).toContain('https://cdn.test/pause.png');
+  });
 });

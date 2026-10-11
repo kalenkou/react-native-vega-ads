@@ -3,6 +3,7 @@ import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import type { AdSchedule, Macros, PlayerPort } from 'react-native-ads-core';
 import { AdCountdown } from './AdCountdown';
 import { AdOverlay } from './AdOverlay';
+import { PauseAd } from './PauseAd';
 import { AdSurfaceLayers } from './AdSurfaceLayers';
 import { DualSurfaceView } from './DualSurfaceView';
 import { useVegaAds, type UseVegaAdsOptions, type VegaAds } from './useVegaAds';
@@ -126,6 +127,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
         </>
       )}
       {countdown && !ads.playing && <AdCountdown nextBreakIn={ads.timeline.nextBreakIn} strings={options.strings} />}
+      <PauseAd view={ads.pauseAd} strings={options.strings} />
       {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} />}
     </View>
   );

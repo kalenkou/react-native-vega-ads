@@ -38,6 +38,7 @@ On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no offi
 - Two ad players: the next ad is prebuffered while the current one plays.
 - No black frame on content → ad → content. The content resumes at the same position.
 - No repeats, on by default: a creative is not shown again within 30 minutes, and a break has one copy of each creative and one ad per advertiser. The same creative is found by its Universal Ad ID or by its media file URLs, also when it comes from another ad source under another ad id. A dropped ad sends its `notUsed` pixels (VAST 4.1), so the ad server can use it elsewhere. The rules live in memory for one piece of content; no viewer ID is needed.
+- Pause ads (IAB CTV Ad Portfolio): when the viewer pauses the content, a still image from a VAST `<NonLinear>` shows beside the picture after 1.5 s, without sound, and goes away when the content plays or the viewer presses Back. Never when a break pauses the content. A QR code comes from the IAB `tl_qrcode` extension. Tracking: impression, `creativeView`, `overlayViewDuration`, `close`.
 - Short breaks, if you want them: `maxBreakAds` and `maxBreakSeconds` cap every break on the device (an ad that would end later is not started) and go to the ad server as the VAST 4.2 macros `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. Ads left out send their `notUsed` pixels.
 - IAB tracking: impression, start, quartiles, complete, pause, resume, skip, error codes.
 - Macros for the Fire TV advertising ID and the user's tracking choice (`IFA`, `LIMITADTRACKING`).
@@ -294,6 +295,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `macros` | Ad tag macros, for example `adIdMacros(source)` for `IFA` and `LIMITADTRACKING`. |
 | `prefetchSeconds` | How early a break is loaded and buffered. Default 15. |
 | `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |
+| `pauseAdUrl`, `pauseAdDelayMs` | VAST tag of a pause ad (`<NonLinear>` image), and how long the content stays paused before it shows. Default 1500 ms. |
 | `maxBreakAds`, `maxBreakSeconds` | Caps for every break, also sent as `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. Preloaded pre-roll requests use the macros you pass to `preloadVegaAds`. |
 | `avoidRepeats` | `{ withinMs }`: how long a shown creative is not shown again. Default 30 minutes. `false` turns the no-repeat rules off. |
 | `mediaFile` | Media file choice: `maxHeight`, `targetBitrateKbps`, or your own `select`. |
@@ -314,6 +316,8 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `ui` | Data for `AdOverlay`: label, skip button, announcement. |
 | `timeline` | `marks`: the mid-rolls (`id`, `time` in seconds, `done`) for your timeline. `nextBreakIn`: whole seconds to the next mid-roll in its last `countdownSeconds`, only once its ads are loaded; otherwise `null`. |
 | `surfaces` | Pass to `DualSurfaceView` or `AdSurfaceLayers`. |
+| `pauseAd` | The pause ad to draw with `<PauseAd view={ads.pauseAd} />`, or `null`. Back closes it. |
+| `closePauseAd()` | Close the pause ad from your own UI. Returns `false` if none is shown. |
 | `skip()` | Skip the ad. Returns `false` if skip is not allowed yet. |
 | `togglePause()` | Pause or play the ad from your own on-screen button. Not for the remote key. |
 | `back()` | Leave the break and return to the content. |
@@ -332,6 +336,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 | `skip` | the viewer pressed Skip | `SKIPPED` |
 | `skipped:repeat`, `skipped:advertiser`, `skipped:budget` | an ad was left out of a break: the viewer saw it, the break already has it or its advertiser, or it does not fit `maxBreakAds` / `maxBreakSeconds` | – |
 | `notUsed` | the `notUsed` pixels of that ad were sent | – |
+| `pauseAd:impression`, `pauseAd:creativeView`, `pauseAd:overlayViewDuration`, `pauseAd:close` | the pause ad showed, left the screen, or the viewer closed it | – |
 | `error:<code>` | an ad failed; `<code>` is the VAST error code (for example 400, 403, 405) | `ERROR` |
 | `breakEnd` | the break is over and the content resumes | `AD_BREAK_ENDED`, `CONTENT_RESUME_REQUESTED` |
 | `content:ended` | the content and the post-roll, if any, are over | `ALL_ADS_COMPLETED` (after the post-roll) |
@@ -349,6 +354,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 | `AdSurfaceLayers` | `surfaces`, `scalingMode?` (default `'fit'`), `style?` |
 | `AdOverlay` | `ui`, `onSkip`, `style?` |
 | `AdCountdown` | `nextBreakIn`, `strings?`, `style?`. Takes no D-pad focus; announces the break once for VoiceView. |
+| `PauseAd` | `view` (`ads.pauseAd`), `strings?`, `style?`. The image beside the paused picture (up to 600 px high), "Ad", the QR code if any, "Back closes the ad". Takes no D-pad focus; announced once for VoiceView. `VegaAdsPlayer` draws it for you. |
 
 ## Architecture
 
@@ -419,7 +425,7 @@ How the library meets the Appstore advertising policy, the Advertising ID policy
 - **Amazon Publisher Services (APS).** Amazon's [advertising policy](https://developer.amazon.com/docs/policy-center/amazon-appstore-advertising.html) can require large ad-supported Fire TV apps to give 30% of ad impressions to APS. `react-native-vega-ads` does not integrate APS. Check if the rule applies to your app.
 - **HTTPS media only**, unless the host is in the manifest's cleartext list (see Quick start).
 - **No VPAID or SIMID.** Interactive ads are not supported.
-- **No NonLinear or Companion ads.**
+- **NonLinear: pause ads only** (a static image). No overlay or squeezeback during playback, no Companion ads.
 - **No SSAI.** `react-native-vega-ads` is client-side only.
 - **XML.** Vega has no `DOMParser`, and native XML modules are not available. The library parses with pure JS (`@xmldom/xmldom`); `installDOMParser()` from `react-native-ads-core` adds a global `DOMParser` for other libraries. Pure-JS parsers such as `fast-xml-parser` also run on Vega. A 34.4 KB VAST takes about 60 ms on the JS thread. Ads load before the break, so the viewer does not wait. You can pass your own parser.
 

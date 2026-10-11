@@ -4,6 +4,7 @@
  */
 export const View = 'View';
 export const Text = 'Text';
+export const Image = 'Image';
 export const TouchableOpacity = 'TouchableOpacity';
 
 export const StyleSheet = {

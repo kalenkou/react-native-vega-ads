@@ -373,6 +373,29 @@ describe('useVegaAds', () => {
     expect(ctx.http.requests).toEqual(['https://ads.test/pre.xml?ads=2&dur=90']);
   });
 
+  it('shows a pause ad when the viewer pauses the content, and Back closes it', async () => {
+    const PAUSE = 'https://ads.test/pause.xml';
+    const ctx = setup({ source: { breaks: [] }, pauseAdUrl: PAUSE });
+    ctx.http.on(PAUSE, { body: readFileSync(`${__dirname}/../../core/fixtures/vast/pause.xml`, 'utf8') });
+    await ctx.surfacesReady();
+    expect(ctx.ads().pauseAd).toBeNull();
+    expect(back.pressBack()).toBe(false); // nothing on screen: Back is the app's
+    act(() => {
+      ctx.content.emit('pause');
+      ctx.clock.advance(1_500);
+    });
+    await settle();
+    expect(ctx.ads().pauseAd).toMatchObject({ imageUrl: 'https://cdn.test/pause.png' });
+    let handled = false;
+    act(() => {
+      handled = back.pressBack();
+    });
+    await settle();
+    expect(handled).toBe(true);
+    expect(ctx.ads().pauseAd).toBeNull();
+    expect(ctx.events).toContain('pauseAd:close');
+  });
+
   it('tells the app when the content and its post-roll are over', async () => {
     const ctx = setup({ source: { breaks: [] } });
     await ctx.surfacesReady();
