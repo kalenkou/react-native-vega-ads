@@ -70,6 +70,8 @@ const PLAYBACK_ERROR = 405;
 interface Current {
   item: PodItem;
   tracker: AdTracker;
+  /** Media controls already point at this ad's player. */
+  focused?: boolean;
 }
 
 interface Standby {
@@ -179,7 +181,6 @@ export class AdBreakSession {
     }
     this.armWatchdog();
     await player.play();
-    await player.takeMediaControlFocus();
   }
 
   /** Viewer pressed Skip. @returns false when skipping is not allowed yet (R8). */
@@ -395,6 +396,25 @@ export class AdBreakSession {
         void this.prepareStandby(c);
       }
     });
+    this.whilePlaying((c) => this.focusMediaControls(c));
+  }
+
+  /**
+   * Points media controls at the ad's player once, after its first frame is tracked:
+   * on a cold start the call blocks the JS thread for 1-2 s, which would hold back
+   * the impression and start pixels.
+   */
+  private focusMediaControls(c: Current): void {
+    if (c.focused) {
+      return;
+    }
+    c.focused = true;
+    const player = this.player;
+    this.deps.clock.setTimeout(() => {
+      if (this.current === c && this.player === player && player) {
+        player.takeMediaControlFocus().catch(() => undefined);
+      }
+    }, 0);
   }
 
   /** Prebuffers the ad that will follow the current one on the free ad surface. */
@@ -593,7 +613,6 @@ export class AdBreakSession {
     this.emitChange();
     this.armWatchdog();
     await standby.player.play();
-    await standby.player.takeMediaControlFocus();
   }
 
   private async backToContent(): Promise<void> {

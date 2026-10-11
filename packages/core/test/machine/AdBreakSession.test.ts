@@ -122,12 +122,33 @@ describe('AdBreakSession – playing (R1, R2, R11, R12, R21)', () => {
     await ctx.session.start();
     expect(ctx.content.calls).toContain('pause');
     expect(player.calls).toContain('play');
-    expect(player.hasMediaControlFocus).toBe(true);
     expect(sent().filter((u) => u.includes('/impression'))).toEqual([]);
     await player.flush();
     expect(sent().filter((u) => u.includes('/impression'))).toHaveLength(2);
+    ctx.clock.advance(0);
+    expect(player.hasMediaControlFocus).toBe(true);
     expect(ctx.session.state).toBe('playing');
     expect(last(ctx.states)).toMatchObject({ state: 'playing', position: 1, total: 1 });
+  });
+
+  // On a cold start setMediaControlFocus blocks the JS thread for 1-2 s on the device,
+  // which held back the `playing` event and so the impression and start pixels.
+  it('takes media control focus only after the first frame is tracked, once per ad', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    sent();
+    await ctx.session.start();
+    await settle();
+    expect(player.calls).not.toContain('focus');
+    await player.flush();
+    expect(player.calls).not.toContain('focus');
+    ctx.clock.advance(0);
+    expect(player.calls.filter((call) => call === 'focus')).toHaveLength(1);
+    expect(ctx.session.togglePause()).toBe(true);
+    expect(ctx.session.togglePause()).toBe(true);
+    await player.flush();
+    ctx.clock.advance(0);
+    expect(player.calls.filter((call) => call === 'focus')).toHaveLength(1);
   });
 
   it('tracks quartiles and shows progress', async () => {
@@ -294,13 +315,14 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
     first.emitEnded();
     await settle();
     expect(next.calls).toContain('play');
-    expect(next.hasMediaControlFocus).toBe(true);
     expect(first.calls.filter((c) => c.startsWith('src:'))).toHaveLength(1);
     expect(first.deinitialized).toBe(true);
     await next.flush();
     await settle();
     expect(last(ctx.states)).toMatchObject({ position: 2, total: 2, adSurface: STANDBY });
     expect(pixels.requests).toContain('https://t.test/imp-pod-2');
+    ctx.clock.advance(0);
+    expect(next.hasMediaControlFocus).toBe(true);
   });
 
   it('starts the next ad just before the current one ends, so its first frame covers the end (no content frame between ads)', async () => {
@@ -315,7 +337,6 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
     first.emitTime(9.6);
     await settle();
     expect(next.calls).toContain('play');
-    expect(next.hasMediaControlFocus).toBe(true);
     expect(first.deinitialized).toBe(false);
     // One sound at a time (Fire TV audio focus test): the finishing ad is silenced.
     expect(first.muted).toBe(true);
@@ -325,6 +346,8 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
     await next.flush();
     await settle();
     expect(last(ctx.states)).toMatchObject({ position: 2, adSurface: STANDBY });
+    ctx.clock.advance(0);
+    expect(next.hasMediaControlFocus).toBe(true);
     expect(ctx.events.filter((e) => e === 'complete')).toHaveLength(0);
     first.emitEnded();
     await settle();

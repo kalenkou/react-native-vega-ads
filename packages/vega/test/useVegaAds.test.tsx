@@ -87,6 +87,8 @@ function setup(overrides: Partial<UseVegaAdsOptions> = {}) {
     await settle();
     act(() => {
       lastAd().emit('playing');
+      // Media controls move to the ad right after its first frame is tracked.
+      clock.advance(0);
     });
     await settle();
     return lastAd();
