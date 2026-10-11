@@ -8,7 +8,10 @@ import {PlayerScreen} from './screens/PlayerScreen';
 /** Two screens: the movie page and the player. */
 export const App = () => {
   const [playing, setPlaying] = useState(false);
-  const play = useCallback(() => setPlaying(true), []);
+  const play = useCallback(() => {
+    console.log('[demo] play');
+    setPlaying(true);
+  }, []);
   const close = useCallback(() => setPlaying(false), []);
   return (
     <View style={styles.root}>

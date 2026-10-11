@@ -1,5 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
+import {preloadVegaAds} from 'react-native-vega-ads';
 import type {Movie} from '../catalog';
 import {colors} from '../theme';
 
@@ -17,6 +19,10 @@ export const DetailsScreen = ({movie, onPlay}: DetailsScreenProps) => {
       globalThis as {performance?: {reportFullyDrawn?: () => void}}
     ).performance?.reportFullyDrawn?.();
   }, []);
+  // Ask for the schedule and the pre-roll now: after Play the ad only has to buffer.
+  useEffect(() => {
+    preloadVegaAds({vmapUrl: movie.vmapUrl}, {adId: AdIdRetriever});
+  }, [movie.vmapUrl]);
 
   return (
     <View style={styles.root}>
