@@ -12,8 +12,24 @@ Vega apps have no ready, open way to play VAST/VMAP ads:
 
 - **Google IMA is not available on Vega.** Amazon's CSAI guide shows how to switch between two `VideoPlayer` instances. Ad requests, VAST/VMAP, tracking, pods, skip and error handling are left to each app ("App-specific logic"). See [Client-side ad insertion overview](https://developer.amazon.com/docs/vega/0.24/client-side-ad-insertion-overview-vega.html).
 - **Player vendors do not cover it.** The Bitmovin Vega sample states: "No client-side ad support, due to the lack of video element reusability on Vega OS" ([sample README](https://github.com/bitmovin/bitmovin-player-web-sample-fire-tv-vega)).
-- **The options that exist are closed.** FreeWheel's Vega AdManager is a beta for FreeWheel customers only ([forum t/5679](https://community.amazondeveloper.com/t/5679)). Logituit Logix Ads Manager runs the IMA HTML5 SDK inside a WebView, VOD only ([forum t/7536](https://community.amazondeveloper.com/t/7536)).
+- **The options that exist are closed.** FreeWheel's Vega AdManager is a beta for FreeWheel customers only ([forum t/5679](https://community.amazondeveloper.com/t/5679)). Logituit Logix Ads Manager runs the IMA HTML5 SDK inside a WebView, VOD only ([forum t/7536](https://community.amazondeveloper.com/t/7536)). Dolby OptiView for Vega uses the same Logix IMA integration, and its sample notes: "Skippable ads are not supported" ([OptiView Vega sample, ads.md](https://github.com/THEOplayer/react-native-optiview-vega-sample/blob/main/doc/ads.md)).
 - **Developers ask for it.** "Dealing with ads these days usually means working with VAST XML data" ([forum t/20419](https://community.amazondeveloper.com/t/20419), 25.09.2025).
+
+### Options on Vega today
+
+| | vega-ads | Logix Ads Manager | Dolby OptiView Vega | FreeWheel AdManager |
+|---|---|---|---|---|
+| How ads are played | native w3cmedia players | IMA HTML5 SDK in a WebView | through the Logix IMA integration | FreeWheel SDK (beta) |
+| Your own VAST/VMAP server | yes | through Google Ad Manager | through Google Ad Manager | FreeWheel ad server |
+| Skippable ads | yes, Skip with D-pad focus | not supported in the integration the OptiView sample uses | "not supported" in the sample | not stated |
+| Remote and Alexa during ads | yes (media controls) | not stated | not stated | not stated |
+| Licence and access | Apache-2.0, open | commercial | commercial | beta, FreeWheel customers |
+
+Sources are in the list above. "Not stated" means the public pages do not say. If you need Google Ad Manager features (programmatic demand, Open Measurement), an IMA-based option fits better; `vega-ads` fits when you serve your own VAST/VMAP.
+
+### Coming from react-native-video?
+
+On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no official port. The community port [react-native-video-vega](https://github.com/TheWidlarzGroup/react-native-video-vega) (MIT) plays a URL and keeps the ad prop types, but has no ad playback. Amazon's [multi-TV sample](https://github.com/AmazonAppDev/react-native-multi-tv-app-sample) uses separate `.vega.tsx` player files on w3cmedia. `vega-ads` adds VAST/VMAP ads to that w3cmedia player: keep your `adTagUrl` (a VMAP tag) and pass it as `source: { vmapUrl }`.
 
 ## Features
 
@@ -32,7 +48,7 @@ Vega apps have no ready, open way to play VAST/VMAP ads:
 
 ### Measured on a real device
 
-Fire TV Stick 4K Select, Vega OS 1.2, 11.10.2026. Details: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
+Fire TV Stick 4K Select, Vega OS 2.0, 11.10.2026. Details: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
 
 | Check | Result |
 |---|---|
@@ -45,6 +61,8 @@ Fire TV Stick 4K Select, Vega OS 1.2, 11.10.2026. Details: [`apps/spike/DEVICE-T
 | Remote play/pause and "Alexa, pause/play" | pass during ads and content, with the manifest entries below |
 | Media controls focus switch | 197–217 ms |
 | VAST parse, 34.4 KB, Release build | ~49 ms text → DOM, ~11 ms DOM → model (median of 30) |
+| Cold launch: ad's first frame → impression pixel | 143 ms |
+| Phone video, content → pod of 3 → content | no black frame, no content frame between ads |
 
 ## Quick start
 
@@ -87,6 +105,13 @@ interface_name = "com.amazon.kepler.media.IMediaPlaybackServer"
 command_options = []
 attribute_options = []
 features = []
+```
+
+**Media URLs must be HTTPS.** The w3cmedia player refuses `http://` media with "Invalid or insecure URI scheme" in the system log; the app gets only a generic error. Many ad servers still return `http://` media files, so check your VAST. For a development server, list it in the manifest (an IP address works):
+
+```toml
+[network-traffic-policy.cleartext]
+allowed-domains = ["192.168.1.20"]
 ```
 
 Keep the usual w3cmedia services (`com.amazon.media.server`, `com.amazon.media.playersession.service` and others) as in any Vega video app. A full example is in [`apps/spike/manifest.toml`](apps/spike/manifest.toml).
@@ -242,12 +267,16 @@ Then pass your adapter as `contentPlayer`, or use `AdManager` from `@vega-ads/co
 
 | Vega SDK | React Native | Status |
 |---|---|---|
-| 0.23 | 0.72 | Verified on Fire TV Stick 4K Select, Vega OS 1.2 (`apps/spike`) |
+| 0.23 | 0.72 | Verified on Fire TV Stick 4K Select, Vega OS 2.0 (`apps/spike`) |
 | 0.24 | 0.83 | Verified on the same device in Amazon's vega-video-sample with Shaka (`examples/vega-video-sample`) |
+
+The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read on 11.10.2026). The Vega Virtual Device of SDK 0.24 runs Vega OS 1.2.
 
 ## Tools
 
-[`tools/make-vmap`](tools/make-vmap) finds mid-roll points in a video with Amazon Rekognition (shot cuts, black frames, credits) and writes a VMAP file for `vega-ads`.
+- [`tools/demo-ads`](tools/demo-ads) draws three demo ad creatives (invented brands, no third-party footage) and serves them with VAST, VMAP and a pixel log on the local network.
+- [`tools/pixel-collector`](tools/pixel-collector) collects tracking pixels on AWS Lambda and DynamoDB.
+- [`tools/make-vmap`](tools/make-vmap) finds mid-roll points in a video with Amazon Rekognition (shot cuts, black frames, credits) and writes a VMAP file for `vega-ads`.
 
 ## Development
 
@@ -261,6 +290,7 @@ npm run check   # lint, types and all tests
 - **DRM.** The first Vega devices support only one secure video decoder ([media player requirements](https://developer.amazon.com/docs/vega/0.24/media-player-requirements.html)). If both content and ads are DRM-protected, the second player cannot decode at the same time. Use clear (non-DRM) ad creatives.
 - **1 GB devices.** All current Vega sticks have 1 GB RAM. `vega-ads` uses two ad players. Amazon's guide recommends one ad player on devices with limited memory or decoders. If the second ad player cannot start or fails, `vega-ads` continues with one ad player; the gap between ads in a pod is then longer. Test on your target devices.
 - **Amazon Publisher Services (APS).** Amazon's [advertising policy](https://developer.amazon.com/docs/policy-center/amazon-appstore-advertising.html) can require large ad-supported Fire TV apps to give 30% of ad impressions to APS. `vega-ads` does not integrate APS. Check if the rule applies to your app.
+- **HTTPS media only**, unless the host is in the manifest's cleartext list (see Quick start).
 - **No VPAID or SIMID.** Interactive ads are not supported.
 - **No NonLinear or Companion ads.**
 - **No SSAI.** `vega-ads` is client-side only.
@@ -277,6 +307,12 @@ While building `vega-ads`, I logged platform issues with steps, expected and act
 - A video surface turns empty after `ended`, so content shows through between two ads for ~0.5 s. `vega-ads` starts the next ad ~500 ms early to hide this.
 - The play/pause key reaches both media controls and JS key handlers. Apps with their own remote handler toggle twice.
 - Without the media controls entries, a legacy player session still pauses a playing player on play/pause, and undoes an app's own resume.
+- The w3cmedia player refuses `http://` media; the manifest's cleartext list fixes it, but it is documented only for WebView.
+- On a cold launch, `setMediaControlFocus` blocks the JS thread for 1–2 s. Called right after `play()`, it delayed the impression; `vega-ads` now takes media controls focus after the first frame.
+
+## Credits
+
+Device tests and the demo use *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Soundtrack (C) Joram Letwory – www.tearsofsteel.org, CC BY-ND 3.0. The demo ads use the Inter font (SIL Open Font License).
 
 ## License
 

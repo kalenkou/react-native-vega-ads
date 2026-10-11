@@ -1,6 +1,6 @@
 # Spike device tests
 
-Device: Fire TV Stick 4K Select (OS 1.2, TV Ship/547, armv7l), build: `build/armv7-debug/spike_armv7.vpkg`
+Device: Fire TV Stick 4K Select (armv7l). `/etc/os-release` on 11.10.2026: "OS 2.0 (TV Ship/515)"; earlier notes said OS 1.2, which was not read from the device, build: `build/armv7-debug/spike_armv7.vpkg`
 
 | Gate | What | How | Result | Date |
 |---|---|---|---|---|

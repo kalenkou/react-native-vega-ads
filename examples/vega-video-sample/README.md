@@ -31,4 +31,4 @@ Set `ADS_ENABLED = false` in `src/ads/adsConfig.ts` to compare with the original
 
 ## Tested
 
-Fire TV Stick 4K Select, Vega OS 1.2, SDK 0.24.12112, 11.10.2026: MP4 and DASH (Shaka) titles; pre-roll, mid-roll pod, remote play/pause during an ad, Back during an ad. Details in `apps/spike/DEVICE-TESTS.md`.
+Fire TV Stick 4K Select, Vega OS 2.0, SDK 0.24.12112, 11.10.2026: MP4 and DASH (Shaka) titles; pre-roll, mid-roll pod, remote play/pause during an ad, Back during an ad. Details in `apps/spike/DEVICE-TESTS.md`.

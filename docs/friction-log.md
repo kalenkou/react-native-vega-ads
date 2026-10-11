@@ -1,9 +1,9 @@
 # Friction log
 
-Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega OS 1.2). Each entry has the task, steps, expected and actual results, severity, workaround and a suggestion.
+Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega OS 2.0). Each entry has the task, steps, expected and actual results, severity, workaround and a suggestion.
 
 ## FL-01 · Sample video URL used across docs returns 403 (11.10.2026)
-- **Task:** play a long public MP4 as content in a w3cmedia `VideoPlayer` on Fire TV Stick 4K Select (Vega OS 1.2).
+- **Task:** play a long public MP4 as content in a w3cmedia `VideoPlayer` on Fire TV Stick 4K Select (Vega OS 2.0).
 - **Steps:** `player.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'` (a Google sample bucket used in many player samples; in Amazon's `AmazonAppDev/vega-sports-app` it appears only as a commented-out option).
 - **Expected:** playback, or a JS `error` with a readable reason.
 - **Actual:** black screen. JS got `error` with `code = 4` and an empty `message`. The real cause (`souphttpsrc … Forbidden (403)`) was visible only in the system log at warning level.
@@ -21,7 +21,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Suggestion:** separate budgets for JS console and native media logs, or lower media pipeline info logs in production-like builds; document the limit next to `loggingctl`.
 
 ## FL-03 · Media controls with two w3cmedia players fail silently unless two separate steps are both done (11.10.2026)
-- **Task:** make remote play/pause and "Alexa, pause" control the player the viewer sees (content → ad → content) in a client-side ad insertion (CSAI) app with two w3cmedia players, Fire TV Stick 4K Select, Vega OS 1.2, `@amazon-devices/react-native-w3cmedia` ~2.1.
+- **Task:** make remote play/pause and "Alexa, pause" control the player the viewer sees (content → ad → content) in a client-side ad insertion (CSAI) app with two w3cmedia players, Fire TV Stick 4K Select, Vega OS 2.0, `@amazon-devices/react-native-w3cmedia` ~2.1.
 - **Steps:** A/B test on the device, one change at a time; keys injected with `inputd-cli button_press KEY_PLAYPAUSE` (once during content, once during the ad); result = count of `MediaControlHandler: performing handleTogglePlayPause` in the system log.
   - A. `player.setMediaControlFocus(componentInstance)` on every switch, no manifest entry → 0 commands delivered.
   - B. Manifest `[[extras]] key = "interface.provider"` + `interface_name = "com.amazon.kepler.media.IMediaPlaybackServer"`, no `setMediaControlFocus` → 0.
@@ -52,7 +52,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Suggestion:** document in the CSAI guide that a surface does not keep the last frame after `ended`, and give the typical `play()` → first frame latency of a prebuffered player; or add an option to keep the last frame.
 
 ## FL-06 · Play/pause key reaches both media controls and JS key handlers (11.10.2026)
-- **Task:** decide whether an app (or an ad library) should handle the remote play/pause key itself or rely on Vega Media Controls, Fire TV Stick 4K Select, Vega OS 1.2.
+- **Task:** decide whether an app (or an ad library) should handle the remote play/pause key itself or rely on Vega Media Controls, Fire TV Stick 4K Select, Vega OS 2.0.
 - **Steps:** `useTVEventHandler` logger; `inputd-cli button_press KEY_PLAYPAUSE`; builds with and without the manifest media-controls entries; during content and during an ad.
 - **Expected:** one owner per key press: either media controls consume it, or it reaches JS (like Android `onKeyDown` returning true), and docs say which.
 - **Actual:** the key always reaches JS (`eventType: 'playpause'`, down and up). With the manifest entries, media controls also pause the focused player (224 ms after key down). Apps that already map `playpause` in their own remote handler (common with spatial navigation libraries) toggle twice; without the entries, media controls do nothing and only the JS handler works, so "Alexa, pause" is lost.
@@ -61,10 +61,28 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Suggestion:** document the routing (key event and media control command both fire), or add a way to mark the key as consumed by media controls.
 
 ## FL-07 · Without media controls entries, a legacy player session still pauses the player on play/pause (11.10.2026)
-- **Task:** let an app own the remote play/pause key (spatial navigation remote handler) without the media controls manifest entries, Fire TV Stick 4K Select, Vega OS 1.2, w3cmedia ~2.1.
+- **Task:** let an app own the remote play/pause key (spatial navigation remote handler) without the media controls manifest entries, Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1.
 - **Steps:** manifest without `com.amazon.category.kepler.media` / `IMediaPlaybackServer`; no `setMediaControlFocus` call; app toggles the player on `useTVEventHandler` `playpause` key down; live log with `loggingctl log -f`.
 - **Expected:** with no media controls declared, the key goes only to the app.
 - **Actual:** the key reaches JS, and then inputd's MediaController also handles it when the player session is in foreground: "isSessionInForeground :1", then w3cmedia "Player Session is performing pause operation on Media Player". A paused player is not resumed by the system (session not in foreground), so the app's resume is undone ~450 ms later; the viewer sees play start and stop.
 - **Severity:** high for apps with their own remote handling (looks like a broken resume).
 - **Workaround:** use the manifest entries and media controls as the only owner of play/pause; ignore `playpause` in the app's own key handler while media controls own the player.
 - **Suggestion:** document the legacy player session behaviour (which keys, when it acts) next to the media controls docs, or a way to opt out of it; log which component consumed the key.
+
+## FL-08 · w3cmedia refuses http:// media; the cleartext manifest policy is documented only for WebView (11.10.2026)
+- **Task:** play VAST ad media files and a content movie served over plain HTTP on the local network (typical for development, and many ad servers still return `http://` MediaFile URLs), Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1, SDK 0.24.
+- **Steps:** `fetch` the VMAP/VAST over `http://<LAN IP>:8080/` (works); set `player.src = 'http://<LAN IP>:8080/ad.mp4'`; read `loggingctl log -f -o cat`.
+- **Expected:** playback, or a documented rule that media must use HTTPS, with a clear `MediaError` message.
+- **Actual:** `MEDIA_PLAYERV2: MediaUrlSourceImpl.cpp(58) createSourceElement Invalid or insecure URI scheme`, `Could not build sourceBin`; JS only gets a generic error, so the ad fails with VAST error 400 and the content stays black. `fetch` to the same host works. Adding `[network-traffic-policy.cleartext] allowed-domains = ["<LAN IP>"]` to the manifest makes w3cmedia play it (IP address accepted). The docs describe this section only on the WebView page ("Build Web Apps with WebView", 0.24). The public AmazonAppDev/vega-video-sample has four `http://` `videoUrl` entries (`src/data/rotatorData.json`) and no cleartext section in its manifest (I did not play those entries).
+- **Severity:** medium (silent black screen; hard to find without the system log; ad libraries cannot tell "insecure URL" from "broken file").
+- **Workaround:** HTTPS for all media; for development, the cleartext allow-list in the app manifest.
+- **Suggestion:** document `network-traffic-policy` as an app-wide policy (fetch vs media vs WebView), and put the reason ("cleartext not allowed") into `MediaError.message`.
+
+## FL-09 · setMediaControlFocus blocks the JS thread for 1–2 s on a cold launch (11.10.2026)
+- **Task:** start a pre-roll right after app launch and send the impression on the first frame, Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1, SDK 0.24.
+- **Steps:** `player.play()`, then at once `player.setMediaControlFocus(componentInstance)` (so the remote and Alexa control the ad); the impression is sent from the `playing` listener; `loggingctl log -f -o cat`.
+- **Expected:** `setMediaControlFocus` returns a promise and does not hold the JS thread; `playing` reaches JS a few ms after the native event.
+- **Actual:** native `playing` at 21.33 s; JS logs from the media controls setup ("Manifest was parsed", then a 1.2 s gap, then `MediaControlStateUtil` and many `addEventListener` lines); `playing` reached JS at 23.74 s. The impression and `start` pixels were 2.4 s late on the first launch after install (0.5 s on the next launch), and `firstQuartile` came 0.3 s after `start`. With a 5 s first-frame timeout this can also drop the pre-roll.
+- **Severity:** medium (wrong ad measurement on cold start; possible lost pre-roll).
+- **Workaround:** call `setMediaControlFocus` after the first frame is handled (deferred with `setTimeout(0)`); measured after the change: 143 ms from native `playing` to the impression.
+- **Suggestion:** do the media controls setup off the JS thread, or document that the first call is slow and should not be made on a time-critical path.
