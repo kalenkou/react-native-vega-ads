@@ -15,12 +15,13 @@ The ads are invented brands drawn by [`tools/demo-ads`](../../tools/demo-ads).
 ## Run it
 
 You need the Vega SDK, a Fire TV device on the same network as your computer, and the
-media from [`tools/demo-ads`](../../tools/demo-ads) (the ads and `tears_of_steel_720p.mp4`).
+media from [`tools/demo-ads`](../../tools/demo-ads).
 
-1. Start the media server on your computer:
+1. Get the movie and the ads, and start the media server on your computer:
 
    ```sh
    cd tools/demo-ads
+   sh get_media.sh
    node serve.mjs --dir media --midrolls 139.917,441.208
    ```
 

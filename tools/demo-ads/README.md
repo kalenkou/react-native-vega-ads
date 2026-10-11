@@ -11,12 +11,29 @@ Inter font (SIL Open Font License), no third-party footage or logos.
 | Brewnord | 15 s | no |
 | Voltaro | 12 s | after 5 s |
 
-## Make the creatives
+## Get all the media
 
-Needs Python 3 with Pillow, and ffmpeg with libx264 and aac.
+Needs curl, ffmpeg with libx264 and aac, and Python 3 with Pillow.
 
 ```sh
-python3 make_ads.py --font Inter.ttf --out media/ads
+sh get_media.sh
+```
+
+It fills `media/` (not committed) in about a minute:
+
+- `tears_of_steel_720p.mp4` – the movie, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Downloaded from `download.blender.org` and checked by SHA-256. The video is copied as it is; the MP3 sound becomes AAC, which w3cmedia plays.
+- `poster.jpg` – a frame of the movie;
+- `fonts/Inter.ttf` and `fonts/OFL.txt` – [Inter](https://github.com/google/fonts/tree/main/ofl/inter), SIL Open Font License;
+- `ads/` – the three ads, drawn by `make_ads.py`.
+
+Files that are already there are kept, so a second run does nothing.
+
+## Make the creatives
+
+`get_media.sh` runs this step. To run it alone (Python 3 with Pillow, ffmpeg with libx264 and aac):
+
+```sh
+python3 make_ads.py --font media/fonts/Inter.ttf --out media/ads
 ```
 
 Each ad is written in 1080p (H.264 High 4.0) and 720p, AAC stereo, `+faststart`.

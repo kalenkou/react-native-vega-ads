@@ -14,3 +14,5 @@ coverage/
 samconfig.toml
 # Vega perf tool reports
 output/
+# Demo media, downloaded or built by tools/demo-ads/get_media.sh
+tools/demo-ads/media/
