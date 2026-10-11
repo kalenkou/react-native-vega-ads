@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="4.2">
+  <Ad id="pod-2" sequence="2"><InLine><AdSystem>fx</AdSystem><AdTitle>second</AdTitle>
+    <Impression><![CDATA[https://t.test/imp-pod-2]]></Impression>
+    <Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles>
+      <MediaFile delivery="progressive" type="video/mp4" width="1280" height="720" bitrate="2500"><![CDATA[https://cdn.test/pod-2.mp4]]></MediaFile>
+    </MediaFiles></Linear></Creative></Creatives></InLine></Ad>
+  <Ad id="pod-1" sequence="1"><InLine><AdSystem>fx</AdSystem><AdTitle>first</AdTitle>
+    <Impression><![CDATA[https://t.test/imp-pod-1]]></Impression>
+    <Creatives><Creative><Linear skipoffset="00:00:05"><Duration>00:00:10</Duration><MediaFiles>
+      <MediaFile delivery="progressive" type="video/mp4" width="1280" height="720" bitrate="2500"><![CDATA[https://cdn.test/pod-1.mp4]]></MediaFile>
+    </MediaFiles></Linear></Creative></Creatives></InLine></Ad>
+  <Ad id="buffet"><InLine><AdSystem>fx</AdSystem><AdTitle>buffet</AdTitle>
+    <Impression><![CDATA[https://t.test/imp-buffet]]></Impression>
+    <Creatives><Creative><Linear><Duration>00:00:06</Duration><MediaFiles>
+      <MediaFile delivery="progressive" type="video/mp4" width="1280" height="720" bitrate="2500"><![CDATA[https://cdn.test/buffet.mp4]]></MediaFile>
+    </MediaFiles></Linear></Creative></Creatives></InLine></Ad>
+</VAST>

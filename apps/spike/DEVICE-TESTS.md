@@ -15,3 +15,16 @@ Device: Fire TV Stick 4K Select (OS 1.2, TV Ship/547, armv7l), build: `build/arm
 Notes:
 - The Google sample bucket (gtv-videos-bucket) answers 403; content moved to archive.org BigBuckBunny_512kb.mp4.
 - System log drops info lines above 300 lines/s; the on-screen log is the reliable source.
+
+## Core on the device (11.10.2026)
+
+Spike uses `@vega-ads/core` (packed with `npm pack`, installed with `npm run use-core`) instead of its own VAST code.
+
+| Check | Result |
+|---|---|
+| Metro bundles core (vast-client, vmap ESM build, xmldom) | build OK, app starts → PASS |
+| Core `Image` polyfill | "polyfill (core): Image installed"; all pixel responses 200 → PASS |
+| `requestVmap` on Google sample `premidpostoptimizedpod` | 3 breaks in 309 ms; mid-roll pod seq 1, 2, 3 (10 s each) → PASS |
+| `requestVast` + `selectMediaFile` on Google single inline tag | ready in 461 ms, 10 s, 720p, skipAfter=null; switch 101 ms; resume drift 0.00 s → PASS |
+
+Screens captured on the device with `gwsi-tool-screenshooter /tmp/x.png` and `vega exec vda pull /tmp/x.png .` (no phone needed).

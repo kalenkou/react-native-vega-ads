@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
+  <vmap:AdBreak timeOffset="00:00:15.000" breakType="linear" breakId="midroll-1">
+    <vmap:AdSource id="midroll-1-ad-1" allowMultipleAds="false" followRedirects="true">
+      <vmap:AdTagURI templateType="vast3"><![CDATA[https://ads.test/pod-a.xml]]></vmap:AdTagURI>
+    </vmap:AdSource>
+  </vmap:AdBreak>
+  <vmap:AdBreak timeOffset="00:00:15.000" breakType="linear" breakId="midroll-1">
+    <vmap:AdSource id="midroll-1-ad-2" allowMultipleAds="false" followRedirects="true">
+      <vmap:AdTagURI templateType="vast3"><![CDATA[https://ads.test/pod-b.xml]]></vmap:AdTagURI>
+    </vmap:AdSource>
+  </vmap:AdBreak>
+  <vmap:AdBreak timeOffset="00:00:45.000" breakType="linear" breakId="midroll-2">
+    <vmap:AdSource id="midroll-2-ad-1" allowMultipleAds="false" followRedirects="true">
+      <vmap:AdTagURI templateType="vast3"><![CDATA[https://ads.test/pod-c.xml]]></vmap:AdTagURI>
+    </vmap:AdSource>
+  </vmap:AdBreak>
+</vmap:VMAP>

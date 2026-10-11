@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="4.2">
+  <Ad id="nl"><InLine><AdSystem>fx</AdSystem><AdTitle>overlay</AdTitle>
+    <Impression><![CDATA[https://t.test/imp-nl]]></Impression>
+    <Error><![CDATA[https://t.test/err-nl?code=[ERRORCODE]]]></Error>
+    <Creatives><Creative><NonLinearAds><NonLinear width="300" height="50"><StaticResource creativeType="image/png"><![CDATA[https://cdn.test/o.png]]></StaticResource></NonLinear></NonLinearAds></Creative></Creatives>
+  </InLine></Ad>
+</VAST>

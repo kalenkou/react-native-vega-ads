@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="2.0">
+  <Ad id="v2"><InLine><AdSystem>old</AdSystem><AdTitle>v2</AdTitle>
+    <Impression><![CDATA[https://t.test/v2-imp]]></Impression>
+    <Creatives><Creative><Linear><Duration>00:00:05</Duration><MediaFiles>
+      <MediaFile delivery="progressive" type="video/mp4" width="640" height="360"><![CDATA[https://cdn.test/v2.mp4]]></MediaFile>
+    </MediaFiles></Linear></Creative></Creatives>
+  </InLine></Ad>
+</VAST>

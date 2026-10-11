@@ -4,5 +4,17 @@
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "scripts": { "test": "jest" }
+  "scripts": {
+    "build": "tsc -b",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@dailymotion/vast-client": "6.5.0",
+    "@dailymotion/vmap": "3.3.3",
+    "@xmldom/xmldom": "0.8.15"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ]
 }

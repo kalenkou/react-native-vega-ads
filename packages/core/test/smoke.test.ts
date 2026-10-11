@@ -1,7 +1,21 @@
-import { VERSION } from '../src';
+import * as core from '../src';
 
-describe('package smoke test', () => {
+describe('public API', () => {
   it('exposes a version string', () => {
-    expect(VERSION).toBe('0.0.0');
+    expect(core.VERSION).toBe('0.0.0');
+  });
+
+  it.each([
+    'installImagePolyfill',
+    'createUrlHandler',
+    'describeFailure',
+    'requestVast',
+    'requestVmap',
+    'parseTimeOffset',
+    'selectMediaFile',
+    'BreakScheduler',
+    'silentLogger',
+  ])('exports %s', (name) => {
+    expect((core as Record<string, unknown>)[name]).toBeDefined();
   });
 });

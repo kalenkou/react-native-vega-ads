@@ -13,7 +13,7 @@ import {
 import {useKeplerAppStateManager} from '@amazon-devices/react-native-kepler';
 import {log, subscribe} from './spike/log';
 import {installImagePolyfill, reportRuntime} from './spike/runtime';
-import {loadAd, LoadedAd} from './spike/ads';
+import {checkVmap, loadAd, LoadedAd} from './spike/ads';
 
 const CONTENT_URL =
   'https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4';
@@ -62,6 +62,7 @@ export const App = () => {
   useEffect(() => {
     reportRuntime();
     installImagePolyfill();
+    void checkVmap();
     return () => {
       void adPlayer.current?.deinitialize().catch(() => undefined);
       void mainPlayer.current?.deinitialize().catch(() => undefined);

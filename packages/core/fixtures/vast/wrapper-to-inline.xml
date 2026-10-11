@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="4.2">
+  <Ad id="w1">
+    <Wrapper>
+      <AdSystem>vega-ads fixtures</AdSystem>
+      <VASTAdTagURI><![CDATA[https://ads.test/inline.xml]]></VASTAdTagURI>
+      <Impression><![CDATA[https://t.test/impression-w1]]></Impression>
+      <Error><![CDATA[https://t.test/error-w1?code=[ERRORCODE]]]></Error>
+      <Creatives>
+        <Creative>
+          <Linear>
+            <TrackingEvents>
+              <Tracking event="start"><![CDATA[https://t.test/start-w1]]></Tracking>
+            </TrackingEvents>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </Wrapper>
+  </Ad>
+</VAST>

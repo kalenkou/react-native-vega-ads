@@ -1,3 +1,5 @@
+import {installImagePolyfill as installCorePolyfill} from '@vega-ads/core';
+import {http} from './ads';
 import {log} from './log';
 
 /** Gate 6: what the Vega JavaScript runtime actually provides. */
@@ -14,32 +16,19 @@ export function reportRuntime(): void {
   names.forEach((name) => log(`runtime: typeof ${name} = ${typeof g[name]}`));
 }
 
-/**
- * Tracking pixels: vast-client sends them with `new Image()` when `window` exists.
- * React Native has `window` but no `Image` constructor, so we provide a tiny one
- * that fires a GET request and ignores the response.
- */
+/** Core polyfill, with a logging HTTP port so pixels and their status show on screen. */
 export function installImagePolyfill(): void {
-  const g = globalThis as Record<string, unknown>;
-  if (typeof g.Image !== 'undefined') {
-    log('polyfill: Image already defined, skipped');
-    return;
-  }
-  class PixelImage {
-    private url = '';
-    get src(): string {
-      return this.url;
-    }
-    set src(value: string) {
-      this.url = value;
-      log(`pixel: ${value.slice(0, 90)}`);
-      fetch(value, {method: 'GET'})
-        .then((response) => log(`pixel status: ${response.status}`))
-        .catch((error: unknown) => {
-          log(`pixel failed: ${String(error)}`);
-        });
-    }
-  }
-  g.Image = PixelImage;
-  log('polyfill: Image installed');
+  const installed = installCorePolyfill({
+    get: async (url) => {
+      log(`pixel: ${url.slice(0, 90)}`);
+      const response = await http.get(url);
+      log(`pixel status: ${response.status}`);
+      return response;
+    },
+  });
+  log(
+    installed
+      ? 'polyfill (core): Image installed'
+      : 'polyfill (core): Image already defined',
+  );
 }
