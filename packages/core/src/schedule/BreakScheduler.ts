@@ -1,4 +1,4 @@
-import type { BreakOffset } from '../request/VmapRequester';
+import type { BreakOffset } from '@vega-ads/vast';
 
 export type Decision = { type: 'prefetch' | 'start'; breakId: string };
 

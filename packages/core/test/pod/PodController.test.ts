@@ -1,5 +1,5 @@
 import { PodController, PodItem } from '../../src/pod/PodController';
-import type { LinearAd } from '../../src/request/VastRequester';
+import type { LinearAd } from '@vega-ads/vast';
 
 function ad(id: string, sequence: number | null = null, duration = 10): LinearAd {
   return {

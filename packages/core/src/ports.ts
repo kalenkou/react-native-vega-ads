@@ -29,32 +29,5 @@ export interface PlayerPort {
   deinitialize(): Promise<void>;
 }
 
-export interface ClockPort {
-  now(): number;
-  setTimeout(callback: () => void, ms: number): unknown;
-  clearTimeout(handle: unknown): void;
-}
-
-export interface HttpResponse {
-  status: number;
-  ok: boolean;
-  text(): Promise<string>;
-}
-
-export interface HttpRequestOptions {
-  signal?: AbortSignal;
-}
-
-export interface HttpPort {
-  get(url: string, options?: HttpRequestOptions): Promise<HttpResponse>;
-}
-
-export interface LoggerPort {
-  debug(message: string): void;
-  warn(message: string): void;
-}
-
-export const silentLogger: LoggerPort = {
-  debug: () => undefined,
-  warn: () => undefined,
-};
+export type { ClockPort, HttpPort, HttpRequestOptions, HttpResponse, LoggerPort } from '@vega-ads/vast';
+export { silentLogger } from '@vega-ads/vast';

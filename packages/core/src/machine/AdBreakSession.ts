@@ -1,9 +1,16 @@
 import { PodController, PodItem } from '../pod/PodController';
-import type { ClockPort, HttpPort, PlayerPort } from '../ports';
-import { MediaFileOptions, selectMediaFile } from '../request/mediaFileSelector';
-import type { AdSourceRef } from '../request/types';
-import { LinearAd, requestVast } from '../request/VastRequester';
-import { AdTracker, Macros } from '../tracking/AdTracker';
+import {
+  AdSourceRef,
+  AdTracker,
+  ClockPort,
+  HttpPort,
+  LinearAd,
+  Macros,
+  MediaFileOptions,
+  requestVast,
+  selectMediaFile,
+} from '@vega-ads/vast';
+import type { PlayerPort } from '../ports';
 
 export type SessionState = 'idle' | 'loading' | 'ready' | 'empty' | 'playing' | 'resuming' | 'interrupted' | 'finished';
 

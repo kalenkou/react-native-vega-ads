@@ -1,3 +1,6 @@
+// Ambient typings for @dailymotion/vmap (it ships none); a reference keeps them visible when another package compiles this file.
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../types/dailymotion-vmap.d.ts" />
 import VMAP, { VMAPAdBreak } from '@dailymotion/vmap';
 import { XMLSerializer } from '@xmldom/xmldom';
 import type { AdSourceRef } from './types';

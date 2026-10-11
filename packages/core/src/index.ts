@@ -1,23 +1,12 @@
 export const VERSION = '0.0.0';
 
-export * from './ports';
-export { installImagePolyfill } from './polyfill/image';
-export { createUrlHandler, describeFailure, DEFAULT_VAST_TIMEOUT_MS } from './request/urlHandler';
-export { parseXml } from './request/urlHandler';
-export type { LoadFailure, UrlHandler, UrlHandlerDeps, UrlHandlerResult, XmlParser } from './request/urlHandler';
-export { requestVast, WRAPPER_LIMIT } from './request/VastRequester';
-export type { LinearAd, VastResult, VastRequestDeps } from './request/VastRequester';
-export { requestVmap, parseTimeOffset } from './request/VmapRequester';
-export type { BreakOffset, BreakSource, ScheduledBreak, VmapResult, VmapTrackingEvent } from './request/VmapRequester';
-export { selectMediaFile, MEDIA_FILE_NOT_SUPPORTED } from './request/mediaFileSelector';
-export type { MediaFileChoice, MediaFileOptions } from './request/mediaFileSelector';
-export type { AdSourceRef, VastAd, VastLinearCreative, VastMediaFile } from './request/types';
+// Everything from the VAST layer, so apps can depend on @vega-ads/core alone.
+export * from '@vega-ads/vast';
+export type { PlayerEventName, PlayerPort } from './ports';
 export { BreakScheduler } from './schedule/BreakScheduler';
 export type { Decision, SchedulerOptions } from './schedule/BreakScheduler';
 export { PodController } from './pod/PodController';
 export type { PodItem, PodOptions } from './pod/PodController';
-export { AdTracker, adIdMacros } from './tracking/AdTracker';
-export type { AdIdSource, AdTrackerOptions, Macros } from './tracking/AdTracker';
 export { AdBreakSession } from './machine/AdBreakSession';
 export type { SessionDeps, SessionSnapshot, SessionState } from './machine/AdBreakSession';
 export { adUiState, defaultAdUiStrings } from './ui/adUiState';

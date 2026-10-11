@@ -3,7 +3,7 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/test'],
-  moduleNameMapper: { '^@vega-ads/core$': '<rootDir>/../core/src' },
+  moduleNameMapper: { '^@vega-ads/core$': '<rootDir>/../core/src', '^@vega-ads/vast$': '<rootDir>/../vast/src' },
   collectCoverage: true,
   coverageReporters: ['text-summary'],
   collectCoverageFrom: ['src/**/*.ts', '!src/**/index.ts'],

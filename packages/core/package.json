@@ -8,13 +8,11 @@
     "build": "tsc -b",
     "test": "jest"
   },
-  "dependencies": {
-    "@dailymotion/vast-client": "6.5.0",
-    "@dailymotion/vmap": "3.3.3",
-    "@xmldom/xmldom": "0.8.15"
-  },
   "files": [
     "dist",
     "!dist/**/*.tsbuildinfo"
-  ]
+  ],
+  "dependencies": {
+    "@vega-ads/vast": "0.0.0"
+  }
 }
