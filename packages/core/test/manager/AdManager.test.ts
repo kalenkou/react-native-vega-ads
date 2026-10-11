@@ -923,6 +923,14 @@ describe('AdManager', () => {
       expect(ctx.content.calls).toContain('play');
     });
 
+    it('turns a loud preloaded pre-roll down too', async () => {
+      const ctx = setup({ [VMAP]: fixture('vmap/pre-mid-post.xml'), [PRE]: fixture('vast/inline-loud.xml') }, { contentLoudness: -24 });
+      const preloaded = preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock });
+      await preloaded;
+      await startWith(ctx, { vmapUrl: VMAP }, preloaded);
+      expect(ctx.lastAdPlayer().calls).toContain('volume:0.398');
+    });
+
     it('waits for a preload still in flight instead of requesting twice', async () => {
       const ctx = setup(routes());
       let resolve: (value: PreloadedAds) => void = () => undefined;

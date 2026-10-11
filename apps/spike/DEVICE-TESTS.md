@@ -219,3 +219,13 @@ Not checked yet: the pause ad with VoiceView on (the announcement), and Back whi
 | 2 (a minute later) | Kettlo again: impression, complete | the same as run 1 |
 
 So AsyncStorage works on Vega OS 1.2 from React Native, the memory survives a cold start, and `vega run-app` (a reinstall) clears it. Gate runs, which reinstall each time, stay alike.
+
+## Loudness guard: an ad louder than the movie is turned down (12.10.2026)
+
+The movie is brought to -23.7 LUFS and the ads to -16 LUFS by `tools/demo-ads/get_media.sh`; each ad's VAST carries its loudness (`loudness` creative extension); the demo passes `contentLoudness={-23.7}`. `loud-run.sh` (kept outside the repo): install, Play, the pre-roll plays out; the whole system log of the app is kept.
+
+| Runs | Result |
+|---|---|
+| 4 | The pre-roll played to `complete` every time. The media pipeline logged `MPB UNF callback: setVolume success volume 0.412000` and the GStreamer audio sink `Setting volume` before the first frame: 0.412 is -7.7 dB, the difference between the ad and the movie. The JS line `[ads] loudness:-7.7` never reached the system log, like other lines in FL-02 |
+
+Not checked yet: by ear, that the ad sounds as loud as the movie and the movie is not turned down after the break.
