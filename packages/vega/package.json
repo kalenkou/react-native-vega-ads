@@ -1,5 +1,5 @@
 {
-  "name": "@vega-ads/vega",
+  "name": "react-native-vega-ads",
   "version": "0.0.0",
   "description": "VAST/VMAP video ads for React Native on Amazon Vega OS (Fire TV): w3cmedia players, a React hook, surfaces and a 10-foot overlay",
   "keywords": [
@@ -34,7 +34,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@vega-ads/core": "0.0.0"
+    "react-native-ads-core": "0.0.0"
   },
   "peerDependencies": {
     "@amazon-devices/react-native-kepler": ">=2.0.0",

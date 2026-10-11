@@ -6,7 +6,7 @@ index a8a3bbf..dfa3ae6 100644
  import { VideoHandler } from '../utils/VideoHandler';
  import VideoPlayerUI from '../w3cmedia/mediacontrols/VideoPlayerUI';
  import { ShakaPlayer } from '../w3cmedia/shakaplayer/ShakaPlayer';
-+import { AdOverlay, AdSurfaceLayers, useVegaAds } from '@vega-ads/vega';
++import { AdOverlay, AdSurfaceLayers, useVegaAds } from 'react-native-vega-ads';
 +import { ADS_ENABLED, ADS_VMAP_URL } from '../ads/adsConfig';
 +import { AppOverrideMediaControlHandler } from '../utils/AppOverrideMediaControlHandler';
  

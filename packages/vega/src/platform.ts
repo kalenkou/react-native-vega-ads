@@ -1,4 +1,4 @@
-import type { ClockPort, HttpPort } from '@vega-ads/core';
+import type { ClockPort, HttpPort } from 'react-native-ads-core';
 
 /** HttpPort on the global fetch of React Native for Vega. */
 export const fetchHttp: HttpPort = {

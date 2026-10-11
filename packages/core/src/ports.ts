@@ -29,5 +29,5 @@ export interface PlayerPort {
   deinitialize(): Promise<void>;
 }
 
-export type { ClockPort, HttpPort, HttpRequestOptions, HttpResponse, LoggerPort } from '@vega-ads/vast';
-export { silentLogger } from '@vega-ads/vast';
+export type { ClockPort, HttpPort, HttpRequestOptions, HttpResponse, LoggerPort } from './vast';
+export { silentLogger } from './vast';

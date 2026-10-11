@@ -1,5 +1,5 @@
-import { selectMediaFile } from '../../src/request/mediaFileSelector';
-import type { VastMediaFile } from '../../src/request/types';
+import { selectMediaFile } from '../../../src/vast/request/mediaFileSelector';
+import type { VastMediaFile } from '../../../src/vast/request/types';
 
 function file(overrides: Partial<VastMediaFile>): VastMediaFile {
   return {

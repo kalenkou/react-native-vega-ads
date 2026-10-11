@@ -12,3 +12,5 @@ coverage/
 # AWS SAM build output and local deploy settings
 .aws-sam/
 samconfig.toml
+# Vega perf tool reports
+output/

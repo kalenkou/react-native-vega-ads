@@ -1,11 +1,11 @@
 import { readFileSync } from 'fs';
 import { AdBreakSession, SessionSnapshot } from '../../src/machine/AdBreakSession';
-import { installImagePolyfill } from '@vega-ads/vast';
-import { FakeClock } from '../../../vast/test/fakes/FakeClock';
-import { FakeHttp } from '../../../vast/test/fakes/FakeHttp';
+import { installImagePolyfill } from '../../src/vast';
+import { FakeClock } from '../fakes/FakeClock';
+import { FakeHttp } from '../fakes/FakeHttp';
 import { FakePlayer } from '../fakes/FakePlayer';
 
-const fixture = (name: string): string => readFileSync(`${__dirname}/../../../vast/fixtures/vast/${name}`, 'utf8');
+const fixture = (name: string): string => readFileSync(`${__dirname}/../../fixtures/vast/${name}`, 'utf8');
 const TAG = 'https://ads.test/tag.xml';
 const SURFACE = 'ad-surface';
 const STANDBY = 'ad-surface-b';

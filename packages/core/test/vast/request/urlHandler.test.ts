@@ -1,7 +1,7 @@
-import { createUrlHandler, LoadFailure, describeFailure } from '../../src/request/urlHandler';
-import { FakeClock } from '../fakes/FakeClock';
-import { FakeHttp } from '../fakes/FakeHttp';
-import type { HttpPort } from '../../src/ports';
+import { createUrlHandler, LoadFailure, describeFailure } from '../../../src/vast/request/urlHandler';
+import { FakeClock } from '../../fakes/FakeClock';
+import { FakeHttp } from '../../fakes/FakeHttp';
+import type { HttpPort } from '../../../src/vast/ports';
 
 const URL = 'https://ads.test/vast.xml';
 const VAST = '<VAST version="4.2"><Ad id="1"><InLine/></Ad></VAST>';

@@ -1,7 +1,7 @@
 import { DOMParser } from '@xmldom/xmldom';
-import { requestVmap } from '../../../packages/vast/src/request/VmapRequester';
-import { FakeClock } from '../../../packages/vast/test/fakes/FakeClock';
-import { FakeHttp } from '../../../packages/vast/test/fakes/FakeHttp';
+import { requestVmap } from '../../../packages/core/src/vast/request/VmapRequester';
+import { FakeClock } from '../../../packages/core/test/fakes/FakeClock';
+import { FakeHttp } from '../../../packages/core/test/fakes/FakeHttp';
 import { appendCustParams, buildVmap, formatTimeOffset } from '../src/buildVmap';
 
 const VMAP_NS = 'http://www.iab.net/videosuite/vmap';

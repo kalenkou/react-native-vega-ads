@@ -1,6 +1,6 @@
 import TestRenderer, { act, ReactTestInstance } from 'react-test-renderer';
 import { AccessibilityInfo } from 'react-native';
-import type { AdUiState } from '@vega-ads/core';
+import type { AdUiState } from 'react-native-ads-core';
 import { AdOverlay } from '../src/AdOverlay';
 
 const announce = AccessibilityInfo.announceForAccessibility as jest.Mock;

@@ -1,4 +1,4 @@
-import type { AdIdSource } from '@vega-ads/core';
+import type { AdIdSource } from 'react-native-ads-core';
 
 /** The part of `AdIdRetriever` from @amazon-devices/kepler-adid-retriever that is used. */
 export interface VegaAdIdRetriever {

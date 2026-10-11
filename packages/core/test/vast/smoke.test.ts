@@ -1,4 +1,4 @@
-import * as core from '../src';
+import * as core from '../../src';
 
 describe('public API', () => {
   it('exposes a version string', () => {

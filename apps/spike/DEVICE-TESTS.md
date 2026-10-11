@@ -18,7 +18,7 @@ Notes:
 
 ## Core on the device (11.10.2026)
 
-Spike uses `@vega-ads/core` (packed with `npm pack`, installed with `npm run use-core`) instead of its own VAST code.
+Spike uses `react-native-ads-core` (packed with `npm pack`, installed with `npm run use-core`) instead of its own VAST code.
 
 | Check | Result |
 |---|---|
@@ -31,7 +31,7 @@ Screens captured on the device with `gwsi-tool-screenshooter /tmp/x.png` and `ve
 
 ## Full core session on the device (11.10.2026)
 
-Button "VMAP session": Google sample VMAP `premidpostoptimizedpod` → `BreakScheduler` → `AdBreakSession` → two w3cmedia players via `W3cPlayerAdapter` (packed `@vega-ads/core` + `@vega-ads/vega`). Keys pressed with `inputd-cli`, screens read with `gwsi-tool-screenshooter`.
+Button "VMAP session": Google sample VMAP `premidpostoptimizedpod` → `BreakScheduler` → `AdBreakSession` → two w3cmedia players via `W3cPlayerAdapter` (packed `react-native-ads-core` + `react-native-vega-ads`). Keys pressed with `inputd-cli`, screens read with `gwsi-tool-screenshooter`.
 
 | Check | Result |
 |---|---|
@@ -95,7 +95,7 @@ Confirmed by hand on the device with the normal build (manifest entries, `mediaC
 
 ## Amazon vega-video-sample with Shaka, SDK 0.24 / RN 0.83 (11.10.2026)
 
-The public AmazonAppDev/vega-video-sample (React Native 0.83, w3cmedia 2.3.2, Shaka for DASH/HLS) built with Vega SDK 0.24.12112; the packed `@vega-ads/*` installed; integration on the player screen: `useVegaAds` + `AdSurfaceLayers` + `AdOverlay`, the sample's own media controls handler passed as `contentMediaControlHandler`, player UI and buffering view hidden while `ads.playing`. VMAP: Google sample pre/mid(pod of 3)/post.
+The public AmazonAppDev/vega-video-sample (React Native 0.83, w3cmedia 2.3.2, Shaka for DASH/HLS) built with Vega SDK 0.24.12112; the packed library packages installed; integration on the player screen: `useVegaAds` + `AdSurfaceLayers` + `AdOverlay`, the sample's own media controls handler passed as `contentMediaControlHandler`, player UI and buffering view hidden while `ads.playing`. VMAP: Google sample pre/mid(pod of 3)/post.
 
 | Check | Result |
 |---|---|

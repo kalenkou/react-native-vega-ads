@@ -1,19 +1,19 @@
 {
-  "name": "@vega-ads/core",
+  "name": "react-native-ads-core",
   "version": "0.0.0",
-  "description": "Player-independent ad break logic for VAST/VMAP: break schedule, ad pods, two-player hand-over, IAB tracking and overlay state",
+  "description": "VAST 4 / VMAP 1 and player-independent ad break logic for React Native: requests, media file choice, IAB tracking, break schedule, ad pods, two-player hand-over, overlay state",
   "keywords": [
-    "vast",
-    "vmap",
+    "ad-pods",
     "ads",
     "csai",
-    "ad-pods",
+    "fire-tv",
     "iab",
     "react-native",
+    "tv",
+    "vast",
     "vega",
     "vega-os",
-    "fire-tv",
-    "tv"
+    "vmap"
   ],
   "license": "Apache-2.0",
   "author": "Yury Kalenkou",
@@ -37,6 +37,8 @@
     "!dist/**/*.tsbuildinfo"
   ],
   "dependencies": {
-    "@vega-ads/vast": "0.0.0"
+    "@dailymotion/vast-client": "6.5.0",
+    "@dailymotion/vmap": "3.3.3",
+    "react-native-vega-xml": "0.0.0"
   }
 }

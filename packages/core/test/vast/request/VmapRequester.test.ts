@@ -1,11 +1,11 @@
 import { readFileSync } from 'fs';
-import { parseTimeOffset, requestVmap, VmapResult } from '../../src/request/VmapRequester';
-import { installImagePolyfill } from '../../src/polyfill/image';
-import { parseXml as defaultParseXml } from '../../src/request/urlHandler';
-import { FakeClock } from '../fakes/FakeClock';
-import { FakeHttp } from '../fakes/FakeHttp';
+import { parseTimeOffset, requestVmap, VmapResult } from '../../../src/vast/request/VmapRequester';
+import { installImagePolyfill } from '../../../src/vast/polyfill/image';
+import { parseXml as defaultParseXml } from '../../../src/vast/request/urlHandler';
+import { FakeClock } from '../../fakes/FakeClock';
+import { FakeHttp } from '../../fakes/FakeHttp';
 
-const fixture = (name: string): string => readFileSync(`${__dirname}/../../fixtures/vmap/${name}`, 'utf8');
+const fixture = (name: string): string => readFileSync(`${__dirname}/../../../fixtures/vmap/${name}`, 'utf8');
 const URL = 'https://ads.test/vmap.xml';
 
 const g = globalThis as Record<string, unknown>;

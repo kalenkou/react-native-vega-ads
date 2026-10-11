@@ -5,7 +5,7 @@ import {
   requestVast,
   requestVmap,
   selectMediaFile,
-} from '@vega-ads/core';
+} from 'react-native-ads-core';
 import {log} from './log';
 
 /** Public Google IMA sample tag: one 10-second inline linear ad. */

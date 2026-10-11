@@ -5,6 +5,6 @@ module.exports = {
   roots: ['<rootDir>/test'],
   collectCoverage: true,
   coverageReporters: ['text-summary'],
-  collectCoverageFrom: ['src/**/*.ts', '!src/**/index.ts', '!src/ports.ts', '!src/types/**'],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/index.ts'],
   coverageThreshold: { global: { lines: 90, branches: 85 } },
 };

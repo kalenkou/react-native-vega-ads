@@ -1,6 +1,6 @@
-import { requestVast } from '../../../packages/vast/src/request/VastRequester';
-import { FakeClock } from '../../../packages/vast/test/fakes/FakeClock';
-import { FakeHttp } from '../../../packages/vast/test/fakes/FakeHttp';
+import { requestVast } from '../../../packages/core/src/vast/request/VastRequester';
+import { FakeClock } from '../../../packages/core/test/fakes/FakeClock';
+import { FakeHttp } from '../../../packages/core/test/fakes/FakeHttp';
 import { buildVast, VastAdInput } from '../src/buildVast';
 
 const VAST_URL = 'https://cdn.test/ads/pod.xml';

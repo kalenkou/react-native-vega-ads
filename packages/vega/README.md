@@ -1,13 +1,13 @@
-# @vega-ads/vega
+# react-native-vega-ads
 
 VAST/VMAP video ads for React Native on Amazon Vega OS (Fire TV): w3cmedia players, a React hook, video surfaces and a 10-foot overlay.
 
-Part of [vega-ads](https://github.com/kalenkou/vega-ads). Full guide, manifest entries and device measurements: [main README](https://github.com/kalenkou/vega-ads#readme).
+Part of [react-native-vega-ads](https://github.com/kalenkou/vega-ads). Full guide, manifest entries and device measurements: [main README](https://github.com/kalenkou/vega-ads#readme).
 
 ## Use
 
 ```tsx
-import { AdOverlay, DualSurfaceView, useVegaAds } from '@vega-ads/vega';
+import { AdOverlay, DualSurfaceView, useVegaAds } from 'react-native-vega-ads';
 
 const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player });
 

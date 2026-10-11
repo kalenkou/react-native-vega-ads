@@ -1,12 +1,12 @@
 import { readFileSync } from 'fs';
-import { AdTracker, adIdMacros } from '../../src/tracking/AdTracker';
-import { installImagePolyfill } from '../../src/polyfill/image';
-import { requestVast, LinearAd } from '../../src/request/VastRequester';
-import { FakeClock } from '../fakes/FakeClock';
-import { FakeHttp } from '../fakes/FakeHttp';
+import { AdTracker, adIdMacros } from '../../../src/vast/tracking/AdTracker';
+import { installImagePolyfill } from '../../../src/vast/polyfill/image';
+import { requestVast, LinearAd } from '../../../src/vast/request/VastRequester';
+import { FakeClock } from '../../fakes/FakeClock';
+import { FakeHttp } from '../../fakes/FakeHttp';
 
 const URL = 'https://ads.test/inline.xml';
-const INLINE = readFileSync(`${__dirname}/../../fixtures/vast/inline.xml`, 'utf8');
+const INLINE = readFileSync(`${__dirname}/../../../fixtures/vast/inline.xml`, 'utf8');
 
 const g = globalThis as Record<string, unknown>;
 let pixels: FakeHttp;

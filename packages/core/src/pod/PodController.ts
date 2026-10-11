@@ -1,4 +1,4 @@
-import type { LinearAd } from '@vega-ads/vast';
+import type { LinearAd } from '../vast';
 
 export interface PodItem {
   ad: LinearAd;

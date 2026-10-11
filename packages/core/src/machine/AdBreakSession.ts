@@ -9,7 +9,7 @@ import {
   MediaFileOptions,
   requestVast,
   selectMediaFile,
-} from '@vega-ads/vast';
+} from '../vast';
 import type { PlayerPort } from '../ports';
 
 export type SessionState = 'idle' | 'loading' | 'ready' | 'empty' | 'playing' | 'resuming' | 'interrupted' | 'finished';

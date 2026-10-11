@@ -1,5 +1,5 @@
-import { installImagePolyfill } from '../../src/polyfill/image';
-import { FakeHttp } from '../fakes/FakeHttp';
+import { installImagePolyfill } from '../../../src/vast/polyfill/image';
+import { FakeHttp } from '../../fakes/FakeHttp';
 
 const PIXEL = 'https://t.test/impression?cb=1';
 

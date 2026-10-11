@@ -1,6 +1,6 @@
 import { type ReactElement, useEffect, useRef } from 'react';
 import { AccessibilityInfo, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
-import type { AdUiState } from '@vega-ads/core';
+import type { AdUiState } from 'react-native-ads-core';
 
 export interface AdOverlayProps {
   ui: AdUiState;

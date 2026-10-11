@@ -3,14 +3,14 @@ import TestRenderer, { act } from 'react-test-renderer';
 import { BackHandler } from 'react-native';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const kepler = require('@amazon-devices/react-native-kepler') as { emitAppState(state: string): void; appStateListenerCount(): number };
-import { FakeClock } from '../../vast/test/fakes/FakeClock';
-import { FakeHttp } from '../../vast/test/fakes/FakeHttp';
+import { FakeClock } from '../../core/test/fakes/FakeClock';
+import { FakeHttp } from '../../core/test/fakes/FakeHttp';
 import { useVegaAds, UseVegaAdsOptions, VegaAds } from '../src/useVegaAds';
 import { FakeW3cPlayer } from './fakes/FakeW3cPlayer';
 import { W3cPlayerAdapter } from '../src/W3cPlayerAdapter';
 
 const back = BackHandler as unknown as { pressBack(): boolean; listenerCount(): number };
-const inline = readFileSync(`${__dirname}/../../vast/fixtures/vast/inline.xml`, 'utf8');
+const inline = readFileSync(`${__dirname}/../../core/fixtures/vast/inline.xml`, 'utf8');
 const PRE = 'https://ads.test/pre.xml';
 
 const g = globalThis as Record<string, unknown>;

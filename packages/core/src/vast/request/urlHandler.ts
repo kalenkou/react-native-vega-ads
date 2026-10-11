@@ -1,4 +1,4 @@
-import { DOMParser } from '@xmldom/xmldom';
+import { parseXml } from 'react-native-vega-xml';
 import type { ClockPort, HttpPort } from '../ports';
 
 export const DEFAULT_VAST_TIMEOUT_MS = 4000;
@@ -38,25 +38,7 @@ export function describeFailure(error: unknown): LoadFailure {
   return { kind: match[1] as 'timeout' | 'xml' | 'network' };
 }
 
-export function parseXml(text: string): Document | null {
-  let fatal = false;
-  const parser = new DOMParser({
-    errorHandler: {
-      warning: () => undefined,
-      error: () => {
-        fatal = true;
-      },
-      fatalError: () => {
-        fatal = true;
-      },
-    },
-  });
-  const doc = parser.parseFromString(text, 'text/xml') as unknown as Document | undefined;
-  if (fatal || !doc || !doc.documentElement) {
-    return null;
-  }
-  return doc;
-}
+export { parseXml };
 
 /**
  * URL handler for @dailymotion/vast-client on React Native (R16):

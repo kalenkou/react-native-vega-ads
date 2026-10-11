@@ -1,4 +1,4 @@
-import { ClockPort, HttpPort, Macros, MediaFileOptions, requestVmap, ScheduledBreak, VmapTrackingEvent } from '@vega-ads/vast';
+import { ClockPort, HttpPort, Macros, MediaFileOptions, requestVmap, ScheduledBreak, VmapTrackingEvent } from '../vast';
 import { AdBreakSession, SessionSnapshot } from '../machine/AdBreakSession';
 import { BreakScheduler, Decision } from '../schedule/BreakScheduler';
 import type { PlayerPort } from '../ports';

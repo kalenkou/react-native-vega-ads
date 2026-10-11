@@ -16,7 +16,7 @@ import {
   Macros,
   MediaFileOptions,
   SessionSnapshot,
-} from '@vega-ads/core';
+} from 'react-native-ads-core';
 import { W3cPlayerAdapter, W3cVideoPlayer } from './W3cPlayerAdapter';
 import { fetchHttp, systemClock } from './platform';
 import { createAdMediaControlHandler } from './adMediaControlHandler';

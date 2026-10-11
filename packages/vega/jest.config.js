@@ -4,8 +4,8 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/test'],
   moduleNameMapper: {
-    '^@vega-ads/core$': '<rootDir>/../core/src',
-    '^@vega-ads/vast$': '<rootDir>/../vast/src',
+    '^react-native-vega-xml$': '<rootDir>/../xml/src',
+    '^react-native-ads-core$': '<rootDir>/../core/src',
     '^react-native$': '<rootDir>/test/mocks/react-native.ts',
     '^@amazon-devices/react-native-w3cmedia$': '<rootDir>/test/mocks/w3cmedia.ts',
     '^@amazon-devices/react-native-kepler$': '<rootDir>/test/mocks/kepler.ts',

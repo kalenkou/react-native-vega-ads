@@ -85,4 +85,4 @@ Exit codes: `0` success, `1` AWS or job error, `2` bad arguments.
 cd tools/make-vmap && npx jest
 ```
 
-The tests use fake ports. They make no AWS calls and need no credentials. One test reads the generated VMAP with `requestVmap` from `packages/vast` to check that the player accepts it.
+The tests use fake ports. They make no AWS calls and need no credentials. One test reads the generated VMAP with `requestVmap` from `packages/core` to check that the player accepts it.

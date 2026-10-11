@@ -1,4 +1,4 @@
-import type { PlayerEventName, PlayerPort } from '@vega-ads/core';
+import type { PlayerEventName, PlayerPort } from 'react-native-ads-core';
 
 /**
  * The part of `VideoPlayer` from @amazon-devices/react-native-w3cmedia that the

@@ -1,8 +1,8 @@
-import { installImagePolyfill } from '../src/polyfill/image';
-import type { ClockPort, HttpPort } from '../src/ports';
-import { requestVast } from '../src/request/VastRequester';
-import { requestVmap } from '../src/request/VmapRequester';
-import { selectMediaFile } from '../src/request/mediaFileSelector';
+import { installImagePolyfill } from '../src/vast/polyfill/image';
+import type { ClockPort, HttpPort } from '../src/vast/ports';
+import { requestVast } from '../src/vast/request/VastRequester';
+import { requestVmap } from '../src/vast/request/VmapRequester';
+import { selectMediaFile } from '../src/vast/request/mediaFileSelector';
 
 // Public samples from the Google IMA docs. Responses are not stored anywhere.
 const BASE = 'https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&ciu_szs=300x250%2C728x90&gdfp_req=1&unviewed_position_start=1&env=vp&impl=s&correlator=[CACHEBUSTING]';

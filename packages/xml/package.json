@@ -1,22 +1,19 @@
 {
-  "name": "@vega-ads/vast",
+  "name": "react-native-vega-xml",
   "version": "0.0.0",
-  "description": "VAST 4 / VMAP 1 loading, media file choice and IAB tracking for React Native and Amazon Vega OS",
+  "description": "XML for React Native on Amazon Vega OS and other runtimes without DOMParser: parse to DOM or to plain objects, pure JavaScript, no native module",
   "keywords": [
-    "vast",
-    "vmap",
-    "iab",
-    "ads",
-    "csai",
+    "xml",
+    "domparser",
+    "xmlserializer",
+    "xml2js",
+    "parser",
     "react-native",
     "vega",
     "vega-os",
     "kepler",
     "fire-tv",
-    "xml",
-    "xmldom",
-    "domparser",
-    "xml2js"
+    "hermes"
   ],
   "license": "Apache-2.0",
   "author": "Yury Kalenkou",
@@ -24,7 +21,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kalenkou/vega-ads.git",
-    "directory": "packages/vast"
+    "directory": "packages/xml"
   },
   "bugs": {
     "url": "https://github.com/kalenkou/vega-ads/issues"
@@ -36,8 +33,6 @@
     "test": "jest"
   },
   "dependencies": {
-    "@dailymotion/vast-client": "6.5.0",
-    "@dailymotion/vmap": "3.3.3",
     "@xmldom/xmldom": "0.8.15"
   },
   "files": [

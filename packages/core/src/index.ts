@@ -1,7 +1,7 @@
 export const VERSION = '0.0.0';
 
-// Everything from the VAST layer, so apps can depend on @vega-ads/core alone.
-export * from '@vega-ads/vast';
+// Everything from the VAST layer, so apps get VAST and the break logic from one package.
+export * from './vast';
 export type { PlayerEventName, PlayerPort } from './ports';
 export { BreakScheduler } from './schedule/BreakScheduler';
 export type { Decision, SchedulerOptions } from './schedule/BreakScheduler';

@@ -1,4 +1,4 @@
-import type { BreakOffset } from '@vega-ads/vast';
+import type { BreakOffset } from '../vast';
 
 export type Decision = { type: 'prefetch' | 'start'; breakId: string };
 

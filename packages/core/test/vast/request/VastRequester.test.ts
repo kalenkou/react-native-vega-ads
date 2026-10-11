@@ -1,11 +1,11 @@
 import { readFileSync } from 'fs';
-import { requestVast, VastResult } from '../../src/request/VastRequester';
-import { installImagePolyfill } from '../../src/polyfill/image';
-import { parseXml as defaultParseXml } from '../../src/request/urlHandler';
-import { FakeClock } from '../fakes/FakeClock';
-import { FakeHttp } from '../fakes/FakeHttp';
+import { requestVast, VastResult } from '../../../src/vast/request/VastRequester';
+import { installImagePolyfill } from '../../../src/vast/polyfill/image';
+import { parseXml as defaultParseXml } from '../../../src/vast/request/urlHandler';
+import { FakeClock } from '../../fakes/FakeClock';
+import { FakeHttp } from '../../fakes/FakeHttp';
 
-const fixture = (name: string): string => readFileSync(`${__dirname}/../../fixtures/vast/${name}`, 'utf8');
+const fixture = (name: string): string => readFileSync(`${__dirname}/../../../fixtures/vast/${name}`, 'utf8');
 const INLINE = 'https://ads.test/inline.xml';
 
 function wrapperTo(next: string, id: string): string {

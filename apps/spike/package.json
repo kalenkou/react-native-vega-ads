@@ -17,7 +17,7 @@
     "build:app": "npm-run-all build:release",
     "build": "npm-run-all build:release",
     "release": "npm-run-all lint test build:app",
-    "use-core": "npm run build --prefix ../../packages/vast && npm run build --prefix ../../packages/core && npm run build --prefix ../../packages/vega && npm pack ../../packages/vast ../../packages/core ../../packages/vega --pack-destination /tmp && npm install --no-save /tmp/vega-ads-vast-0.0.0.tgz /tmp/vega-ads-core-0.0.0.tgz /tmp/vega-ads-vega-0.0.0.tgz"
+    "use-core": "npm run build --prefix ../../packages/xml && npm run build --prefix ../../packages/core && npm run build --prefix ../../packages/vega && npm pack ../../packages/xml ../../packages/core ../../packages/vega --pack-destination /tmp && npm install --no-save /tmp/react-native-vega-xml-0.0.0.tgz /tmp/react-native-ads-core-0.0.0.tgz /tmp/react-native-vega-ads-0.0.0.tgz"
   },
   "dependencies": {
     "@amazon-devices/react-native-kepler": "^2.0.0",

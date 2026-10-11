@@ -1,12 +1,12 @@
 import { readFileSync } from 'fs';
 import { AdManager, AdSchedule, IDLE_SNAPSHOT } from '../../src/manager/AdManager';
 import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
-import { installImagePolyfill } from '@vega-ads/vast';
-import { FakeClock } from '../../../vast/test/fakes/FakeClock';
-import { FakeHttp } from '../../../vast/test/fakes/FakeHttp';
+import { installImagePolyfill } from '../../src/vast';
+import { FakeClock } from '../fakes/FakeClock';
+import { FakeHttp } from '../fakes/FakeHttp';
 import { FakePlayer } from '../fakes/FakePlayer';
 
-const fixture = (path: string): string => readFileSync(`${__dirname}/../../../vast/fixtures/${path}`, 'utf8');
+const fixture = (path: string): string => readFileSync(`${__dirname}/../../fixtures/${path}`, 'utf8');
 const VMAP = 'https://ads.test/vmap.xml';
 const AD_A = 'ad-a';
 const AD_B = 'ad-b';

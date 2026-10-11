@@ -3,7 +3,7 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/test'],
-  // Tests compile with a config that also sees the test folder and the DOM types used by @vega-ads/vast.
+  // Tests compile with a config that also sees the test folder and the DOM types used by react-native-ads-core.
   transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }] },
   collectCoverage: true,
   coverageReporters: ['text-summary'],

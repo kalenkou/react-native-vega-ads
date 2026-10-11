@@ -1,4 +1,4 @@
-import {installImagePolyfill as installCorePolyfill} from '@vega-ads/core';
+import {installImagePolyfill as installCorePolyfill} from 'react-native-ads-core';
 import {http} from './ads';
 import {log} from './log';
 

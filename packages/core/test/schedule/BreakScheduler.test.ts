@@ -1,5 +1,5 @@
 import { BreakScheduler, Decision } from '../../src/schedule/BreakScheduler';
-import type { BreakOffset } from '@vega-ads/vast';
+import type { BreakOffset } from '../../src/vast';
 
 const at = (seconds: number): BreakOffset => ({ kind: 'time', seconds });
 const start: BreakOffset = { kind: 'start' };

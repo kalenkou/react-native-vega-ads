@@ -1,8 +1,8 @@
-# vega-ads
+# react-native-vega-ads
 
 Client-side ad insertion (CSAI) for React Native apps on Amazon Vega OS (Fire TV).
 
-`vega-ads` reads VAST 4 and VMAP 1, plays pre-, mid- and post-rolls on native w3cmedia players, switches between content and ads without a black frame, and sends IAB tracking events. It is for Vega app developers who have their own ad server and need video ads without a vendor SDK. It is open source under Apache-2.0.
+`react-native-vega-ads` reads VAST 4 and VMAP 1, plays pre-, mid- and post-rolls on native w3cmedia players, switches between content and ads without a black frame, and sends IAB tracking events. It is for Vega app developers who have their own ad server and need video ads without a vendor SDK. It is open source under Apache-2.0.
 
 > Status: early. The API can still change. The packages are not on npm yet. Tested on one device (see below).
 
@@ -17,7 +17,7 @@ Vega apps have no ready, open way to play VAST/VMAP ads:
 
 ### Options on Vega today
 
-| | vega-ads | Logix Ads Manager | Dolby OptiView Vega | FreeWheel AdManager |
+| | react-native-vega-ads | Logix Ads Manager | Dolby OptiView Vega | FreeWheel AdManager |
 |---|---|---|---|---|
 | How ads are played | native w3cmedia players | IMA HTML5 SDK in a WebView | through the Logix IMA integration | FreeWheel SDK (beta) |
 | Your own VAST/VMAP server | yes | through Google Ad Manager | through Google Ad Manager | FreeWheel ad server |
@@ -25,11 +25,11 @@ Vega apps have no ready, open way to play VAST/VMAP ads:
 | Remote and Alexa during ads | yes (media controls) | not stated | not stated | not stated |
 | Licence and access | Apache-2.0, open | commercial | commercial | beta, FreeWheel customers |
 
-Sources are in the list above. "Not stated" means the public pages do not say. If you need Google Ad Manager features (programmatic demand, Open Measurement), an IMA-based option fits better; `vega-ads` fits when you serve your own VAST/VMAP.
+Sources are in the list above. "Not stated" means the public pages do not say. If you need Google Ad Manager features (programmatic demand, Open Measurement), an IMA-based option fits better; `react-native-vega-ads` fits when you serve your own VAST/VMAP.
 
 ### Coming from react-native-video?
 
-On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no official port. The community port [react-native-video-vega](https://github.com/TheWidlarzGroup/react-native-video-vega) (MIT) plays a URL and keeps the ad prop types, but has no ad playback. Amazon's [multi-TV sample](https://github.com/AmazonAppDev/react-native-multi-tv-app-sample) uses separate `.vega.tsx` player files on w3cmedia. `vega-ads` adds VAST/VMAP ads to that w3cmedia player: keep your `adTagUrl` (a VMAP tag) and pass it as `source: { vmapUrl }`.
+On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no official port. The community port [react-native-video-vega](https://github.com/TheWidlarzGroup/react-native-video-vega) (MIT) plays a URL and keeps the ad prop types, but has no ad playback. Amazon's [multi-TV sample](https://github.com/AmazonAppDev/react-native-multi-tv-app-sample) uses separate `.vega.tsx` player files on w3cmedia. `react-native-vega-ads` adds VAST/VMAP ads to that w3cmedia player: keep your `adTagUrl` (a VMAP tag) and pass it as `source: { vmapUrl }`.
 
 ## Features
 
@@ -72,12 +72,12 @@ The packages are not published yet. Build and pack them from this repository:
 
 ```sh
 npm ci
-npm pack ./packages/vast ./packages/core ./packages/vega
+npm pack ./packages/xml ./packages/core ./packages/vega
 ```
 
-Then, in your app, install the three `.tgz` files: `npm install --no-save path/to/vega-ads-*.tgz`. After the npm release this becomes `npm install @vega-ads/vega @vega-ads/core`.
+Then, in your app, install the three `.tgz` files: `npm install --no-save path/to/*.tgz`. After the npm release this becomes `npm install react-native-vega-ads`.
 
-Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. Your Vega app already has them. The Amazon packages are marked optional, so `@vega-ads/core` also installs in non-Vega projects.
+Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. Your Vega app already has them. The Amazon packages are marked optional, so `react-native-ads-core` also installs in non-Vega projects.
 
 ### 2. Add entries to `manifest.toml`
 
@@ -123,7 +123,7 @@ Create your content `VideoPlayer` as usual, with `autoplay = false`. The hook st
 ```tsx
 import { useEffect, useState } from 'react';
 import { VideoPlayer } from '@amazon-devices/react-native-w3cmedia';
-import { AdOverlay, DualSurfaceView, useVegaAds } from '@vega-ads/vega';
+import { AdOverlay, DualSurfaceView, useVegaAds } from 'react-native-vega-ads';
 
 export function PlayerScreen({ contentUrl, vmapUrl }: { contentUrl: string; vmapUrl: string }) {
   const [player, setPlayer] = useState<VideoPlayer | null>(null);
@@ -169,7 +169,7 @@ To fill the Fire TV advertising ID macros (`IFA`, `IFATYPE`, `LIMITADTRACKING`):
 
 ```ts
 import { AdIdRetriever } from '@amazon-devices/kepler-adid-retriever';
-import { adIdMacros, vegaAdIdSource } from '@vega-ads/vega';
+import { adIdMacros, vegaAdIdSource } from 'react-native-vega-ads';
 
 const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player, macros: adIdMacros(vegaAdIdSource(AdIdRetriever)) });
 ```
@@ -236,6 +236,23 @@ useTVEventHandler((event) => {
 | `togglePause()` | Pause or play the ad from your own on-screen button. Not for the remote key. |
 | `back()` | Leave the break and return to the content. |
 
+### Events (`onEvent`)
+
+| Event | When | react-native-video `AdEvent` |
+|---|---|---|
+| `impression` | the ad's first frame is on screen | `IMPRESSION` |
+| `start`, `firstQuartile`, `midpoint`, `thirdQuartile`, `complete` | IAB progress of the ad | `STARTED`, `FIRST_QUARTILE`, `MIDPOINT`, `THIRD_QUARTILE`, `COMPLETED` |
+| `pause`, `resume` | the viewer paused or resumed the ad | `PAUSED`, `RESUMED` |
+| `skip` | the viewer pressed Skip | `SKIPPED` |
+| `error:<code>` | an ad failed; `<code>` is the VAST error code (for example 400, 403, 405) | `ERROR` |
+| `breakEnd` | the break is over and the content resumes | `AD_BREAK_ENDED`, `CONTENT_RESUME_REQUESTED` |
+| `content:ended` | the content and the post-roll, if any, are over | `ALL_ADS_COMPLETED` (after the post-roll) |
+| `vmap:error:<code>` | the VMAP request failed (VMAP error code) | – |
+| `break:<id>:late` | a break was not ready in time and was skipped | – |
+| `break:<id>:interrupted` | the app went to the background (Home) during a break or while it loaded; it is not shown again | – |
+| `standby:unavailable`, `standby:error` | the second ad player could not start; one player is used | – |
+| `error:start` | the ad schedule could not be started; the content plays without ads | – |
+
 ### Components
 
 | Component | Props |
@@ -246,13 +263,13 @@ useTVEventHandler((event) => {
 
 ## Architecture
 
-Three packages:
+Three packages, each for its own user:
 
-| Package | What it does |
-|---|---|
-| `@vega-ads/vast` | Loads VAST/VMAP, chooses the media file, sends IAB tracking. No player code. |
-| `@vega-ads/core` | Platform-independent logic: break schedule, pods, session state, overlay data. Re-exports `vast`. |
-| `@vega-ads/vega` | Vega adapter: `W3cPlayerAdapter`, surfaces, media controls, React hook and overlay. |
+| Package | What it does | Who installs it |
+|---|---|---|
+| `react-native-vega-ads` | Vega integration: `useVegaAds`, surfaces, overlay, media controls, `W3cPlayerAdapter` | Vega apps with ads (this is the one to install) |
+| `react-native-ads-core` | VAST/VMAP requests, media file choice, IAB tracking, break schedule, pods, session state. No player code | apps with another player (write a `PlayerPort` adapter), or only VAST/VMAP and tracking |
+| `react-native-vega-xml` | XML for Vega: `parseXml`, xml2js-style `xmlToObject`, a `DOMParser` polyfill | any Vega app that reads XML (VAST, EPG, RSS, TTML subtitles) |
 
 `core` never imports a player SDK, `fetch` or timers. It talks to the platform through ports: `PlayerPort`, `HttpPort` and `ClockPort`.
 
@@ -278,7 +295,7 @@ interface PlayerPort {
 }
 ```
 
-Then pass your adapter as `contentPlayer`, or use `AdManager` from `@vega-ads/core` directly. `W3cPlayerAdapter` is the reference implementation.
+Then pass your adapter as `contentPlayer`, or use `AdManager` from `react-native-ads-core` directly. `W3cPlayerAdapter` is the reference implementation.
 
 ## Compatibility
 
@@ -293,7 +310,7 @@ The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read 
 
 - [`tools/demo-ads`](tools/demo-ads) draws three demo ad creatives (invented brands, no third-party footage) and serves them with VAST, VMAP and a pixel log on the local network.
 - [`tools/pixel-collector`](tools/pixel-collector) collects tracking pixels on AWS Lambda and DynamoDB.
-- [`tools/make-vmap`](tools/make-vmap) finds mid-roll points in a video with Amazon Rekognition (shot cuts, black frames, credits) and writes a VMAP file for `vega-ads`.
+- [`tools/make-vmap`](tools/make-vmap) finds mid-roll points in a video with Amazon Rekognition (shot cuts, black frames, credits) and writes a VMAP file for `react-native-vega-ads`.
 
 ## Development
 
@@ -302,30 +319,34 @@ npm ci
 npm run check   # lint, types and all tests
 ```
 
+## Amazon requirements
+
+How the library meets the Appstore advertising policy, the Advertising ID policy and the Fire TV / Vega test criteria (ad fraud, audio focus, Home, Back, Alexa during ads, opt-out): [`docs/amazon-requirements.md`](docs/amazon-requirements.md).
+
 ## Known limitations
 
 - **DRM.** The first Vega devices support only one secure video decoder ([media player requirements](https://developer.amazon.com/docs/vega/0.24/media-player-requirements.html)). If both content and ads are DRM-protected, the second player cannot decode at the same time. Use clear (non-DRM) ad creatives.
-- **1 GB devices.** All current Vega sticks have 1 GB RAM. `vega-ads` uses two ad players. Amazon's guide recommends one ad player on devices with limited memory or decoders. If the second ad player cannot start or fails, `vega-ads` continues with one ad player; the gap between ads in a pod is then longer. Test on your target devices.
-- **Amazon Publisher Services (APS).** Amazon's [advertising policy](https://developer.amazon.com/docs/policy-center/amazon-appstore-advertising.html) can require large ad-supported Fire TV apps to give 30% of ad impressions to APS. `vega-ads` does not integrate APS. Check if the rule applies to your app.
+- **1 GB devices.** All current Vega sticks have 1 GB RAM. `react-native-vega-ads` uses two ad players. Amazon's guide recommends one ad player on devices with limited memory or decoders. If the second ad player cannot start or fails, `react-native-vega-ads` continues with one ad player; the gap between ads in a pod is then longer. Test on your target devices.
+- **Amazon Publisher Services (APS).** Amazon's [advertising policy](https://developer.amazon.com/docs/policy-center/amazon-appstore-advertising.html) can require large ad-supported Fire TV apps to give 30% of ad impressions to APS. `react-native-vega-ads` does not integrate APS. Check if the rule applies to your app.
 - **HTTPS media only**, unless the host is in the manifest's cleartext list (see Quick start).
 - **No VPAID or SIMID.** Interactive ads are not supported.
 - **No NonLinear or Companion ads.**
-- **No SSAI.** `vega-ads` is client-side only.
-- **XML.** Vega has no `DOMParser`, and native XML modules are not available. `vega-ads` uses pure JS (`@xmldom/xmldom`). A 34.4 KB VAST takes about 60 ms on the JS thread. Ads load before the break, so the viewer does not wait. You can pass your own parser.
+- **No SSAI.** `react-native-vega-ads` is client-side only.
+- **XML.** Vega has no `DOMParser`, and native XML modules are not available. The library parses with pure JS ([`react-native-vega-xml`](packages/xml), on `@xmldom/xmldom`). A 34.4 KB VAST takes about 60 ms on the JS thread. Ads load before the break, so the viewer does not wait. You can pass your own parser.
 
 ## Friction log
 
-While building `vega-ads`, I logged platform issues with steps, expected and actual results, and suggestions. Full log: [`docs/friction-log.md`](docs/friction-log.md). Main points:
+While building `react-native-vega-ads`, I logged platform issues with steps, expected and actual results, and suggestions. Full log: [`docs/friction-log.md`](docs/friction-log.md). Main points:
 
 - A Google sample video URL used in many player samples returns HTTP 403. The JS error has code 4 and an empty message; the cause is only in the system log.
 - The system log drops app `console.log` lines above 300 lines per second. Media pipeline logs use most of that budget.
 - Media controls with two players need both the manifest entry and `setMediaControlFocus`. With one step missing, nothing works and nothing is logged. The CSAI guide does not mention media controls.
 - The media control docs sample uses a deprecated API (`useComponentInstance`).
-- A video surface turns empty after `ended`, so content shows through between two ads for ~0.5 s. `vega-ads` starts the next ad ~500 ms early to hide this.
+- A video surface turns empty after `ended`, so content shows through between two ads for ~0.5 s. `react-native-vega-ads` starts the next ad ~500 ms early to hide this.
 - The play/pause key reaches both media controls and JS key handlers. Apps with their own remote handler toggle twice.
 - Without the media controls entries, a legacy player session still pauses a playing player on play/pause, and undoes an app's own resume.
 - The w3cmedia player refuses `http://` media; the manifest's cleartext list fixes it, but it is documented only for WebView.
-- On a cold launch, `setMediaControlFocus` blocks the JS thread for 1–2 s. Called right after `play()`, it delayed the impression; `vega-ads` now takes media controls focus after the first frame.
+- On a cold launch, `setMediaControlFocus` blocks the JS thread for 1–2 s. Called right after `play()`, it delayed the impression; `react-native-vega-ads` now takes media controls focus after the first frame.
 
 ## Credits
 

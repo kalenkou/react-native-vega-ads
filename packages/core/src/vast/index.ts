@@ -1,4 +1,3 @@
-export const VERSION = '0.0.0';
 
 export * from './ports';
 export { installImagePolyfill } from './polyfill/image';

@@ -7,8 +7,8 @@ import {
   requestVmap,
   ScheduledBreak,
   SessionSnapshot,
-} from '@vega-ads/core';
-import {W3cPlayerAdapter, W3cVideoPlayer} from '@vega-ads/vega';
+} from 'react-native-ads-core';
+import {W3cPlayerAdapter, W3cVideoPlayer} from 'react-native-vega-ads';
 import {clock, http, VMAP_OPTIMIZED_POD_TAG} from './ads';
 import {log} from './log';
 

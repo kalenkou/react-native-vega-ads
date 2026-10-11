@@ -1,5 +1,5 @@
 import {VASTParser} from '@dailymotion/vast-client';
-import {parseXml} from '@vega-ads/core';
+import {parseXml} from 'react-native-ads-core';
 import {log} from './log';
 import {SINGLE_INLINE_TAG} from './ads';
 

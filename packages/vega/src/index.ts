@@ -13,5 +13,5 @@ export { AdOverlay } from './AdOverlay';
 export type { AdOverlayProps } from './AdOverlay';
 export { fetchHttp, systemClock } from './platform';
 export { vegaAdIdSource } from './vegaAdIdSource';
-export { adIdMacros } from '@vega-ads/core';
+export { adIdMacros } from 'react-native-ads-core';
 export type { VegaAdIdRetriever } from './vegaAdIdSource';
