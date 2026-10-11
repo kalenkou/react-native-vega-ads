@@ -26,6 +26,8 @@ export interface VastAdInput {
    * `loudness` creative extension; vega-ads turns the ad down to the content's loudness.
    */
   loudnessLufs?: number;
+  /** `<Category>`: what the ad sells, as IAB Ad Product Taxonomy 2.0 codes; players block by them. */
+  categories?: readonly string[];
 }
 
 const AD_ID = /^[A-Za-z0-9_.-]{1,64}$/;
@@ -62,6 +64,10 @@ function check(input: VastAdInput): void {
   if (!/^https?:\/\/.+\/$/.test(input.pixelBaseUrl)) {
     throw new TypeError(`The pixel base URL must be http(s) and end with "/": "${input.pixelBaseUrl}"`);
   }
+  const badCategory = input.categories?.find((code) => !/^[A-Za-z0-9-]+$/.test(code));
+  if (badCategory !== undefined) {
+    throw new TypeError(`Not an ad category code: "${badCategory}"`);
+  }
   if (input.loudnessLufs !== undefined && !Number.isFinite(input.loudnessLufs)) {
     throw new RangeError(`The loudness of ad "${input.id}" must be a number of LUFS`);
   }
@@ -82,6 +88,7 @@ function inlineAd(input: VastAdInput, sequence: number | null): string {
     '      <AdSystem>vega-ads demo</AdSystem>',
     `      <AdTitle>${escapeXml(input.title)}</AdTitle>`,
     ...(input.advertiser === undefined ? [] : [`      <Advertiser>${escapeXml(input.advertiser)}</Advertiser>`]),
+    ...(input.categories ?? []).map((code) => `      <Category authority="https://iabtechlab.com">${code}</Category>`),
     `      <Impression>${pixel('impression')}</Impression>`,
     `      <Error>${pixel('error', '&code=[ERRORCODE]')}</Error>`,
     '      <Creatives>',

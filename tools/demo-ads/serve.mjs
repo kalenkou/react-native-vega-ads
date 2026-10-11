@@ -47,12 +47,13 @@ function lanAddress() {
 const root = normalize(values.dir);
 const base = `http://${values.host ?? lanAddress()}:${values.port}/`;
 
+// category: what the ad sells, IAB Ad Product Taxonomy 2.0 (a break can block it).
 const ads = {
-  kettlo: { title: 'Kettlo', seconds: 10 },
-  brewnord: { title: 'Brewnord', seconds: 15 },
-  voltaro: { title: 'Voltaro', seconds: 12 },
-  ferntop: { title: 'Ferntop', seconds: 10 },
-  quillary: { title: 'Quillary', seconds: 12 },
+  kettlo: { title: 'Kettlo', seconds: 10, category: '1524' }, // Sporting Goods
+  brewnord: { title: 'Brewnord', seconds: 15, category: '1133' }, // Coffee and Tea
+  voltaro: { title: 'Voltaro', seconds: 12, category: '1571' }, // Electric Vehicles
+  ferntop: { title: 'Ferntop', seconds: 10, category: '1070' }, // Footwear
+  quillary: { title: 'Quillary', seconds: 12, category: '1203' }, // Office/School Supplies
 };
 
 // Measured by get_media.sh (EBU R128). Without the file the ads carry no loudness and play as they are.
@@ -73,6 +74,7 @@ function ad(id, skipAfterSeconds) {
     advertiser: ads[id].title,
     universalAdId: { idRegistry: 'vega-ads-demo', value: id },
     loudnessLufs: loudness['ads/' + id + '_720p.mp4'],
+    categories: [ads[id].category],
     mediaFiles: sizes.map(([width, height, path]) => ({
       url: base + path,
       width,

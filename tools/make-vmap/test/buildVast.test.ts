@@ -71,6 +71,15 @@ describe('buildVast', () => {
     expect(() => buildVast([ad('tos-a', { loudnessLufs: NaN })])).toThrow(RangeError);
   });
 
+  it('writes what the ad sells as IAB Ad Product Taxonomy categories', async () => {
+    const [parsed] = await load(buildVast([ad('tos-a', { categories: ['1571', '1551'] })]));
+    expect(parsed?.ad.categories).toEqual([
+      { authority: 'https://iabtechlab.com', value: '1571' },
+      { authority: 'https://iabtechlab.com', value: '1551' },
+    ]);
+    expect(() => buildVast([ad('tos-a', { categories: ['15 71'] })])).toThrow(TypeError);
+  });
+
   it('writes a pod in sequence order when given several ads', async () => {
     const parsed = await load(buildVast([ad('tos-a'), ad('tos-b'), ad('tos-c')]));
     expect(parsed.map((p) => [p.ad.id, p.sequence])).toEqual([
