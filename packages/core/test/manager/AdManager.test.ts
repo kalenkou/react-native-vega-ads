@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { AdManager, AdSchedule, AdTimeline, IDLE_SNAPSHOT } from '../../src/manager/AdManager';
+import { PreloadedAds, preloadAds } from '../../src/manager/preloadAds';
 import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
 import { installImagePolyfill } from '../../src/vast';
 import { FakeClock } from '../fakes/FakeClock';
@@ -588,6 +589,156 @@ describe('AdManager', () => {
       ctx.content.emitTime(10.5);
       await settle();
       expect(ctx.timelines).toHaveLength(count);
+    });
+  });
+
+  describe('preloaded ads (requested before the player exists)', () => {
+    const PRE = 'https://ads.test/pre.xml';
+    const routes = () => ({ [VMAP]: fixture('vmap/pre-mid-post.xml'), [PRE]: fixture('vast/inline.xml') });
+
+    /** Starts with `preloaded` and lets the pre-roll, if any, become ready. */
+    async function startWith(ctx: Ctx, schedule: AdSchedule, preloaded: Promise<PreloadedAds>): Promise<void> {
+      const starting = ctx.manager.start(schedule, { preloaded });
+      await settle();
+      ctx.lastAdPlayer()?.emitCanPlay();
+      await starting;
+      await settle();
+    }
+
+    it('preloadAds() requests the VMAP and the pre-roll VAST, not the later breaks', async () => {
+      const ctx = setup(routes());
+      const preloaded = await preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock });
+      expect(ctx.http.requests).toEqual([VMAP, PRE]);
+      expect(preloaded.breaks?.map((b) => b.id)).toEqual(['preroll', 'mid-1', 'mid-2', 'postroll']);
+      expect(preloaded.preroll?.breakId).toBe('preroll');
+      expect(preloaded.preroll?.results.map((r) => r.status)).toEqual(['ok']);
+    });
+
+    it('plays the preloaded pre-roll without asking the ad server again', async () => {
+      const ctx = setup(routes());
+      const preloaded = preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock });
+      await preloaded;
+      ctx.http.requests.length = 0;
+
+      await startWith(ctx, { vmapUrl: VMAP }, preloaded);
+      expect(ctx.http.requests).toEqual([]);
+      await ctx.lastAdPlayer().flush();
+      expect(ctx.last()?.state).toBe('playing');
+      await playAdToEnd(ctx);
+      expect(ctx.content.calls).toContain('play');
+    });
+
+    it('waits for a preload still in flight instead of requesting twice', async () => {
+      const ctx = setup(routes());
+      let resolve: (value: PreloadedAds) => void = () => undefined;
+      const pending = new Promise<PreloadedAds>((r) => (resolve = r));
+      const starting = ctx.manager.start({ vmapUrl: VMAP }, { preloaded: pending });
+      await settle();
+      expect(ctx.http.requests).toEqual([]);
+      expect(ctx.content.calls).not.toContain('play');
+
+      resolve(await preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock }));
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      expect(ctx.http.requests).toEqual([VMAP, PRE]);
+      await ctx.lastAdPlayer().flush();
+      expect(ctx.last()?.state).toBe('playing');
+    });
+
+    it('ignores a preload of another schedule', async () => {
+      const ctx = setup(routes());
+      const other = preloadAds(manual([{ offset: 'start', vastUrl: PRE }]), { http: ctx.http, clock: ctx.clock });
+      await other;
+      ctx.http.requests.length = 0;
+      await startWith(ctx, { vmapUrl: VMAP }, other);
+      expect(ctx.http.requests).toEqual([VMAP, PRE]);
+    });
+
+    it('ignores a preload older than five minutes: the ads may have expired', async () => {
+      const ctx = setup(routes());
+      const preloaded = preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock });
+      await preloaded;
+      ctx.http.requests.length = 0;
+      ctx.clock.advance(5 * 60 * 1000 + 1);
+      await startWith(ctx, { vmapUrl: VMAP }, preloaded);
+      expect(ctx.http.requests).toEqual([VMAP, PRE]);
+    });
+
+    it('uses a preload exactly five minutes old', async () => {
+      const ctx = setup(routes());
+      const preloaded = preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock });
+      await preloaded;
+      ctx.http.requests.length = 0;
+      ctx.clock.advance(5 * 60 * 1000);
+      await startWith(ctx, { vmapUrl: VMAP }, preloaded);
+      expect(ctx.http.requests).toEqual([]);
+    });
+
+    it('requests again when the preloaded VMAP failed', async () => {
+      const ctx = setup({ [PRE]: fixture('vast/inline.xml') });
+      const preloaded = preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock });
+      expect((await preloaded).breaks).toBeNull();
+      ctx.http.on(VMAP, { body: fixture('vmap/pre-mid-post.xml') });
+      ctx.http.requests.length = 0;
+      await startWith(ctx, { vmapUrl: VMAP }, preloaded);
+      expect(ctx.http.requests).toEqual([VMAP, PRE]);
+      expect(ctx.events).not.toContain('vmap:error:1008');
+    });
+
+    it('asks again for a pre-roll whose preloaded request failed', async () => {
+      const ctx = setup({ [VMAP]: fixture('vmap/pre-mid-post.xml') });
+      ctx.http.fail(PRE);
+      const preloaded = preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock });
+      expect((await preloaded).preroll?.results.map((r) => r.status)).toEqual(['failed']);
+      ctx.http.on(PRE, { body: fixture('vast/inline.xml') });
+      ctx.http.requests.length = 0;
+      await startWith(ctx, { vmapUrl: VMAP }, preloaded);
+      expect(ctx.http.requests).toEqual([PRE]);
+      await ctx.lastAdPlayer().flush();
+      expect(ctx.last()?.state).toBe('playing');
+    });
+
+    it('falls back to its own requests when the preload rejects', async () => {
+      const ctx = setup(routes());
+      await startWith(ctx, { vmapUrl: VMAP }, Promise.reject(new Error('preload failed')));
+      expect(ctx.http.requests).toEqual([VMAP, PRE]);
+    });
+
+    it('starts the content at once when the preloaded pre-roll has no ads', async () => {
+      const ctx = setup({ [PRE]: fixture('vast/empty.xml') });
+      const schedule = manual([{ offset: 'start', vastUrl: PRE }]);
+      const preloaded = preloadAds(schedule, { http: ctx.http, clock: ctx.clock });
+      await preloaded;
+      ctx.http.requests.length = 0;
+      await ctx.manager.start(schedule, { preloaded });
+      await settle();
+      expect(ctx.http.requests).toEqual([]);
+      expect(ctx.content.calls).toContain('play');
+    });
+
+    it('requests the later breaks as usual', async () => {
+      const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
+      const schedule = manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]);
+      const preloaded = preloadAds(schedule, { http: ctx.http, clock: ctx.clock });
+      expect((await preloaded).preroll).toBeNull();
+      expect(ctx.http.requests).toEqual([]);
+      await ctx.manager.start(schedule, { preloaded });
+      ctx.content.emitTime(20);
+      await settle();
+      expect(ctx.http.requests).toEqual(['https://ads.test/mid.xml']);
+    });
+
+    it('a resumed viewing leaves the preload alone: no pre-roll', async () => {
+      const ctx = setup(routes());
+      const preloaded = preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock });
+      await preloaded;
+      ctx.http.requests.length = 0;
+      await ctx.manager.start({ vmapUrl: VMAP }, { resumeAt: 10, preloaded });
+      await settle();
+      expect(ctx.http.requests).toEqual([VMAP]);
+      expect(ctx.adPlayers).toHaveLength(0);
+      expect(ctx.content.calls).toContain('play');
     });
   });
 });

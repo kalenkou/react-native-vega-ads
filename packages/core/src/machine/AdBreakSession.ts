@@ -9,6 +9,7 @@ import {
   MediaFileOptions,
   requestVast,
   selectMediaFile,
+  VastResult,
 } from '../vast';
 import type { PlayerPort } from '../ports';
 
@@ -131,12 +132,20 @@ export class AdBreakSession {
     this.deps = deps;
   }
 
-  /** Requests all sources of the break and prebuffers its first ad (R10). */
-  async load(sources: AdSourceRef[]): Promise<'ready' | 'empty'> {
+  /**
+   * Requests all sources of the break and prebuffers its first ad (R10). `preloaded` holds
+   * answers already received for the sources, in the same order (see preloadAds()); a source
+   * whose preloaded request failed is asked again.
+   */
+  async load(sources: AdSourceRef[], preloaded: readonly VastResult[] = []): Promise<'ready' | 'empty'> {
     this.setState('loading');
     const responses: LinearAd[][] = [];
-    for (const source of sources) {
-      const result = await requestVast(source, { http: this.deps.http, clock: this.deps.clock, macros: this.deps.macros });
+    for (const [index, source] of sources.entries()) {
+      const ready = preloaded[index];
+      const result =
+        ready && ready.status !== 'failed'
+          ? ready
+          : await requestVast(source, { http: this.deps.http, clock: this.deps.clock, macros: this.deps.macros });
       if (this.state !== 'loading') {
         return 'empty'; // interrupted while the ad server answered
       }

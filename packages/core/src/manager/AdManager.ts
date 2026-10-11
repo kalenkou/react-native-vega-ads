@@ -1,7 +1,8 @@
-import { ClockPort, HttpPort, Macros, MediaFileOptions, requestVmap, ScheduledBreak, VmapTrackingEvent } from '../vast';
+import { ClockPort, HttpPort, Macros, MediaFileOptions, ScheduledBreak, VastResult, VmapTrackingEvent } from '../vast';
 import { AdBreakSession, SessionSnapshot } from '../machine/AdBreakSession';
 import { BreakMark, BreakScheduler, Decision } from '../schedule/BreakScheduler';
 import type { PlayerPort } from '../ports';
+import { PreloadedAds, resolveSchedule, scheduleKey } from './preloadAds';
 
 /** Where the breaks come from: a VMAP document, or a list of VAST tags with their times. */
 export type AdSchedule =
@@ -53,6 +54,9 @@ export const IDLE_SNAPSHOT: SessionSnapshot = Object.freeze({
 /** VMAP error: the ad source of the break gave no playable ad. */
 const VMAP_EMPTY_RESPONSE = 1009;
 
+/** A preload older than this is not used: ad servers do not promise their answers stay valid longer. */
+const PRELOAD_MAX_AGE_MS = 5 * 60 * 1000;
+
 interface Prepared {
   session: AdBreakSession;
   loading: Promise<'ready' | 'empty'>;
@@ -69,6 +73,8 @@ export class AdManager {
   private scheduler: BreakScheduler | null = null;
   private readonly breaks = new Map<string, ScheduledBreak>();
   private readonly prepared = new Map<string, Prepared>();
+  /** VAST answers from preloadAds(), by break; used once, by the first load of that break. */
+  private readonly preloadedVast = new Map<string, VastResult[]>();
   private active: AdBreakSession | null = null;
   private activeId: string | null = null;
   /** Breaks whose start waits for their ads to load: not "passed", even though the scheduler marked them done. */
@@ -93,11 +99,16 @@ export class AdManager {
   /**
    * Reads the schedule, plays the pre-roll if there is one, otherwise starts the content.
    * `resumeAt` continues a viewing that was interrupted: no pre-roll, no earlier breaks.
+   * `preloaded` (from preloadAds()) saves the VMAP and pre-roll requests when it is for the same
+   * schedule and at most five minutes old; a resumed viewing does not use it.
    * Never rejects: on failure the content plays and `error:start` is reported.
    */
-  async start(schedule: AdSchedule, options: { resumeAt?: number } = {}): Promise<void> {
+  async start(
+    schedule: AdSchedule,
+    options: { resumeAt?: number; preloaded?: Promise<PreloadedAds> } = {},
+  ): Promise<void> {
     try {
-      await this.run(schedule, options.resumeAt);
+      await this.run(schedule, options.resumeAt, options.preloaded);
     } catch {
       this.deps.onEvent?.('error:start');
       if (!this.disposed) {
@@ -106,8 +117,16 @@ export class AdManager {
     }
   }
 
-  private async run(schedule: AdSchedule, resumeAt: number | undefined): Promise<void> {
-    const breaks = await this.resolve(schedule);
+  private async run(
+    schedule: AdSchedule,
+    resumeAt: number | undefined,
+    preloaded: Promise<PreloadedAds> | undefined,
+  ): Promise<void> {
+    const ready = resumeAt === undefined ? await this.usablePreload(schedule, preloaded) : null;
+    if (ready?.preroll) {
+      this.preloadedVast.set(ready.preroll.breakId, ready.preroll.results);
+    }
+    const breaks = ready ? ready.breaks : await this.resolve(schedule);
     if (this.disposed) {
       return;
     }
@@ -220,21 +239,23 @@ export class AdManager {
   }
 
   private async resolve(schedule: AdSchedule): Promise<ScheduledBreak[]> {
-    if ('breaks' in schedule) {
-      return schedule.breaks.map((b, i) => ({
-        id: `break-${i + 1}`,
-        offset: b.offset === 'start' || b.offset === 'end' ? { kind: b.offset } : { kind: 'time', seconds: b.offset },
-        sources: [{ id: null, source: { kind: 'url', url: b.vastUrl }, allowMultipleAds: true, track: () => undefined }],
-      }));
+    const { breaks, errorCode } = await resolveSchedule(schedule, { http: this.deps.http, clock: this.deps.clock });
+    if (errorCode !== undefined) {
+      this.deps.onEvent?.(`vmap:error:${errorCode}`);
     }
-    const vmap = await requestVmap(schedule.vmapUrl, { http: this.deps.http, clock: this.deps.clock });
-    if (vmap.status === 'failed') {
-      this.deps.onEvent?.(`vmap:error:${vmap.errorCode}`);
+    return breaks;
+  }
+
+  /** The preload, if it is for this schedule, fresh, and its VMAP request worked. */
+  private async usablePreload(
+    schedule: AdSchedule,
+    preloaded: Promise<PreloadedAds> | undefined,
+  ): Promise<{ breaks: ScheduledBreak[]; preroll: PreloadedAds['preroll'] } | null> {
+    const ads = preloaded ? await preloaded.catch(() => null) : null;
+    if (!ads?.breaks || ads.key !== scheduleKey(schedule) || this.deps.clock.now() - ads.at > PRELOAD_MAX_AGE_MS) {
+      return null;
     }
-    if (vmap.status !== 'ok') {
-      return [];
-    }
-    return vmap.breaks;
+    return { breaks: ads.breaks, preroll: ads.preroll };
   }
 
   private onContentEnded(scheduler: BreakScheduler): void {
@@ -327,7 +348,7 @@ export class AdManager {
     });
     const entry: Prepared = {
       session,
-      loading: session.load(adBreak.sources.map((s) => s.source)),
+      loading: session.load(adBreak.sources.map((s) => s.source), this.takePreloaded(id)),
       loaded: false,
       ready: false,
     };
@@ -400,6 +421,13 @@ export class AdManager {
       return;
     }
     this.deps.onChange?.(snapshot);
+  }
+
+  /** VAST answers preloaded for a break, once. */
+  private takePreloaded(id: string): VastResult[] {
+    const results = this.preloadedVast.get(id) ?? [];
+    this.preloadedVast.delete(id);
+    return results;
   }
 
   /** VMAP tracking of the break (manual schedules have no pixels). */

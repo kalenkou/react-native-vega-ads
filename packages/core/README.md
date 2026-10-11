@@ -40,6 +40,8 @@ What it handles:
 - pods in `sequence` order; the next ad starts ~500 ms before the current one ends, so no content frame shows between ads;
 - impression only for a visible ad; one sound at a time;
 - every error and timeout ends in content, with the VAST error code sent.
+- the VMAP and the pre-roll can be requested before the player exists: `preloadAds(schedule, { http, clock, macros })`, then `manager.start(schedule, { preloaded })`; answers older than five minutes are not used;
+- `onTimeline` gives the mid-rolls for a timeline and an "Ad in N" countdown, only for a break whose ads are loaded.
 
 ## VAST and VMAP only
 
