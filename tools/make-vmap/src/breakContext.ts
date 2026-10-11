@@ -1,25 +1,45 @@
 import type { BreakContext } from './buildVmap';
 import type { TimedLine } from './whisperSpeech';
 
+/** IAB Ad Product Taxonomy 2.0 codes the default rules use, with their names. */
+export const AD_CATEGORIES: Readonly<Record<string, string>> = {
+  '1002': 'Alcohol',
+  '1003': 'Bars',
+  '1004': 'Beer',
+  '1005': 'Hard Sodas, Seltzers, Alco Pops',
+  '1006': 'Spirits',
+  '1007': 'Wine',
+  '1248': 'Toys and Games',
+  '1343': 'Life Insurance',
+  '1524': 'Sporting Goods',
+  '1551': 'Vehicles',
+  '1571': 'Electric Vehicles',
+};
+
+const ALCOHOL = ['1002', '1003', '1004', '1005', '1006', '1007'];
+
 /**
- * Ad categories the model may block, from the IAB Ad Product Taxonomy 2.0: the products of the
- * demo ads and a few that often clash with a scene. `children` are blocked with their parent.
+ * What the model may say is in a scene, and the ad categories each one blocks right after it.
+ * The model only reports what it sees and hears; these rules decide, so every block can be
+ * explained and a publisher can change them.
  */
-export const AD_CATEGORIES: ReadonlyArray<{ code: string; name: string; children?: readonly string[] }> = [
-  { code: '1002', name: 'Alcohol', children: ['1003', '1004', '1005', '1006', '1007'] },
-  { code: '1070', name: 'Footwear' },
-  { code: '1133', name: 'Coffee and Tea' },
-  { code: '1203', name: 'Office/School Supplies' },
-  { code: '1248', name: 'Toys and Games' },
-  { code: '1343', name: 'Life Insurance' },
-  { code: '1524', name: 'Sporting Goods' },
-  { code: '1551', name: 'Vehicles', children: ['1571'] },
-  { code: '1571', name: 'Electric Vehicles' },
-];
+export const SENSITIVITY_RULES: Readonly<Record<string, readonly string[]>> = {
+  death: ['1343', '1248', ...ALCOHOL],
+  grief: ['1248', ...ALCOHOL],
+  violence: ['1248', ...ALCOHOL],
+  weapons: ['1248'],
+  'vehicle crash': ['1551', '1571'],
+  injury: ['1343', '1524'],
+  drinking: ['1551', '1571'],
+  'child in danger': ['1248'],
+};
 
 export const MOODS = ['calm', 'happy', 'romantic', 'sad', 'tense', 'violent'] as const;
 
 const SCENE_MAX = 200;
+
+/** Words of a guess: evidence that only "suggests" something does not block an ad. */
+const GUESS = /\b(suggests?|suggesting|potential(ly)?|possibl[ey]|could|may|might|appears?|seems?|likely|indicat\w*|impl(y|ies))\b/i;
 
 /** Seconds before the break of the frames the model looks at. */
 const FRAME_OFFSETS = [28, 15, 2];
@@ -54,9 +74,17 @@ export function contextSchema(): object {
     properties: {
       scene: { type: 'string', maxLength: SCENE_MAX },
       mood: { enum: [...MOODS] },
-      avoid: { type: 'array', items: { enum: AD_CATEGORIES.map((c) => c.code) } },
+      signals: {
+        type: 'array',
+        maxItems: 4,
+        items: {
+          type: 'object',
+          properties: { signal: { enum: Object.keys(SENSITIVITY_RULES) }, evidence: { type: 'string', maxLength: 100 } },
+          required: ['signal', 'evidence'],
+        },
+      },
     },
-    required: ['scene', 'mood', 'avoid'],
+    required: ['scene', 'mood', 'signals'],
   };
 }
 
@@ -64,35 +92,50 @@ export function contextPrompt(dialogue: string, frames: number): string {
   const said = dialogue ? `The dialogue of the minute before it: "${dialogue}".` : 'There is no dialogue in the minute before it.';
   return [
     `You place TV ad breaks. ${frames} frames from the 30 seconds before an ad break are attached. ${said}`,
-    'Describe the scene in under 20 words, give its mood, and list the ad categories that would feel',
-    'wrong or insensitive right after this scene (brand safety). Leave the list empty if all fit.',
-    `Categories: ${AD_CATEGORIES.map((c) => `${c.code} ${c.name}`).join('; ')}.`,
+    'Describe the scene in under 20 words and give its mood. Then list sensitive content the scene clearly',
+    `shows or talks about, from: ${Object.keys(SENSITIVITY_RULES).join(', ')}. For each, give the evidence:`,
+    'what exactly is visible in a frame or said in a line. Do not guess: if you cannot point to it, leave it',
+    'out. Most scenes have none.',
   ].join(' ');
 }
 
 /**
  * The model's answer as a break context, or null when it cannot be trusted: no JSON, an unknown
- * mood or category. A break without context plays every ad, as before.
+ * mood or signal. The rules turn the signals into blocked categories. A break without context
+ * plays every ad, as before.
  */
 export function parseContext(output: string): BreakContext | null {
-  let answer: { scene?: unknown; mood?: unknown; avoid?: unknown };
+  let answer: { scene?: unknown; mood?: unknown; signals?: unknown };
   try {
     answer = JSON.parse(output.slice(output.indexOf('{'), output.lastIndexOf('}') + 1)) as typeof answer;
   } catch {
     return null;
   }
-  const { scene, mood, avoid } = answer;
-  const known = new Map(AD_CATEGORIES.map((c) => [c.code, c]));
+  const { scene, mood, signals } = answer;
   if (
     typeof scene !== 'string' ||
     !MOODS.includes(mood as (typeof MOODS)[number]) ||
-    !Array.isArray(avoid) ||
-    !avoid.every((code) => typeof code === 'string' && known.has(code))
+    !Array.isArray(signals) ||
+    !signals.every((s: { signal?: unknown; evidence?: unknown } | null) => {
+      return typeof s?.signal === 'string' && s.signal in SENSITIVITY_RULES && typeof s.evidence === 'string';
+    })
   ) {
     return null;
   }
-  const blocked = (avoid as string[]).flatMap((code) => [code, ...(known.get(code)?.children ?? [])]);
-  return { scene: scene.trim().slice(0, SCENE_MAX), mood: mood as string, blockedAdCategories: [...new Set(blocked)] };
+  const found = new Map<string, string>();
+  for (const { signal, evidence } of signals as Array<{ signal: string; evidence: string }>) {
+    const seen = evidence.trim();
+    if (seen !== '' && !GUESS.test(seen) && !found.has(signal)) {
+      found.set(signal, seen);
+    }
+  }
+  const blocked = [...found.keys()].flatMap((signal) => SENSITIVITY_RULES[signal] ?? []);
+  return {
+    scene: scene.trim().slice(0, SCENE_MAX),
+    mood: mood as string,
+    signals: [...found].map(([name, evidence]) => ({ name, evidence })),
+    blockedAdCategories: [...new Set(blocked)],
+  };
 }
 
 export interface VisionModel {

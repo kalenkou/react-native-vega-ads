@@ -6,6 +6,8 @@ export interface BreakContext {
   mood: string;
   /** One sentence about the scene, for people reading the VMAP. */
   scene?: string;
+  /** What the scene shows that made categories blocked, each with what the model saw. */
+  signals?: ReadonlyArray<{ name: string; evidence: string }>;
   /** IAB Ad Product Taxonomy codes that must not play in this break. */
   blockedAdCategories: readonly string[];
 }
@@ -93,7 +95,7 @@ function cdata(text: string): string {
 }
 
 function escapeXml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 const CATEGORY_CODE = /^[A-Za-z0-9-]+$/;
@@ -108,6 +110,13 @@ function contextExtension(context: BreakContext): string[] {
     '      <vmap:Extension type="vega-ads:context">',
     `        <Mood>${escapeXml(context.mood)}</Mood>`,
     ...(context.scene ? [`        <Scene>${escapeXml(context.scene)}</Scene>`] : []),
+    ...(context.signals?.length
+      ? [
+          '        <Signals>',
+          ...context.signals.map((signal) => `          <Signal name="${escapeXml(signal.name)}">${escapeXml(signal.evidence)}</Signal>`),
+          '        </Signals>',
+        ]
+      : []),
     ...(context.blockedAdCategories.length > 0
       ? [
           `        <BlockedAdCategories authority="https://iabtechlab.com">${context.blockedAdCategories.join(' ')}</BlockedAdCategories>`,

@@ -295,7 +295,7 @@ describe('break context (local vision model, no AWS)', () => {
   });
 
   it('asks the model about the frames and lines before each break and writes its answer into the VMAP', async () => {
-    const ctx = contextDeps(async () => 'llama log\n{ "scene": "Soldiers under fire.", "mood": "violent", "avoid": ["1551"] }');
+    const ctx = contextDeps(async () => 'llama log\n{ "scene": "A car hits a wall.", "mood": "violent", "signals": [{ "signal": "vehicle crash", "evidence": "A red car hits a wall." }] }');
     expect(await runCli(ARGV, ctx.deps)).toBe(0);
     const xml = ctx.out.join('');
     expect(xml).toContain('<Mood>violent</Mood>');
@@ -307,7 +307,7 @@ describe('break context (local vision model, no AWS)', () => {
     expect(args[args.indexOf('-p') + 1]).toContain('Get down!');
     expect(ctx.files.has('/tmp/context-x/schema.json')).toBe(true);
     expect(ctx.removed).toEqual(['/tmp/context-x']);
-    expect(ctx.err.join('\n')).toContain('00:08:20.000 · violent · blocks 1551 1571 · Soldiers under fire.');
+    expect(ctx.err.join('\n')).toContain('00:08:20.000 · violent · vehicle crash (A red car hits a wall.) → blocks 1551 1571 · A car hits a wall.');
   });
 
   it('writes the break without context when the model fails', async () => {

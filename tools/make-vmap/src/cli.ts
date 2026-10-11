@@ -306,7 +306,9 @@ async function contextOf(
     });
     contexts.forEach((context, index) => {
       const at = formatTimeOffset(times[index]!);
-      const blocked = context?.blockedAdCategories.length ? `blocks ${context.blockedAdCategories.join(' ')}` : 'blocks nothing';
+      const blocked = context?.blockedAdCategories.length
+        ? `${context.signals?.map((s) => `${s.name} (${s.evidence})`).join(', ')} → blocks ${context.blockedAdCategories.join(' ')}`
+        : 'blocks nothing';
       deps.stderr(context ? `${at} · ${context.mood} · ${blocked} · ${context.scene ?? ''}` : `${at} · no context`);
     });
     return contexts;

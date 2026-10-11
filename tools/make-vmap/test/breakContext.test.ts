@@ -1,6 +1,7 @@
 import {
   AD_CATEGORIES,
   breakContexts,
+  SENSITIVITY_RULES,
   contextPrompt,
   contextSchema,
   dialogueBefore,
@@ -30,42 +31,82 @@ describe('dialogueBefore', () => {
 });
 
 describe('contextSchema and contextPrompt', () => {
-  it('lets the model answer only with known moods and category codes', () => {
-    const schema = contextSchema() as { properties: { mood: { enum: string[] }; avoid: { items: { enum: string[] } } } };
+  it('lets the model answer only with known moods and signals', () => {
+    const schema = contextSchema() as {
+      properties: { mood: { enum: string[] }; signals: { items: { properties: { signal: { enum: string[] } }; required: string[] } } };
+    };
     expect(schema.properties.mood.enum).toEqual(['calm', 'happy', 'romantic', 'sad', 'tense', 'violent']);
-    expect(schema.properties.avoid.items.enum).toEqual(AD_CATEGORIES.map((c) => c.code));
+    expect(schema.properties.signals.items.properties.signal.enum).toEqual(Object.keys(SENSITIVITY_RULES));
+    expect(schema.properties.signals.items.required).toEqual(['signal', 'evidence']);
   });
 
-  it('gives the model the dialogue and every category with its name', () => {
+  it('gives the model the dialogue and every signal, and no category codes', () => {
     const prompt = contextPrompt('Get down!', 3);
     expect(prompt).toContain('3 frames');
     expect(prompt).toContain('"Get down!"');
-    AD_CATEGORIES.forEach((c) => expect(prompt).toContain(`${c.code} ${c.name}`));
+    Object.keys(SENSITIVITY_RULES).forEach((signal) => expect(prompt).toContain(signal));
+    expect(prompt).not.toContain('1551');
+    expect(prompt).toContain('evidence');
     expect(contextPrompt('', 2)).toContain('no dialogue');
+  });
+
+  it('blocks only categories with a name from the IAB list', () => {
+    Object.values(SENSITIVITY_RULES).flat().forEach((code) => expect(AD_CATEGORIES[code]).toBeDefined());
   });
 });
 
 describe('parseContext', () => {
-  it('reads the JSON answer and adds the child categories of a blocked one', () => {
-    const answer = 'loading model...\n{ "scene": "Robots fire at soldiers.", "mood": "violent", "avoid": ["1551"] }\n';
-    expect(parseContext(answer)).toEqual({ scene: 'Robots fire at soldiers.', mood: 'violent', blockedAdCategories: ['1551', '1571'] });
+  it('reads the JSON answer and lets the rules turn its signals into blocked categories', () => {
+    const answer =
+      'loading model...\n{ "scene": "A car hits a wall.", "mood": "tense", "signals": [{ "signal": "vehicle crash", "evidence": "A car hits a wall." }] }\n';
+    expect(parseContext(answer)).toEqual({
+      scene: 'A car hits a wall.',
+      mood: 'tense',
+      signals: [{ name: 'vehicle crash', evidence: 'A car hits a wall.' }],
+      blockedAdCategories: ['1551', '1571'],
+    });
   });
 
-  it('lists a category once when the model names it and its parent', () => {
-    expect(parseContext('{ "scene": "Crash.", "mood": "tense", "avoid": ["1571", "1551"] }')?.blockedAdCategories).toEqual(['1571', '1551']);
+  const said = (signal: string, evidence: string) => ({ signal, evidence });
+  const answer = (...signals: Array<{ signal: string; evidence: string }>) => JSON.stringify({ scene: 'x', mood: 'sad', signals });
+
+  it('lists a signal and a category once', () => {
+    const context = parseContext(answer(said('death', 'A body lies on the floor.'), said('grief', 'She cries over him.'), said('death', 'He is dead.')));
+    expect(context?.signals).toEqual([
+      { name: 'death', evidence: 'A body lies on the floor.' },
+      { name: 'grief', evidence: 'She cries over him.' },
+    ]);
+    expect(context?.blockedAdCategories).toEqual(['1343', '1248', '1002', '1003', '1004', '1005', '1006', '1007']);
+  });
+
+  it('drops a signal whose evidence is a guess, or empty', () => {
+    const context = parseContext(
+      answer(
+        said('death', 'The weapon suggests a potential death.'),
+        said('grief', 'He appears distressed, possibly grieving.'),
+        said('injury', 'Someone could be hurt.'),
+        said('violence', ' '),
+        said('weapons', 'A soldier aims a rifle.'),
+      ),
+    );
+    expect(context?.signals).toEqual([{ name: 'weapons', evidence: 'A soldier aims a rifle.' }]);
+    expect(context?.blockedAdCategories).toEqual(['1248']);
   });
 
   it('is null for an answer it cannot trust', () => {
     expect(parseContext('no json here')).toBeNull();
-    expect(parseContext('{ "scene": "x", "mood": "angry", "avoid": [] }')).toBeNull();
-    expect(parseContext('{ "scene": "x", "mood": "calm", "avoid": ["9999"] }')).toBeNull();
-    expect(parseContext('{ "scene": "x", "mood": "calm", "avoid": "1551" }')).toBeNull();
+    expect(parseContext('{ "scene": "x", "mood": "angry", "signals": [] }')).toBeNull();
+    expect(parseContext('{ "scene": "x", "mood": "calm", "signals": [{ "signal": "explosions", "evidence": "boom" }] }')).toBeNull();
+    expect(parseContext('{ "scene": "x", "mood": "calm", "signals": [{ "signal": "death" }] }')).toBeNull();
+    expect(parseContext('{ "scene": "x", "mood": "calm", "signals": ["death"] }')).toBeNull();
+    expect(parseContext('{ "scene": "x", "mood": "calm", "signals": "death" }')).toBeNull();
+    expect(parseContext('{ "scene": 7, "mood": "calm", "signals": [] }')).toBeNull();
     expect(parseContext('{ "scene": "x", "mood": "calm" ')).toBeNull();
   });
 
   it('keeps a short scene line', () => {
     const long = 'a'.repeat(400);
-    expect(parseContext(`{ "scene": "${long}", "mood": "calm", "avoid": [] }`)?.scene).toHaveLength(200);
+    expect(parseContext(`{ "scene": "${long}", "mood": "calm", "signals": [] }`)?.scene).toHaveLength(200);
   });
 });
 
@@ -81,7 +122,7 @@ describe('llamaVisionArgs', () => {
 describe('breakContexts', () => {
   it('asks the model about each break and keeps going when one answer fails', async () => {
     const asked: Array<{ images: string[]; prompt: string }> = [];
-    const answers = ['{ "scene": "Calm talk.", "mood": "calm", "avoid": [] }', 'garbage'];
+    const answers = ['{ "scene": "Calm talk.", "mood": "calm", "signals": [] }', 'garbage'];
     const result = await breakContexts([120, 300, 500], {
       frames: async (at) => frameTimes(at).map((t) => `f${t}.jpg`),
       lines: LINES,
@@ -91,7 +132,7 @@ describe('breakContexts', () => {
         return answers[asked.length - 1] as string;
       },
     });
-    expect(result).toEqual([{ scene: 'Calm talk.', mood: 'calm', blockedAdCategories: [] }, null, null]);
+    expect(result).toEqual([{ scene: 'Calm talk.', mood: 'calm', signals: [], blockedAdCategories: [] }, null, null]);
     expect(asked[0]?.images).toEqual(['f92.jpg', 'f105.jpg', 'f118.jpg']);
     expect(asked[0]?.prompt).toContain('"(explosion) Get down!"');
   });
