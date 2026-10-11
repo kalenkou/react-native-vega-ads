@@ -89,7 +89,7 @@ export class BreakScheduler {
     const mids = this.midRolls();
 
     if (previous !== null && time - previous > this.seekThreshold) {
-      const jumped = mids.filter((e) => e.time !== null && e.time > previous && e.time < time);
+      const jumped = mids.filter((e) => e.time !== null && e.time > previous && e.time <= time);
       const target = jumped[jumped.length - 1];
       jumped.forEach((e) => (e.done = true));
       if (target) {
