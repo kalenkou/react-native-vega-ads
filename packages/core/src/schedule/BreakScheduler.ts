@@ -110,6 +110,11 @@ export class BreakScheduler {
     return post ? this.startNow(post) : [];
   }
 
+  /** True when the break has started, was skipped, or does not exist. */
+  isDone(breakId: string): boolean {
+    return this.entries.filter((e) => e.id === breakId).every((e) => e.done);
+  }
+
   /** Mark a break as used without playing it (for example, its ad request failed). */
   skip(breakId: string): void {
     this.entries.filter((e) => e.id === breakId).forEach((e) => (e.done = true));

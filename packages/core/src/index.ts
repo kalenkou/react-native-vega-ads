@@ -8,6 +8,8 @@ export type { Decision, SchedulerOptions } from './schedule/BreakScheduler';
 export { PodController } from './pod/PodController';
 export type { PodItem, PodOptions } from './pod/PodController';
 export { AdBreakSession } from './machine/AdBreakSession';
+export { AdManager, IDLE_SNAPSHOT } from './manager/AdManager';
+export type { AdManagerDeps, AdSchedule } from './manager/AdManager';
 export type { SessionDeps, SessionSnapshot, SessionState } from './machine/AdBreakSession';
 export { adUiState, defaultAdUiStrings } from './ui/adUiState';
 export type { AdUiState, AdUiStrings } from './ui/adUiState';

@@ -1,0 +1,272 @@
+import { readFileSync } from 'fs';
+import { AdManager, AdSchedule, IDLE_SNAPSHOT } from '../../src/manager/AdManager';
+import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
+import { installImagePolyfill } from '@vega-ads/vast';
+import { FakeClock } from '../../../vast/test/fakes/FakeClock';
+import { FakeHttp } from '../../../vast/test/fakes/FakeHttp';
+import { FakePlayer } from '../fakes/FakePlayer';
+
+const fixture = (path: string): string => readFileSync(`${__dirname}/../../../vast/fixtures/${path}`, 'utf8');
+const VMAP = 'https://ads.test/vmap.xml';
+const AD_A = 'ad-a';
+const AD_B = 'ad-b';
+
+const g = globalThis as Record<string, unknown>;
+beforeEach(() => {
+  g.window = g;
+  delete g.Image;
+  installImagePolyfill(new FakeHttp(), g);
+});
+afterEach(() => {
+  delete g.window;
+  delete g.Image;
+});
+
+async function settle(): Promise<void> {
+  for (let i = 0; i < 30; i++) await Promise.resolve();
+}
+
+function setup(routes: Record<string, string>) {
+  const http = new FakeHttp();
+  Object.entries(routes).forEach(([url, body]) => http.on(url, { body }));
+  const clock = new FakeClock(1_000_000);
+  const content = new FakePlayer({ duration: 600 });
+  void content.initialize();
+  const adPlayers: FakePlayer[] = [];
+  const snapshots: SessionSnapshot[] = [];
+  const events: string[] = [];
+  const manager = new AdManager({
+    http,
+    clock,
+    content,
+    adSurface: AD_A,
+    standbySurface: AD_B,
+    createAdPlayer: () => {
+      const player = new FakePlayer({ duration: 10 });
+      adPlayers.push(player);
+      return player;
+    },
+    onChange: (snapshot) => snapshots.push(snapshot),
+    onEvent: (name) => events.push(name),
+  });
+  const lastAdPlayer = (): FakePlayer => adPlayers[adPlayers.length - 1] as FakePlayer;
+  const last = (): SessionSnapshot | undefined => snapshots[snapshots.length - 1];
+  return { http, clock, content, adPlayers, snapshots, events, manager, lastAdPlayer, last };
+}
+
+type Ctx = ReturnType<typeof setup>;
+
+/** Plays the only ad of the active break to its end. */
+async function playAdToEnd(ctx: Ctx): Promise<void> {
+  const player = ctx.lastAdPlayer();
+  await player.flush();
+  player.emitTime(10);
+  player.emitEnded();
+  await settle();
+}
+
+const manual = (breaks: Array<{ offset: 'start' | 'end' | number; vastUrl: string }>): AdSchedule => ({ breaks });
+
+describe('AdManager', () => {
+  it('plays a VMAP pre-roll before the content starts', async () => {
+    const ctx = setup({
+      [VMAP]: fixture('vmap/pre-mid-post.xml'),
+      'https://ads.test/pre.xml': fixture('vast/inline.xml'),
+    });
+    const starting = ctx.manager.start({ vmapUrl: VMAP });
+    await settle();
+    expect(ctx.content.calls).not.toContain('play');
+
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    expect(ctx.last()?.state).toBe('playing');
+    expect(ctx.last()?.adSurface).toBe(AD_A);
+
+    await playAdToEnd(ctx);
+    expect(ctx.content.calls).toContain('play');
+    expect(ctx.content.getCurrentTime()).toBe(0);
+    expect(ctx.content.hasMediaControlFocus).toBe(true);
+    expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
+  });
+
+  it('starts the content at once when there is no pre-roll', async () => {
+    const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]));
+    expect(ctx.content.calls).toContain('play');
+    expect(ctx.http.requests).toEqual([]);
+  });
+
+  it('starts the content when the VMAP request fails', async () => {
+    const ctx = setup({});
+    await ctx.manager.start({ vmapUrl: VMAP });
+    expect(ctx.content.calls).toContain('play');
+    expect(ctx.events).toContain('vmap:error:1008');
+  });
+
+  it('starts the content when the pre-roll has no ads', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/empty.xml') });
+    await ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    expect(ctx.content.calls).toContain('play');
+    expect(ctx.last()?.state ?? 'idle').toBe('idle');
+  });
+
+  it('prefetches a mid-roll and pauses the content at its time', async () => {
+    const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]));
+    ctx.content.emitTime(10);
+    await settle();
+    expect(ctx.http.requests).toEqual([]);
+
+    ctx.content.emitTime(15); // 15 s before the break (R10)
+    await settle();
+    expect(ctx.http.requests).toEqual(['https://ads.test/mid.xml']);
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+
+    ctx.content.emitTime(30);
+    await settle();
+    expect(ctx.content.paused).toBe(true);
+    await ctx.lastAdPlayer().flush();
+    expect(ctx.last()?.state).toBe('playing');
+
+    await playAdToEnd(ctx);
+    expect(ctx.content.calls.filter((c) => c === 'seek:30')).toHaveLength(1);
+    expect(ctx.lastAdPlayer().deinitialized).toBe(true);
+  });
+
+  it('ignores content time while a break plays', async () => {
+    const ctx = setup({
+      'https://ads.test/mid.xml': fixture('vast/inline.xml'),
+      'https://ads.test/mid2.xml': fixture('vast/inline.xml'),
+    });
+    await ctx.manager.start(
+      manual([
+        { offset: 30, vastUrl: 'https://ads.test/mid.xml' },
+        { offset: 100, vastUrl: 'https://ads.test/mid2.xml' },
+      ]),
+    );
+    ctx.content.emitTime(29);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    ctx.content.emitTime(30);
+    await settle();
+
+    // A late timeupdate from the content player while the ad plays.
+    ctx.content.emitTime(90);
+    await settle();
+    expect(ctx.http.requests).toEqual(['https://ads.test/mid.xml']);
+  });
+
+  it('skips a mid-roll that is not loaded when its time comes and keeps the content playing', async () => {
+    const ctx = setup({});
+    ctx.http.hang('https://ads.test/slow.xml');
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/slow.xml' }]));
+    ctx.content.emitTime(20);
+    await settle();
+    ctx.content.emitTime(30);
+    await settle();
+    expect(ctx.content.paused).toBe(false);
+    expect(ctx.events).toContain('break:break-1:late');
+  });
+
+  it('releases the ad player of a prefetched break that a seek jumped over', async () => {
+    const ctx = setup({
+      'https://ads.test/mid.xml': fixture('vast/inline.xml'),
+      'https://ads.test/mid2.xml': fixture('vast/inline.xml'),
+    });
+    await ctx.manager.start(
+      manual([
+        { offset: 30, vastUrl: 'https://ads.test/mid.xml' },
+        { offset: 200, vastUrl: 'https://ads.test/mid2.xml' },
+      ]),
+    );
+    ctx.content.emitTime(20);
+    await settle();
+    const prefetched = ctx.lastAdPlayer();
+    prefetched.emitCanPlay();
+    await settle();
+
+    // Seek back to the start: the break at 30 s is still ahead, nothing is released.
+    ctx.content.emitTime(2);
+    await settle();
+    expect(prefetched.deinitialized).toBe(false);
+
+    // Seek far forward over both breaks: only the last one (200 s) plays (R24); 30 s is gone.
+    ctx.content.emitTime(250);
+    await settle();
+    expect(prefetched.deinitialized).toBe(true);
+  });
+
+  it('plays the post-roll when the content ends', async () => {
+    const ctx = setup({ 'https://ads.test/post.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 'end', vastUrl: 'https://ads.test/post.xml' }]));
+    ctx.content.emitTime(590);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    ctx.content.emitEnded();
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    expect(ctx.last()?.state).toBe('playing');
+  });
+
+  it('skip() passes to the active break and is false without one', async () => {
+    const ctx = setup({});
+    await ctx.manager.start(manual([]));
+    expect(ctx.manager.skip()).toBe(false);
+  });
+
+  it('back() leaves the break and returns to the content (R23)', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+
+    await ctx.manager.back();
+    expect(ctx.lastAdPlayer().deinitialized).toBe(true);
+    expect(ctx.content.calls).toContain('play');
+    expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
+  });
+
+  it('dispose() releases every ad player, stops listening and leaves the content alone', async () => {
+    const ctx = setup({
+      'https://ads.test/mid.xml': fixture('vast/inline.xml'),
+      'https://ads.test/mid2.xml': fixture('vast/inline.xml'),
+    });
+    await ctx.manager.start(
+      manual([
+        { offset: 30, vastUrl: 'https://ads.test/mid.xml' },
+        { offset: 300, vastUrl: 'https://ads.test/mid2.xml' },
+      ]),
+    );
+    ctx.content.emitTime(20);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    const playsBefore = ctx.content.calls.filter((c) => c === 'play').length;
+
+    await ctx.manager.dispose();
+    expect(ctx.adPlayers.every((p) => p.deinitialized)).toBe(true);
+    ctx.content.emitTime(290);
+    await settle();
+    expect(ctx.http.requests).toEqual(['https://ads.test/mid.xml']);
+    expect(ctx.content.calls.filter((c) => c === 'play')).toHaveLength(playsBefore);
+  });
+
+  it('dispose() during the VMAP request starts nothing', async () => {
+    const ctx = setup({});
+    ctx.http.hang(VMAP);
+    const starting = ctx.manager.start({ vmapUrl: VMAP });
+    await ctx.manager.dispose();
+    ctx.clock.advance(10_000); // VMAP timeout
+    await starting;
+    expect(ctx.content.calls).not.toContain('play');
+  });
+});

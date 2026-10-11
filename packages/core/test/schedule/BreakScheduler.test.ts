@@ -24,6 +24,17 @@ describe('BreakScheduler (R10, R24)', () => {
     expect(scheduler.begin()).toEqual([]);
   });
 
+  it('tells whether a break is used up', () => {
+    const scheduler = new BreakScheduler([{ id: 'a', offset: at(30) }, { id: 'b', offset: at(200) }]);
+    scheduler.begin();
+    scheduler.onTime(20);
+    expect(scheduler.isDone('a')).toBe(false);
+    scheduler.onTime(250); // seek over both: only b plays (R24)
+    expect(scheduler.isDone('a')).toBe(true);
+    expect(scheduler.isDone('b')).toBe(true);
+    expect(scheduler.isDone('unknown')).toBe(true);
+  });
+
   it('does nothing at begin without a pre-roll', () => {
     expect(new BreakScheduler([{ id: 'mid', offset: at(60) }]).begin()).toEqual([]);
   });
