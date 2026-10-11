@@ -258,3 +258,17 @@ Sintel (H.264 High, 1280×544, -23.0 LUFS after `get_media.sh`) is the second ti
 | Run | Result |
 |---|---|
 | 1 | PASS: "Next: Sintel" switched the details screen (poster, text, credit) and kept the focus on the button; the app preloaded `vmap/sintel.xml`. Sintel played with its own pre-roll. At 2:42 Kettlo (1524, Sporting Goods) got the error pixel with `code=205` and no impression; Brewnord, then Voltaro played |
+
+## Amazon "test before submission": Home, Back, another app (12.10.2026)
+
+Scenarios 1–3 of Amazon's list, run during the pre-roll where we could. `home-run.sh` and `lifecycle-run.sh` (kept outside the repo); the key is sent with `inputd-cli`. `KEY_HOME` does nothing on the stick (no key mapping, the app stays on screen); `KEY_HOMEPAGE` is the Home button.
+
+| Scenario | Result |
+|---|---|
+| Home 2.5 s into the pre-roll | PASS: the system sent `BACKGROUND`; 50 ms later the media element was destroyed. No pixel after `firstQuartile`: no midpoint, no complete for an ad nobody watched. The process was gone before the relaunch; the relaunch was a cold start on the details screen |
+| Back 2 s into the pre-roll | As designed (R23): the ad player is released and the movie is on screen, no pixel after `firstQuartile`. A second Back closes the player; a third leaves the app. Relaunch: details screen |
+| Another app (Amazon's template) during the movie, then the demo | PASS: the demo came back with a cold start, no error. The switch came after the pre-roll had ended, not during it: the script waited for an ad that the household memory had replaced |
+
+`vlcm crash-history` on the stick lists one entry for the demo in two days of tests: `AppNotResponding`, reason "Lifecycle Callback", during a LAUNCH transition on 11.10 at 22:04 UTC. Not seen again; we do not know which run caused it.
+
+Not run (need a person or other hardware): HDMI unplugged for 5 minutes, TV input change, restart of the device, screensaver, Alexa during an ad, Bluetooth audio.
