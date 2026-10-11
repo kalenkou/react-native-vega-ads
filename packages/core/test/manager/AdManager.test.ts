@@ -387,6 +387,49 @@ describe('AdManager', () => {
     expect(ctx.http.requests.filter((u) => u === 'https://ads.test/mid.xml')).toHaveLength(2);
   });
 
+  it('suspend() while the pre-roll loads: nothing plays in the background, the content starts on wake(), later breaks still run', async () => {
+    const ctx = setup({
+      'https://ads.test/pre.xml': fixture('vast/inline.xml'),
+      'https://ads.test/mid.xml': fixture('vast/inline.xml'),
+    });
+    const starting = ctx.manager.start(
+      manual([
+        { offset: 'start', vastUrl: 'https://ads.test/pre.xml' },
+        { offset: 30, vastUrl: 'https://ads.test/mid.xml' },
+      ]),
+    );
+    await settle();
+    const pre = ctx.lastAdPlayer();
+    void ctx.manager.suspend();
+    pre.emitCanPlay();
+    await starting;
+    await settle();
+    expect(pre.deinitialized).toBe(true);
+    expect(ctx.content.calls).not.toContain('play');
+    expect(ctx.events).not.toContain('error:start');
+
+    await ctx.manager.wake();
+    expect(ctx.content.calls).toContain('play');
+    expect(ctx.events).toContain('break:break-1:interrupted');
+    ctx.content.emitTime(20);
+    await settle();
+    expect(ctx.http.requests).toContain('https://ads.test/mid.xml');
+  });
+
+  it('suspend() and wake() both before the pre-roll loads: the content starts without the pre-roll', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    const pre = ctx.lastAdPlayer();
+    await ctx.manager.suspend();
+    await ctx.manager.wake();
+    pre.emitCanPlay();
+    await starting;
+    await settle();
+    expect(ctx.content.calls).toContain('play');
+    expect(ctx.adPlayers.every((p) => p.deinitialized)).toBe(true);
+  });
+
   it('dispose() during an ad gives media controls back to the content without playing it', async () => {
     const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
     const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));

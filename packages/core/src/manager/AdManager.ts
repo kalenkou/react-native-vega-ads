@@ -57,6 +57,10 @@ export class AdManager {
   private readonly starting = new Set<string>();
   /** A break interrupted by the app going to the background. */
   private suspended: { id: string; session: AdBreakSession } | null = null;
+  /** The app is in the background: a break that finishes loading now must not start. */
+  private background = false;
+  /** A break whose start the background cut off before it was shown; wake() starts the content instead. */
+  private cutOff: string | null = null;
   private contentStarted = false;
   private disposed = false;
   private durationKnown = false;
@@ -147,6 +151,7 @@ export class AdManager {
    * releases every ad player. The content stays paused until wake().
    */
   async suspend(): Promise<void> {
+    this.background = true;
     const active = this.active;
     const activeId = this.activeId;
     this.active = null;
@@ -165,6 +170,14 @@ export class AdManager {
 
   /** Back from the background: the interrupted break is not shown again; the content continues. */
   async wake(): Promise<void> {
+    this.background = false;
+    const cutOff = this.cutOff;
+    this.cutOff = null;
+    if (cutOff && !this.disposed) {
+      this.deps.onEvent?.(`break:${cutOff}:interrupted`);
+      await this.playContent();
+      return;
+    }
     const suspended = this.suspended;
     if (!suspended || this.disposed) {
       return;
@@ -283,6 +296,16 @@ export class AdManager {
     this.starting.add(id);
     const result = await entry.loading.finally(() => this.starting.delete(id));
     if (this.disposed) {
+      return;
+    }
+    if (this.prepared.get(id) !== entry) {
+      // suspend() released the break while it loaded.
+      if (this.background) {
+        this.cutOff = id;
+      } else if (!this.contentStarted) {
+        this.deps.onEvent?.(`break:${id}:interrupted`);
+        await this.playContent();
+      }
       return;
     }
     if (result !== 'ready') {
