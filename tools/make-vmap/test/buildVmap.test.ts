@@ -159,3 +159,33 @@ describe('buildVmap', () => {
     expect(() => buildVmap({ postroll: 'ftp://ads.test/vast.xml', midrolls: [] })).toThrow(/http or https/);
   });
 });
+
+describe('buildVmap break context', () => {
+  it('writes what the scene before a break blocks, so the player leaves those ads out', async () => {
+    const xml = buildVmap({
+      midrolls: [
+        {
+          time: 139.917,
+          vastUrl: 'https://ads.test/mid.xml',
+          context: { mood: 'violent', scene: 'Robots fight <soldiers> & fire', blockedAdCategories: ['1551', '1571'] },
+        },
+        { time: 441.2, vastUrl: 'https://ads.test/mid2.xml' },
+      ],
+    });
+    parse(xml);
+    expect(xml).toContain('<Scene>Robots fight &lt;soldiers&gt; &amp; fire</Scene>');
+    expect(xml).toContain('<Mood>violent</Mood>');
+    const result = await load(xml);
+    expect(result.status === 'ok' && result.breaks.map((b) => b.blockedAdCategories)).toEqual([['1551', '1571'], undefined]);
+  });
+
+  it('writes the mood even when nothing is blocked, and refuses a bad category code', () => {
+    const xml = buildVmap({ midrolls: [{ time: 60, vastUrl: 'https://ads.test/m.xml', context: { mood: 'calm & warm', blockedAdCategories: [] } }] });
+    expect(xml).toContain('<Mood>calm &amp; warm</Mood>');
+    expect(xml).not.toContain('BlockedAdCategories');
+    expect(() =>
+      buildVmap({ midrolls: [{ time: 60, vastUrl: 'https://ads.test/m.xml', context: { mood: 'calm', blockedAdCategories: ['15 51'] } }] }),
+    ).toThrow(TypeError);
+  });
+});
+

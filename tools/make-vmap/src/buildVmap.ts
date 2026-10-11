@@ -1,9 +1,20 @@
 /** Key-value targeting for one ad request. An array becomes a comma-separated list of values. */
 export type CustParams = Readonly<Record<string, string | readonly string[]>>;
 
+/** What the scene before a break means for its ads; see `breakContext.ts`. */
+export interface BreakContext {
+  mood: string;
+  /** One sentence about the scene, for people reading the VMAP. */
+  scene?: string;
+  /** IAB Ad Product Taxonomy codes that must not play in this break. */
+  blockedAdCategories: readonly string[];
+}
+
 export interface AdTag {
   vastUrl: string;
   custParams?: CustParams;
+  /** Written as a `vega-ads:context` VMAP extension; vega-ads leaves out blocked ads. */
+  context?: BreakContext;
 }
 
 export interface Midroll extends AdTag {
@@ -81,6 +92,32 @@ function cdata(text: string): string {
   return `<![CDATA[${text.split(']]>').join(']]]]><![CDATA[>')}]]>`;
 }
 
+function escapeXml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+const CATEGORY_CODE = /^[A-Za-z0-9-]+$/;
+
+function contextExtension(context: BreakContext): string[] {
+  const bad = context.blockedAdCategories.find((code) => !CATEGORY_CODE.test(code));
+  if (bad !== undefined) {
+    throw new TypeError(`Not an ad category code: "${bad}"`);
+  }
+  return [
+    '    <vmap:Extensions>',
+    '      <vmap:Extension type="vega-ads:context">',
+    `        <Mood>${escapeXml(context.mood)}</Mood>`,
+    ...(context.scene ? [`        <Scene>${escapeXml(context.scene)}</Scene>`] : []),
+    ...(context.blockedAdCategories.length > 0
+      ? [
+          `        <BlockedAdCategories authority="https://iabtechlab.com">${context.blockedAdCategories.join(' ')}</BlockedAdCategories>`,
+        ]
+      : []),
+    '      </vmap:Extension>',
+    '    </vmap:Extensions>',
+  ];
+}
+
 function adBreak(timeOffset: string, breakId: string, tag: AdTag): string {
   const url = appendCustParams(checkUrl(tag.vastUrl), tag.custParams);
   return [
@@ -88,6 +125,7 @@ function adBreak(timeOffset: string, breakId: string, tag: AdTag): string {
     `    <vmap:AdSource id="${breakId}-ad" allowMultipleAds="true" followRedirects="true">`,
     `      <vmap:AdTagURI templateType="vast4">${cdata(url)}</vmap:AdTagURI>`,
     '    </vmap:AdSource>',
+    ...(tag.context ? contextExtension(tag.context) : []),
     '  </vmap:AdBreak>',
   ].join('\n');
 }
