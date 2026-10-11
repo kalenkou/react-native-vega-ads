@@ -17,6 +17,14 @@
     "react": ">=18",
     "react-native": "*"
   },
+  "peerDependenciesMeta": {
+    "@amazon-devices/react-native-kepler": {
+      "optional": true
+    },
+    "@amazon-devices/react-native-w3cmedia": {
+      "optional": true
+    }
+  },
   "files": [
     "dist",
     "!dist/**/*.tsbuildinfo"
