@@ -1,7 +1,9 @@
 // Serves the demo ads, the movie and their VAST/VMAP on the local network,
 // and logs tracking pixels. For device tests before the files live on S3.
 //
-// Usage: node serve.mjs --dir MEDIA_DIR [--host LAN_IP] [--port 8080]
+// Usage: node serve.mjs --dir MEDIA_DIR [--host LAN_IP] [--port 8080] [--midrolls 139.9,441.2]
+// --midrolls: mid-roll times in seconds, for example from `make-vmap --local`; the first one
+// gets a pod of three ads. vmap/timer.xml keeps fixed times (2:00, 6:00) to compare with.
 // MEDIA_DIR holds the output of make_ads.py (ads/) and the content movie.
 // Needs `npm run build` in tools/make-vmap first.
 
@@ -22,6 +24,7 @@ const { values } = parseArgs({
     host: { type: 'string' },
     port: { type: 'string', default: '8080' },
     movie: { type: 'string', default: 'tears_of_steel_720p.mp4' },
+    midrolls: { type: 'string', default: '120,360' },
   },
 });
 if (!values.dir) {
@@ -67,20 +70,27 @@ function ad(id, skipAfterSeconds) {
   };
 }
 
+const midrollTimes = values.midrolls.split(',').map(Number);
+if (midrollTimes.some((time) => !(time > 0))) {
+  console.error('--midrolls: positive times in seconds, for example 139.9,441.2');
+  process.exit(2);
+}
+
+const vmap = (times) =>
+  buildVmap({
+    preroll: base + 'vast/single.xml',
+    midrolls: times.map((time, index) => ({ time, vastUrl: base + (index === 0 ? 'vast/pod.xml' : 'vast/single.xml') })),
+    postroll: base + 'vast/single.xml',
+  });
+
 const documents = {
   'vast/single.xml': buildVast([ad('kettlo', 5)]),
   'vast/pod.xml': buildVast([ad('brewnord'), ad('voltaro', 5), ad('kettlo')]),
-  'vmap/movie.xml': buildVmap({
-    preroll: base + 'vast/single.xml',
-    midrolls: [
-      { time: 120, vastUrl: base + 'vast/pod.xml' },
-      { time: 360, vastUrl: base + 'vast/single.xml' },
-    ],
-    postroll: base + 'vast/single.xml',
-  }),
+  'vmap/movie.xml': vmap(midrollTimes),
+  'vmap/timer.xml': vmap([120, 360]),
 };
 
-const types = { '.mp4': 'video/mp4', '.xml': 'application/xml' };
+const types = { '.mp4': 'video/mp4', '.xml': 'application/xml', '.jpg': 'image/jpeg' };
 const counts = new Map();
 
 function sendFile(request, response, path) {
