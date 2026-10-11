@@ -38,7 +38,22 @@ interface WhisperToken {
 }
 
 interface WhisperJson {
-  transcription?: Array<{ tokens?: WhisperToken[] }>;
+  transcription?: Array<{ offsets?: { from?: number; to?: number }; text?: string; tokens?: WhisperToken[] }>;
+}
+
+/** One whisper segment: a line of dialogue or a sound label such as `(somber music)`. */
+export interface TimedLine {
+  startMs: number;
+  endMs: number;
+  text: string;
+}
+
+/** The text of each segment with its time, for reading what was said before a break. */
+export function parseWhisperLines(json: string): TimedLine[] {
+  const data = JSON.parse(json) as WhisperJson;
+  return (data.transcription ?? [])
+    .map((segment) => ({ startMs: segment.offsets?.from ?? 0, endMs: segment.offsets?.to ?? 0, text: (segment.text ?? '').trim() }))
+    .filter((line) => line.text !== '');
 }
 
 /**
@@ -100,13 +115,23 @@ export function parseWhisperJson(json: string): SpeechInterval[] {
  * to a temporary WAV file, which is removed afterwards, also on failure.
  */
 export async function whisperSpeech(file: string, model: string, tools: WhisperTools): Promise<SpeechInterval[]> {
+  return (await whisperTranscript(file, model, tools)).speech;
+}
+
+/** Speech stretches and the lines with their text, from one whisper.cpp run. */
+export async function whisperTranscript(
+  file: string,
+  model: string,
+  tools: WhisperTools,
+): Promise<{ speech: SpeechInterval[]; lines: TimedLine[] }> {
   const dir = await tools.makeTempDir();
   try {
     const wav = join(dir, 'audio.wav');
     const outBase = join(dir, 'speech');
     await tools.runFfmpeg(audioArgs(file, wav));
     await tools.runWhisper(whisperArgs(model, wav, outBase));
-    return parseWhisperJson(await tools.readFile(`${outBase}.json`));
+    const json = await tools.readFile(`${outBase}.json`);
+    return { speech: parseWhisperJson(json), lines: parseWhisperLines(json) };
   } finally {
     await tools.removeDir(dir);
   }

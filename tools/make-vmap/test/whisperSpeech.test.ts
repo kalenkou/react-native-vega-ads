@@ -1,4 +1,4 @@
-import { audioArgs, parseWhisperJson, whisperArgs, whisperSpeech, WhisperTools } from '../src/whisperSpeech';
+import { audioArgs, parseWhisperJson, parseWhisperLines, whisperArgs, whisperSpeech, WhisperTools } from '../src/whisperSpeech';
 
 // Real whisper.cpp 1.9.5 output (`-ojf`, ggml-base.en, Tears of Steel), trimmed to six segments
 // and to the token fields this tool reads.
@@ -13,6 +13,20 @@ const JSON_OUTPUT = `{
     {"offsets":{"from":435280,"to":437280},"text":" *screams* You've been up!","tokens":[{"text":"[_BEG_]","offsets":{"from":435280,"to":435280}},{"text":" *","offsets":{"from":435300,"to":435500}},{"text":"sc","offsets":{"from":435590,"to":435940}},{"text":"ream","offsets":{"from":435940,"to":436820}},{"text":"s","offsets":{"from":436820,"to":437040}},{"text":"*","offsets":{"from":437040,"to":437280}},{"text":" You","offsets":{"from":437280,"to":437280}},{"text":"'ve","offsets":{"from":437280,"to":437280}},{"text":" been","offsets":{"from":437280,"to":437280}},{"text":" up","offsets":{"from":437280,"to":437280}},{"text":"!","offsets":{"from":437280,"to":437280}},{"text":"[_TT_100]","offsets":{"from":437280,"to":437280}}]}
   ]
 }`;
+
+describe('parseWhisperLines', () => {
+  it('keeps the text of each segment with its time, sound labels included', () => {
+    expect(parseWhisperLines(JSON_OUTPUT).slice(0, 3)).toEqual([
+      { startMs: 49400, endMs: 54400, text: 'Robots, memories, synced and locked.' },
+      { startMs: 57400, endMs: 59980, text: '(somber music)' },
+      { startMs: 61000, endMs: 62880, text: 'This is pretty freaky.' },
+    ]);
+  });
+
+  it('skips empty segments', () => {
+    expect(parseWhisperLines(JSON.stringify({ transcription: [{ offsets: { from: 0, to: 1 }, text: '  ' }] }))).toEqual([]);
+  });
+});
 
 describe('parseWhisperJson', () => {
   it('turns word timings into stretches of speech and skips sound labels', () => {

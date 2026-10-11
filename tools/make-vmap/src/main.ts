@@ -30,6 +30,17 @@ void runCli(process.argv.slice(2), {
     makeTempDir: () => mkdtemp(join(tmpdir(), 'make-vmap-')),
     removeDir: (path) => rm(path, { recursive: true, force: true }),
   },
+  vision: {
+    // llama.cpp prints its log to stderr and the answer to stdout.
+    run: (args) =>
+      new Promise((resolve, reject) => {
+        execFile('llama-mtmd-cli', args, { maxBuffer: 16 * 1024 * 1024 }, (error, stdout) =>
+          error ? reject(new Error(`llama-mtmd-cli failed: ${error.message}`)) : resolve(stdout),
+        );
+      }),
+    makeTempDir: () => mkdtemp(join(tmpdir(), 'make-vmap-context-')),
+    removeDir: (path) => rm(path, { recursive: true, force: true }),
+  },
 }).then((code) => {
   process.exitCode = code;
 });

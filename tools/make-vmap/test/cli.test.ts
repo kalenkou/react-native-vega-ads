@@ -256,3 +256,73 @@ describe('speech (whisper.cpp, no AWS)', () => {
     expect(ctx.err.join('\n')).toContain('whisper');
   });
 });
+
+describe('break context (local vision model, no AWS)', () => {
+  const LOG = [
+    '  Duration: 00:30:00.00, start: 0.000000, bitrate: 4000 kb/s',
+    '[Parsed_showinfo_2 @ 0x3] n:   0 pts: 0 pts_time:500 duration:512',
+  ].join('\n');
+  const WHISPER_JSON = JSON.stringify({
+    transcription: [{ offsets: { from: 469000, to: 470000 }, text: ' Get down!', tokens: [{ text: ' Get', offsets: { from: 469000, to: 470000 } }] }],
+  });
+  const CONTEXT = ['--context-model', 'vl.gguf', '--context-mmproj', 'mmproj.gguf'];
+  const ARGV = ['--local', 'film.mp4', '--vast-url', VAST, '--speech-model', 'base.bin', ...CONTEXT];
+
+  function contextDeps(answer: () => Promise<string>) {
+    const ctx = fakeDeps(FILM);
+    const runs: string[][] = [];
+    const asked: string[][] = [];
+    const removed: string[] = [];
+    ctx.deps.runFfmpeg = async (args) => (runs.push(args), args.includes('null') ? LOG : '');
+    ctx.deps.whisper = {
+      runWhisper: async () => undefined,
+      readFile: async () => WHISPER_JSON,
+      makeTempDir: async () => '/tmp/whisper-x',
+      removeDir: async () => undefined,
+    };
+    ctx.deps.vision = {
+      run: async (args) => (asked.push(args), answer()),
+      makeTempDir: async () => '/tmp/context-x',
+      removeDir: async (path) => void removed.push(path),
+    };
+    return { ...ctx, runs, asked, removed };
+  }
+
+  it('reads the model flags, only both together and only with --local', () => {
+    expect(parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST, ...CONTEXT])).toMatchObject({ context: { model: 'vl.gguf', mmproj: 'mmproj.gguf' } });
+    expect(() => parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST, '--context-model', 'vl.gguf'])).toThrow(/--context-mmproj/);
+    expect(() => parseCliArgs([...REQUIRED, ...CONTEXT])).toThrow(/--local/);
+  });
+
+  it('asks the model about the frames and lines before each break and writes its answer into the VMAP', async () => {
+    const ctx = contextDeps(async () => 'llama log\n{ "scene": "Soldiers under fire.", "mood": "violent", "avoid": ["1551"] }');
+    expect(await runCli(ARGV, ctx.deps)).toBe(0);
+    const xml = ctx.out.join('');
+    expect(xml).toContain('<Mood>violent</Mood>');
+    expect(xml).toContain('>1551 1571</BlockedAdCategories>');
+    // three frames before the break at 500 s, written into the temporary folder
+    expect(ctx.runs.filter((args) => args.includes('-frames:v')).map((args) => args[args.indexOf('-ss') + 1])).toEqual(['472', '485', '498']);
+    const args = ctx.asked[0] as string[];
+    expect(args.filter((a) => a.startsWith('/tmp/context-x/'))).toHaveLength(4); // 3 frames + the schema
+    expect(args[args.indexOf('-p') + 1]).toContain('Get down!');
+    expect(ctx.files.has('/tmp/context-x/schema.json')).toBe(true);
+    expect(ctx.removed).toEqual(['/tmp/context-x']);
+    expect(ctx.err.join('\n')).toContain('00:08:20.000 · violent · blocks 1551 1571 · Soldiers under fire.');
+  });
+
+  it('writes the break without context when the model fails', async () => {
+    const ctx = contextDeps(() => Promise.reject(new Error('out of memory')));
+    expect(await runCli(ARGV, ctx.deps)).toBe(0);
+    expect(ctx.out.join('')).not.toContain('vega-ads:context');
+    expect(ctx.err.join('\n')).toContain('00:08:20.000 · no context');
+    expect(ctx.removed).toEqual(['/tmp/context-x']);
+  });
+
+  it('fails when llama.cpp is not available', async () => {
+    const ctx = contextDeps(async () => '');
+    delete ctx.deps.vision;
+    expect(await runCli(ARGV, ctx.deps)).toBe(1);
+    expect(ctx.err.join('\n')).toContain('llama-mtmd-cli');
+  });
+});
+

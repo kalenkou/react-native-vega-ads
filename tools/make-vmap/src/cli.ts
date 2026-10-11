@@ -1,10 +1,12 @@
+import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { buildVmap, formatTimeOffset } from './buildVmap';
+import { breakContexts, contextSchema, frameArgs, frameTimes, llamaVisionArgs, VisionModel } from './breakContext';
+import { BreakContext, buildVmap, formatTimeOffset } from './buildVmap';
 import { FfmpegRunner, ffmpegSegments } from './ffmpegSegments';
 import { pickBreaks, PickBreaksOptions, SpeechInterval } from './pickBreaks';
 import { RekognitionPort, rekognitionSegments } from './rekognition';
 import type { Segment } from './segments';
-import { WhisperTools, whisperSpeech } from './whisperSpeech';
+import { TimedLine, WhisperTools, whisperTranscript } from './whisperSpeech';
 
 export const USAGE = `Usage: make-vmap --bucket B --key K --vast-url URL [options]
        make-vmap --local FILE --vast-url URL [options]
@@ -23,6 +25,10 @@ Required:
 Options:
   --speech-model FILE     whisper.cpp model (ggml .bin) for --local: keep mid-rolls
                           out of speech (needs whisper-cli)
+  --context-model FILE    vision-language model (GGUF) for --local: from the frames and
+                          lines before each mid-roll, write its mood and the ad
+                          categories it blocks (needs llama-mtmd-cli)
+  --context-mmproj FILE   the model's multimodal projector (GGUF)
   --preroll URL           VAST tag URL for a pre-roll
   --postroll URL          VAST tag URL for a post-roll
   --out FILE              write the VMAP to FILE (default: standard output)
@@ -51,6 +57,8 @@ export interface CliOptions {
   local?: string;
   /** A whisper.cpp model: breaks keep out of speech (with `local` only). */
   speechModel?: string;
+  /** A vision-language model: each break gets its context (with `local` only). */
+  context?: VisionModel;
   vastUrl: string;
   preroll?: string;
   postroll?: string;
@@ -82,6 +90,12 @@ export interface CliDeps {
   runFfmpeg?: FfmpegRunner;
   /** Runs whisper-cli and handles its temporary files; needed for --speech-model. */
   whisper?: Omit<WhisperTools, 'runFfmpeg'>;
+  /** Runs llama-mtmd-cli (resolves with its stdout) and handles temporary files; needed for --context-model. */
+  vision?: {
+    run(args: string[]): Promise<string>;
+    makeTempDir(): Promise<string>;
+    removeDir(path: string): Promise<void>;
+  };
 }
 
 function baseName(path: string): string {
@@ -125,6 +139,8 @@ const FLAGS = {
   key: { type: 'string' },
   local: { type: 'string' },
   'speech-model': { type: 'string' },
+  'context-model': { type: 'string' },
+  'context-mmproj': { type: 'string' },
   'vast-url': { type: 'string' },
   preroll: { type: 'string' },
   postroll: { type: 'string' },
@@ -155,6 +171,14 @@ export function parseCliArgs(argv: string[]): CliOptions {
   if (flags['speech-model'] !== undefined && local === undefined) {
     throw new UsageError('--speech-model needs the video on this computer: use it with --local');
   }
+  const model = flags['context-model'];
+  const mmproj = flags['context-mmproj'];
+  if ((model === undefined) !== (mmproj === undefined)) {
+    throw new UsageError('--context-model and --context-mmproj go together');
+  }
+  if (model !== undefined && local === undefined) {
+    throw new UsageError('--context-model needs the video on this computer: use it with --local');
+  }
   const key = local === undefined ? required('key', flags.key) : undefined;
   const bucket = local === undefined ? required('bucket', flags.bucket) : undefined;
   const vastUrl = required('vast-url', flags['vast-url']);
@@ -166,6 +190,7 @@ export function parseCliArgs(argv: string[]): CliOptions {
     key,
     local,
     speechModel: flags['speech-model'],
+    context: model === undefined || mmproj === undefined ? undefined : { model, mmproj },
     vastUrl,
     preroll: flags.preroll,
     postroll: flags.postroll,
@@ -200,6 +225,7 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
     const aws = () => (ports ??= deps.createPorts(options.region));
     let detection: { segments: Segment[]; durationSeconds?: number };
     let speech: SpeechInterval[] | undefined;
+    let lines: TimedLine[] = [];
     if (options.local !== undefined) {
       if (!deps.runFfmpeg) throw new Error('ffmpeg is not available');
       deps.stderr(`Finding shot changes, black frames and silence in ${options.local} with ffmpeg`);
@@ -208,7 +234,7 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
       if (options.speechModel !== undefined) {
         if (!deps.whisper) throw new Error('whisper-cli is not available');
         deps.stderr(`Finding speech in ${options.local} with whisper.cpp`);
-        speech = await whisperSpeech(options.local, options.speechModel, { ...deps.whisper, runFfmpeg: deps.runFfmpeg });
+        ({ speech, lines } = await whisperTranscript(options.local, options.speechModel, { ...deps.whisper, runFfmpeg: deps.runFfmpeg }));
         deps.stderr(`${speech.length} ${speech.length === 1 ? 'stretch' : 'stretches'} of speech`);
       }
     } else {
@@ -225,9 +251,11 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
     const times = pickBreaks(detection.segments, { ...options.breaks, durationSeconds: detection.durationSeconds, speech });
     deps.stderr(`${times.length} mid-rolls: ${times.map(formatTimeOffset).join(', ') || 'none'}`);
 
+    const contexts = options.context ? await contextOf(times, options, lines, deps) : [];
+
     const xml = buildVmap({
       preroll: options.preroll,
-      midrolls: times.map((time) => ({ time, vastUrl: options.vastUrl })),
+      midrolls: times.map((time, index) => ({ time, vastUrl: options.vastUrl, context: contexts[index] ?? undefined })),
       postroll: options.postroll,
     });
 
@@ -248,3 +276,42 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
     return 1;
   }
 }
+
+/** Asks the vision model about each break; frames and the schema live in a temporary folder. */
+async function contextOf(
+  times: readonly number[],
+  options: CliOptions,
+  lines: readonly TimedLine[],
+  deps: CliDeps,
+): Promise<Array<BreakContext | null>> {
+  const vision = deps.vision;
+  const runFfmpeg = deps.runFfmpeg;
+  if (!vision || !runFfmpeg) throw new Error('llama-mtmd-cli is not available');
+  const model = options.context!;
+  const dir = await vision.makeTempDir();
+  try {
+    const schema = join(dir, 'schema.json');
+    await deps.writeFile(schema, JSON.stringify(contextSchema()));
+    deps.stderr(`Reading the scene before each mid-roll with ${model.model}`);
+    const contexts = await breakContexts(times, {
+      lines,
+      frames: async (at) => {
+        const files = frameTimes(at).map((time) => join(dir, `frame-${time}.jpg`));
+        for (const [index, time] of frameTimes(at).entries()) {
+          await runFfmpeg(frameArgs(options.local!, time, files[index]!));
+        }
+        return files;
+      },
+      ask: (prompt, images) => vision.run(llamaVisionArgs(model, prompt, images, schema)),
+    });
+    contexts.forEach((context, index) => {
+      const at = formatTimeOffset(times[index]!);
+      const blocked = context?.blockedAdCategories.length ? `blocks ${context.blockedAdCategories.join(' ')}` : 'blocks nothing';
+      deps.stderr(context ? `${at} · ${context.mood} · ${blocked} · ${context.scene ?? ''}` : `${at} · no context`);
+    });
+    return contexts;
+  } finally {
+    await vision.removeDir(dir);
+  }
+}
+
