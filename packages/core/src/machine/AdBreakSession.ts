@@ -127,7 +127,7 @@ export class AdBreakSession {
     this.setState('loading');
     const responses: LinearAd[][] = [];
     for (const source of sources) {
-      const result = await requestVast(source, { http: this.deps.http, clock: this.deps.clock });
+      const result = await requestVast(source, { http: this.deps.http, clock: this.deps.clock, macros: this.deps.macros });
       if (this.state !== 'loading') {
         return 'empty'; // interrupted while the ad server answered
       }

@@ -763,3 +763,21 @@ describe('AdBreakSession – calls in the wrong state', () => {
     expect(ctx.events.filter((e) => e === 'breakEnd')).toHaveLength(1);
   });
 });
+
+describe('AdBreakSession – ad request macros', () => {
+  it('fills the app macros in the ad tag (C1-1)', async () => {
+    const tag = 'https://ads.test/tag.xml?lat=[LIMITADTRACKING]&ifa=[IFA]';
+    const http = new FakeHttp().on('https://ads.test/tag.xml?lat=1&ifa=', { body: fixture('inline.xml') });
+    const session = new AdBreakSession({
+      http,
+      clock: new FakeClock(1_000_000),
+      content: new FakePlayer({ duration: 600 }),
+      adSurface: SURFACE,
+      createAdPlayer: () => new FakePlayer({ duration: 10 }),
+      macros: { LIMITADTRACKING: '1', IFA: '', IFATYPE: '' },
+    });
+    void session.load([{ kind: 'url', url: tag }]);
+    await settle();
+    expect(http.requests).toEqual(['https://ads.test/tag.xml?lat=1&ifa=']);
+  });
+});

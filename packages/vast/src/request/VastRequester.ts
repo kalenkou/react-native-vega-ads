@@ -1,5 +1,6 @@
 import { VASTClient } from '@dailymotion/vast-client';
 import type { ClockPort, HttpPort } from '../ports';
+import type { Macros } from '../tracking/AdTracker';
 import type { AdSourceRef, VastAd, VastLinearCreative } from './types';
 import { createUrlHandler, describeFailure, LoadFailure, parseXml, UrlHandler, XmlParser } from './urlHandler';
 
@@ -32,13 +33,31 @@ export interface VastRequestDeps {
   timeoutMs?: number;
   random?: () => number;
   parseXml?: XmlParser;
+  /** App macros for the ad tag and every wrapper URL, for example from adIdMacros() (R15). */
+  macros?: Macros;
 }
 
 const XML_PARSING_ERROR = 100;
 const TRAFFICKING_ERROR = 200;
 
-function cacheBust(url: string, random: () => number): string {
-  return url.replace(/\[CACHEBUSTING\]/g, () => String(Math.floor(random() * 1e8)).padStart(8, '0'));
+/**
+ * Fills the macros of an ad request URL: the app's own, [TIMESTAMP] and [CACHEBUSTING].
+ * Values are URL-encoded; unknown macros stay as they are.
+ */
+function fillMacros(url: string, deps: VastRequestDeps): string {
+  const values: Macros = {
+    TIMESTAMP: new Date(deps.clock.now()).toISOString(),
+    ...deps.macros,
+    CACHEBUSTING: String(Math.floor((deps.random ?? Math.random)() * 1e8)).padStart(8, '0'),
+  };
+  return url.replace(/\[([A-Z_]+)\]/g, (macro, name: string) =>
+    values[name] === undefined ? macro : encodeURIComponent(values[name] as string),
+  );
+}
+
+/** Every request, the ad tag and each wrapper's VASTAdTagURI, gets its macros filled (VAST 4.x). */
+function withMacros(handler: UrlHandler, deps: VastRequestDeps): UrlHandler {
+  return { get: (url, options) => handler.get(fillMacros(url, deps), options) };
 }
 
 function toSequence(value: VastAd['sequence']): number | null {
@@ -74,9 +93,9 @@ function withEmbedded(xml: string, network: UrlHandler, parse: XmlParser): UrlHa
 
 export async function requestVast(source: string | AdSourceRef, deps: VastRequestDeps): Promise<VastResult> {
   const ref: AdSourceRef = typeof source === 'string' ? { kind: 'url', url: source } : source;
-  const network = createUrlHandler(deps);
+  const network = withMacros(createUrlHandler(deps), deps);
   const urlHandler = ref.kind === 'xml' ? withEmbedded(ref.xml, network, deps.parseXml ?? parseXml) : network;
-  const url = ref.kind === 'xml' ? EMBEDDED_URL : cacheBust(ref.url, deps.random ?? Math.random);
+  const url = ref.kind === 'xml' ? EMBEDDED_URL : ref.url;
   const client = new VASTClient();
   const parser = client.getParser() as unknown as {
     on(event: 'VAST-error', listener: (data: { ERRORCODE?: number }) => void): void;

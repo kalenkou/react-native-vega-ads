@@ -191,4 +191,23 @@ describe('requestVast', () => {
     expect(result.status).toBe('failed');
     expect(http.requests[0]).toBe('https://ads.test/tag?cb=12345678');
   });
+
+  it('fills app macros, [TIMESTAMP] and [CACHEBUSTING] in the ad tag and in every wrapper URL (C1-1)', async () => {
+    const tag = 'https://ads.test/w1?lat=[LIMITADTRACKING]&ifa=[IFA]&ts=[TIMESTAMP]&cb=[CACHEBUSTING]&x=[UNKNOWN]';
+    const next = 'https://ads.test/inline.xml?lat=[LIMITADTRACKING]&cb=[CACHEBUSTING]';
+    const http = new FakeHttp()
+      .on('https://ads.test/w1?lat=0&ifa=a%2Fb%20c&ts=2026-10-11T12%3A00%3A00.000Z&cb=12345678&x=[UNKNOWN]', { body: wrapperTo(next, 'w1') })
+      .on('https://ads.test/inline.xml?lat=0&cb=12345678', { body: fixture('inline.xml') });
+    const result = await requestVast(tag, {
+      http,
+      clock: new FakeClock(Date.parse('2026-10-11T12:00:00Z')),
+      random: () => 0.12345678,
+      macros: { LIMITADTRACKING: '0', IFA: 'a/b c' },
+    });
+    expect(http.requests).toEqual([
+      'https://ads.test/w1?lat=0&ifa=a%2Fb%20c&ts=2026-10-11T12%3A00%3A00.000Z&cb=12345678&x=[UNKNOWN]',
+      'https://ads.test/inline.xml?lat=0&cb=12345678',
+    ]);
+    expect(result.status).toBe('ok');
+  });
 });
