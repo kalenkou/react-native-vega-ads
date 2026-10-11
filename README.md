@@ -230,6 +230,24 @@ Some apps own their content surface, for example a Shaka player screen. Use `AdS
 
 Pass the `VideoPlayer` that Shaka plays through as `contentPlayer`.
 
+### If your app plays with react-native-video v7
+
+`rnvPlayerPort(player)` turns a react-native-video v7 `VideoPlayer` into the content player for the ads, through its public API (no dependency on react-native-video). Your `<VideoView>` shows the content; the component adds the ad surfaces and the overlay:
+
+```tsx
+import { useVideoPlayer, VideoView } from 'react-native-video';
+import { rnvPlayerPort, VegaAdsPlayer } from 'react-native-vega-ads';
+
+const player = useVideoPlayer({ uri }); // do not call play() here: the ads start the content
+const content = useMemo(() => rnvPlayerPort(player), [player]);
+
+<VegaAdsPlayer player={content} ads={{ vmapUrl }} adId={AdIdRetriever}>
+  {({ ads }) => <VideoView player={player} style={StyleSheet.absoluteFill} />}
+</VegaAdsPlayer>
+```
+
+Hide your controls while `ads.playing`: react-native-video reports `readyToPlay` during the pre-roll. react-native-video needs a Vega backend for this; tested on a Fire TV Stick with a prototype backend (pre-roll, pod, seek and events after the breaks).
+
 ### If your app has its own remote handler (spatial navigation)
 
 On Vega, the play/pause key reaches both media controls and your JS key handler. Media controls already pause and resume the ad. So ignore `playpause` in your handler while `ads.playing` is true. Otherwise the ad toggles twice.
@@ -253,7 +271,7 @@ useTVEventHandler((event) => {
 | `ads` | `{ vmapUrl }` or `{ breaks: [{ offset, vastUrl }] }`. `null` plays the content without ads. |
 | `adId` | `AdIdRetriever` from `@amazon-devices/kepler-adid-retriever`. Optional. |
 | `onEnd` | Called when the content and its post-roll are over. |
-| `player` | Your own content `VideoPlayer` instead of `source`. The component never releases it. |
+| `player` | Your own content `VideoPlayer` instead of `source`, or any `PlayerPort` (for example `rnvPlayerPort(player)`; then your app draws the content). The component never releases it. |
 | `children` | Your UI over the video, or a function `({ player, ads }) => ...`. |
 | `contentSurface` | `false` when your screen draws the content surface itself. Default `true`. |
 | `renderOverlay` | `(ads) => ...` your own ad label and Skip button instead of `AdOverlay`. |

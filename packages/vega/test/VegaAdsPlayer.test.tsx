@@ -3,6 +3,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 import { Text, View } from 'react-native';
 import { FakeClock } from '../../core/test/fakes/FakeClock';
 import { FakeHttp } from '../../core/test/fakes/FakeHttp';
+import { FakePlayer } from '../../core/test/fakes/FakePlayer';
 import { VegaAdsPlayer, VegaAdsPlayerProps } from '../src/VegaAdsPlayer';
 import { FakeW3cPlayer } from './fakes/FakeW3cPlayer';
 
@@ -122,6 +123,28 @@ describe('VegaAdsPlayer – customising', () => {
     await settle();
     expect(ctx.renderer.root.findAllByProps({ testID: 'my-controls' }).length).toBeGreaterThan(0);
     expect(seen.some((s) => s.hasPlayer)).toBe(true);
+  });
+
+  it('plays through any PlayerPort (react-native-video v7 via rnvPlayerPort): the app draws the content', async () => {
+    const port = new FakePlayer({ duration: 600 });
+    await port.initialize();
+    const seen: Array<unknown> = [];
+    const ctx = setup({
+      source: undefined,
+      player: port,
+      children: ({ player }) => {
+        seen.push(player);
+        return null;
+      },
+    });
+    await settle();
+    const views = ctx.renderer.root.findAll((node) => (node.type as unknown) === 'KeplerVideoSurfaceView');
+    expect(views).toHaveLength(2); // the two ad surfaces; <VideoView> of the app shows the content
+    ctx.surfacesReady();
+    await settle();
+    expect(ctx.http.requests.some((url) => url.startsWith('https://ads.test/pre.xml'))).toBe(true);
+    expect(ctx.players.every((p) => p.src !== 'https://cdn.test/movie.mp4')).toBe(true);
+    expect(seen.every((player) => player === null)).toBe(true);
   });
 
   it('adds only the ad surfaces when the app draws the content surface itself', async () => {

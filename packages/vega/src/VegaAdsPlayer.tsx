@@ -1,6 +1,6 @@
 import { type ReactElement, type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
-import type { AdSchedule, Macros } from 'react-native-ads-core';
+import type { AdSchedule, Macros, PlayerPort } from 'react-native-ads-core';
 import { AdCountdown } from './AdCountdown';
 import { AdOverlay } from './AdOverlay';
 import { AdSurfaceLayers } from './AdSurfaceLayers';
@@ -24,8 +24,10 @@ export interface VegaAdsPlayerProps extends Omit<UseVegaAdsOptions, 'source' | '
   /**
    * Your own content `VideoPlayer` instead of `source` (for example the one Shaka plays
    * through): initialized, `autoplay` off, source set. The component never releases it.
+   * Or any `PlayerPort`, for example `rnvPlayerPort(player)` for react-native-video v7: then your
+   * app draws the content (`<VideoView>`) in `children`, and `player` in `children` is null.
    */
-  player?: W3cVideoPlayer | null;
+  player?: W3cVideoPlayer | PlayerPort | null;
   /** A VMAP URL, or VAST tags with their times. Null plays the content without ads. */
   ads: AdSchedule | null;
   /**
@@ -88,10 +90,18 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
   } = props;
   const ownsPlayer = appPlayer === undefined;
   const created = useVideoPlayer(ownsPlayer ? (source?.uri ?? null) : null, { createVideoPlayer: options.createVideoPlayer });
-  const player = ownsPlayer ? created : appPlayer;
+  const contentPlayer = ownsPlayer ? created : appPlayer;
+  // A PlayerPort has no w3cmedia surface to draw: the app shows the content itself.
+  const port = contentPlayer !== null && 'takeMediaControlFocus' in contentPlayer;
+  const player = port ? null : (contentPlayer as W3cVideoPlayer | null);
   // The ID is read once per retriever: the user's choice does not change during playback.
   const allMacros = useMemo<Macros | undefined>(() => vegaMacros(adId, macros), [adId, macros]);
-  const ads = useVegaAds({ ...options, source: player ? (schedule ?? { breaks: [] }) : null, contentPlayer: player, macros: allMacros });
+  const ads = useVegaAds({
+    ...options,
+    source: contentPlayer ? (schedule ?? { breaks: [] }) : null,
+    contentPlayer,
+    macros: allMacros,
+  });
 
   const latestOnEnd = useRef(onEnd);
   latestOnEnd.current = onEnd;
@@ -104,7 +114,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
   const ui = typeof children === 'function' ? children({ player, ads }) : children;
   return (
     <View style={[styles.root, style]}>
-      {contentSurface ? (
+      {contentSurface && !port ? (
         <>
           <DualSurfaceView surfaces={ads.surfaces} contentPlayer={player} scalingMode={scalingMode} />
           {ui}

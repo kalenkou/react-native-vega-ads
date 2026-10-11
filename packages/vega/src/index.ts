@@ -24,3 +24,5 @@ export { adIdMacros } from 'react-native-ads-core';
 export type { VegaAdIdRetriever } from './vegaAdIdSource';
 export { preloadVegaAds } from './preloadVegaAds';
 export type { PreloadVegaAdsOptions } from './preloadVegaAds';
+export { rnvPlayerPort } from './rnvPlayerPort';
+export type { RnvPlayerLike, RnvPlayerPortOptions } from './rnvPlayerPort';
