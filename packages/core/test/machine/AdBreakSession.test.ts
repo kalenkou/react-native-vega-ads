@@ -689,6 +689,15 @@ describe('AdBreakSession – event order and stuck players (review results-34)',
     expect(next.calls).toContain('play');
   });
 
+  it('without a valid <Duration> tracks start and quartiles from the length the player reports (C1-7)', async () => {
+    const ctx = setup(fixture('inline.xml').replace('<Duration>00:00:10.000</Duration>', '<Duration>00:00:00</Duration>'));
+    const player = await playFirst(ctx);
+    sent();
+    player.emitTime(0.5);
+    player.emitTime(2.6);
+    expect(sent()).toEqual(['https://t.test/start', 'https://t.test/q1']);
+  });
+
   it('the active ad is shown even when the finishing one never sends ended (C3-5)', async () => {
     const ctx = setup(POD3(), { standby: true });
     const first = await playFirst(ctx);

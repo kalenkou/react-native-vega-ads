@@ -452,6 +452,10 @@ export class AdBreakSession {
       if (this.framed && !this.adPaused) {
         this.armStallWatchdog();
       }
+      // Without a valid <Duration>, start and quartiles use the length the player reports.
+      if (c.item.ad.creative.duration <= 0) {
+        c.tracker.setDuration(this.player?.getDuration() ?? 0);
+      }
       if (!this.firstFrameHidden) {
         c.tracker.progress(time);
       }

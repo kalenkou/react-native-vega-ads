@@ -28,13 +28,15 @@ export class AdTracker {
   // vast-client starts with `paused` undefined, so its first setPaused(false) would send "resume".
   private isPaused = false;
   private position = 0;
+  private hasDuration: boolean;
 
   constructor(linear: LinearAd, options: AdTrackerOptions = {}) {
     this.macros = options.macros ?? {};
     this.onEvent = options.onEvent ?? (() => undefined);
     this.skipAfter = linear.skipAfter;
     this.tracker = new VASTTracker(linear.client, linear.ad as never, linear.creative as never);
-    if (linear.creative.duration > 0) {
+    this.hasDuration = linear.creative.duration > 0;
+    if (this.hasDuration) {
       this.tracker.setDuration(linear.creative.duration);
     }
     const emitter = this.tracker as unknown as { on(event: string, listener: () => void): void };
@@ -49,6 +51,17 @@ export class AdTracker {
     this.impressed = true;
     this.tracker.trackImpression(this.macros);
     this.onEvent('impression');
+  }
+
+  /**
+   * Ad length from the player, for an ad without a valid <Duration>: start and quartiles
+   * need it. A valid <Duration> is kept.
+   */
+  setDuration(seconds: number): void {
+    if (!this.hasDuration && seconds > 0) {
+      this.hasDuration = true;
+      this.tracker.setDuration(seconds);
+    }
   }
 
   /** Current ad position in seconds (R2). */

@@ -57,6 +57,23 @@ describe('AdTracker (R1, R2, R8, R20)', () => {
     expect(sent()).toEqual(['https://t.test/complete']);
   });
 
+  it('without a valid <Duration>, tracks start and quartiles from the duration set later (C1-7)', async () => {
+    const tracker = new AdTracker(await loadAd(INLINE.replace('<Duration>00:00:10.000</Duration>', '<Duration>00:00:00</Duration>')));
+    tracker.firstFrame();
+    sent();
+    tracker.setDuration(10);
+    tracker.progress(0.5);
+    tracker.progress(2.6);
+    expect(sent()).toEqual(['https://t.test/start', 'https://t.test/q1']);
+  });
+
+  it('keeps a valid <Duration> over the one set later', async () => {
+    const tracker = new AdTracker(await loadAd());
+    tracker.setDuration(100);
+    tracker.progress(2.6);
+    expect(sent()).toContain('https://t.test/q1');
+  });
+
   it('sends pause and resume only on a change', async () => {
     const tracker = new AdTracker(await loadAd());
     tracker.firstFrame();
