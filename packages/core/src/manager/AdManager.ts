@@ -53,6 +53,8 @@ export class AdManager {
   private readonly prepared = new Map<string, Prepared>();
   private active: AdBreakSession | null = null;
   private activeId: string | null = null;
+  /** Breaks whose start waits for their ads to load: not "passed", even though the scheduler marked them done. */
+  private readonly starting = new Set<string>();
   /** A break interrupted by the app going to the background. */
   private suspended: { id: string; session: AdBreakSession } | null = null;
   private contentStarted = false;
@@ -224,7 +226,7 @@ export class AdManager {
   /** A prefetched break that a seek jumped over holds an ad player (a video decoder): free it. */
   private releasePassed(scheduler: BreakScheduler, starting: Set<string>): void {
     for (const [id, entry] of this.prepared) {
-      if (scheduler.isDone(id) && !starting.has(id) && entry.session !== this.active) {
+      if (scheduler.isDone(id) && !starting.has(id) && !this.starting.has(id) && entry.session !== this.active) {
         this.prepared.delete(id);
         void entry.loading.then(() => entry.session.interrupt());
       }
@@ -278,7 +280,8 @@ export class AdManager {
       }
       return;
     }
-    const result = await entry.loading;
+    this.starting.add(id);
+    const result = await entry.loading.finally(() => this.starting.delete(id));
     if (this.disposed) {
       return;
     }

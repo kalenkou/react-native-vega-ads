@@ -91,6 +91,21 @@ describe('AdManager', () => {
     expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
   });
 
+  it('keeps a loading pre-roll when the content player reports time before it plays (Shaka)', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.content.emitTime(0); // an adaptive player sends timeupdate while it loads
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    await settle();
+    expect(ctx.last()?.state).toBe('playing');
+    expect(ctx.lastAdPlayer().deinitialized).toBe(false);
+  });
+
   it('starts the content at once when there is no pre-roll', async () => {
     const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
     await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]));
