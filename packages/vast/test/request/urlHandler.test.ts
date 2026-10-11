@@ -1,6 +1,7 @@
 import { createUrlHandler, LoadFailure, describeFailure } from '../../src/request/urlHandler';
 import { FakeClock } from '../fakes/FakeClock';
 import { FakeHttp } from '../fakes/FakeHttp';
+import type { HttpPort } from '../../src/ports';
 
 const URL = 'https://ads.test/vast.xml';
 const VAST = '<VAST version="4.2"><Ad id="1"><InLine/></Ad></VAST>';
@@ -42,6 +43,18 @@ describe('urlHandler (R4, R16)', () => {
     const result = await pending;
     expect(result).toMatchObject({ statusCode: 408 });
     expect(describeFailure((result as { error: Error }).error)).toEqual({ kind: 'timeout' });
+  });
+
+  it('times out even when the HTTP port ignores the abort signal (C4-5)', async () => {
+    const clock = new FakeClock();
+    const deaf: HttpPort = { get: () => new Promise(() => undefined) };
+    const handler = createUrlHandler({ http: deaf, clock, timeoutMs: 4000 });
+    const pending = handler.get(URL, {});
+    let result: unknown = null;
+    void pending.then((r) => (result = r));
+    clock.advance(4000);
+    await settle();
+    expect(result).toMatchObject({ statusCode: 408 });
   });
 
   it('uses the timeout that vast-client passes when it is shorter', async () => {

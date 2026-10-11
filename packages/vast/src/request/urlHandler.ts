@@ -84,14 +84,21 @@ export function createUrlHandler(deps: UrlHandlerDeps): UrlHandler {
       const timeoutMs = Math.min(ownTimeout, options.timeout ?? ownTimeout);
       const controller = new AbortController();
       let timedOut = false;
+      let expire: (error: Error) => void = () => undefined;
+      // Rejects on the timer, so a port that ignores the signal still times out.
+      const expired = new Promise<never>((_, reject) => (expire = reject));
       const timer = clock.setTimeout(() => {
         timedOut = true;
         controller.abort();
+        expire(failure('timeout'));
       }, timeoutMs);
 
       try {
-        const response = await http.get(url, { signal: controller.signal });
-        const text = await response.text();
+        const load = async () => {
+          const response = await http.get(url, { signal: controller.signal });
+          return { response, text: await response.text() };
+        };
+        const { response, text } = await Promise.race([load(), expired]);
         if (!response.ok) {
           return { error: failure(`http:${response.status}`), statusCode: response.status };
         }
