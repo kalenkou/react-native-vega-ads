@@ -23,6 +23,7 @@ import {
 import { W3cPlayerAdapter, W3cVideoPlayer } from './W3cPlayerAdapter';
 import { fetchHttp, systemClock } from './platform';
 import { createAdMediaControlHandler } from './adMediaControlHandler';
+import { contentMediaControlHandler } from './contentMediaControlHandler';
 import { takePreload } from './preloadVegaAds';
 
 export interface UseVegaAdsOptions {
@@ -177,14 +178,20 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     const componentInstance = o.componentInstance ?? (() => appState.current.getComponentInstance());
     const http = o.http ?? fetchHttp;
     installImagePolyfill(http);
+    // The content's handler also reports a viewer's pause command, for pause ads.
+    let ownContentHandler: unknown;
+    const viewerPaused = (): void => manager.current?.viewerPaused();
+    const contentHandler = (): unknown => {
+      const app = latest.current.contentMediaControlHandler;
+      if (app !== undefined) {
+        return contentMediaControlHandler(app, viewerPaused);
+      }
+      ownContentHandler ??= contentMediaControlHandler(undefined, viewerPaused);
+      return ownContentHandler;
+    };
     const content = isPort(contentPlayer)
       ? contentPlayer
-      : new W3cPlayerAdapter(
-          contentPlayer,
-          componentInstance,
-          () => latest.current.contentMediaControlHandler,
-          o.mediaControls ?? true,
-        );
+      : new W3cPlayerAdapter(contentPlayer, componentInstance, contentHandler, o.mediaControls ?? true);
     const adHandler = createAdMediaControlHandler({ allowPause: o.adPause ?? true });
     const created = new AdManager({
       http,

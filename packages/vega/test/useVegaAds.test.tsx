@@ -381,6 +381,21 @@ describe('useVegaAds', () => {
     expect(ctx.lastAd().volume).toBe(0.398);
   });
 
+  it('shows a pause ad on "Alexa, pause", which reaches the content media controls but sends no pause event', async () => {
+    const PAUSE = 'https://ads.test/pause.xml';
+    const ctx = setup({ source: { breaks: [] }, pauseAdUrl: PAUSE });
+    ctx.http.on(PAUSE, { body: readFileSync(`${__dirname}/../../core/fixtures/vast/pause.xml`, 'utf8') });
+    await ctx.surfacesReady();
+    const handler = ctx.content.mediaControlHandler as { handlePause(): Promise<void>; handled: string[] };
+    await act(async () => {
+      await handler.handlePause();
+      ctx.clock.advance(1_500);
+    });
+    await settle();
+    expect(handler.handled).toContain('pause');
+    expect(ctx.ads().pauseAd).toMatchObject({ imageUrl: 'https://cdn.test/pause.png' });
+  });
+
   it('shows a pause ad when the viewer pauses the content, and Back closes it', async () => {
     const PAUSE = 'https://ads.test/pause.xml';
     const ctx = setup({ source: { breaks: [] }, pauseAdUrl: PAUSE });
