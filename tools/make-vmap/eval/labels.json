@@ -1,0 +1,195 @@
+{
+  "about": "Labelled blind from the 30 s of film before each break (label-kit.mjs), 2026-10-12. The \"seen\" notes were written in Russian and translated to English word for word; signals and \"unsure\" are unchanged.",
+  "films": [
+    {
+      "file": "tears_of_steel_720p.mp4",
+      "breaks": [
+        {
+          "at": 56.667,
+          "signals": [],
+          "seen": "she swung her hand at him at the start, but that is not violence, it was at second 6 // and in their lab there seems to be a human brain connected, from second 16 to 19, but it is a hologram of a big brain, not a real one, as I understood",
+          "unsure": true
+        },
+        {
+          "at": 116.708,
+          "signals": [
+            "weapons",
+            "vehicle crash"
+          ],
+          "seen": "a black man with a sniper rifle, a weapon, aiming, shown from the first seconds / then from second 22 robots attack the platform, it collapses and falls on the houses -- I counted it as vehicle crash, but not sure"
+        },
+        {
+          "at": 172.292,
+          "signals": [
+            "weapons"
+          ],
+          "seen": "a black man with a sniper rifle, a weapon, aiming, shown from the first seconds /"
+        },
+        {
+          "at": 253.417,
+          "signals": [],
+          "seen": "found nothing"
+        },
+        {
+          "at": 307.708,
+          "signals": [],
+          "seen": "found nothing"
+        },
+        {
+          "at": 399,
+          "signals": [
+            "violence"
+          ],
+          "seen": "at the start a robot attacks a guy, grabs him -- violence -// and then frames where it holds him (violence)"
+        },
+        {
+          "at": 461.792,
+          "signals": [
+            "weapons"
+          ],
+          "seen": ""
+        },
+        {
+          "at": 517.875,
+          "signals": [
+            "weapons",
+            "violence"
+          ],
+          "seen": "a weapon, shooting, then the robot lets the guy go, but probably also violence"
+        },
+        {
+          "at": 588,
+          "signals": [
+            "weapons",
+            "violence"
+          ],
+          "seen": "a sword is stuck into a robot's eye // it then runs away // and then at the end robots catch up with a guy to attack"
+        }
+      ]
+    },
+    {
+      "file": "sintel_720p.mp4",
+      "breaks": [
+        {
+          "at": 42.417,
+          "signals": [
+            "violence"
+          ],
+          "seen": "at the end someone attacks the girl, but the moment itself is not shown -- not sure",
+          "unsure": true
+        },
+        {
+          "at": 162.083,
+          "signals": [],
+          "seen": "did not see / maybe did not hear",
+          "unsure": true
+        },
+        {
+          "at": 214.917,
+          "signals": [
+            "injury",
+            "child in danger"
+          ],
+          "seen": "a wounded dragon from the very start / the baby dragon is wounded"
+        },
+        {
+          "at": 271.625,
+          "signals": [
+            "violence"
+          ],
+          "seen": "the dragon runs after a chicken, well, not sure about this item",
+          "unsure": true
+        },
+        {
+          "at": 322.208,
+          "signals": [
+            "violence"
+          ],
+          "seen": "a big dragon attacks a small one",
+          "unsure": true
+        },
+        {
+          "at": 436.729,
+          "signals": [
+            "violence"
+          ],
+          "seen": "some guy attacks another -- I think violence, not sure if she is a child"
+        },
+        {
+          "at": 543.125,
+          "signals": [
+            "violence",
+            "death"
+          ],
+          "seen": "the dragon first eats someone, but there seems to be no visible blood, and then the dragon attacks a person, breathes fire",
+          "unsure": true
+        },
+        {
+          "at": 678.75,
+          "signals": [
+            "death",
+            "child in danger"
+          ],
+          "seen": "the dragon dies / not sure if there is a child here, but stones were falling on it",
+          "unsure": true
+        }
+      ]
+    },
+    {
+      "file": "big_buck_bunny_720p.mp4",
+      "breaks": [
+        {
+          "at": 52.133,
+          "signals": [
+            "violence"
+          ],
+          "seen": "a nut hits a bird right away and it falls",
+          "unsure": true
+        },
+        {
+          "at": 104.166,
+          "signals": [],
+          "seen": "saw nothing",
+          "unsure": true
+        },
+        {
+          "at": 160.433,
+          "signals": [],
+          "seen": "seemingly saw nothing / only a squirrel fell, but not sure whether that is violence or not"
+        },
+        {
+          "at": 211.899,
+          "signals": [
+            "violence",
+            "death"
+          ],
+          "seen": "an attack on the rabbit / they killed a butterfly, then death /"
+        },
+        {
+          "at": 304.166,
+          "signals": [
+            "weapons"
+          ],
+          "seen": "the rabbit shoots a bow, practising, a weapon, well, he is set to fight / shoots into a tree",
+          "unsure": true
+        },
+        {
+          "at": 377.133,
+          "signals": [
+            "violence"
+          ],
+          "seen": "a rock almost crushed the squirrel at the start / and then a tree fell right on it, but it survived and went on, and then it flew off with a catapult --- violence",
+          "unsure": true
+        },
+        {
+          "at": 465.749,
+          "signals": [
+            "violence"
+          ],
+          "seen": "the squirrel almost fell into a trap, probably violence -- and then the rabbit grabbed it with his hands, also violence",
+          "unsure": true
+        }
+      ]
+    }
+  ]
+}
