@@ -17,6 +17,6 @@ export { AdManager, IDLE_SNAPSHOT } from './manager/AdManager';
 export type { AdManagerDeps, AdSchedule, AdTimeline } from './manager/AdManager';
 export { preloadAds } from './manager/preloadAds';
 export type { PreloadDeps, PreloadedAds } from './manager/preloadAds';
-export type { SessionDeps, SessionSnapshot, SessionState } from './machine/AdBreakSession';
+export type { BreakWhy, SessionDeps, SessionSnapshot, SessionState } from './machine/AdBreakSession';
 export { adCountdownState, adUiState, defaultAdUiStrings } from './ui/adUiState';
 export type { AdCountdownState, AdUiState, AdUiStrings } from './ui/adUiState';

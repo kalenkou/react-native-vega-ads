@@ -5,6 +5,8 @@ import type { AdUiState } from 'react-native-ads-core';
 export interface AdOverlayProps {
   ui: AdUiState;
   onSkip: () => void;
+  /** Show `ui.why` under the label: why an ad is missing or quieter. Off by default. */
+  showWhy?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -18,7 +20,7 @@ function adName(label: string): string {
  * Announces each ad once for VoiceView (R26), and the moment Skip becomes possible: a viewer
  * who cannot see the button would not know it.
  */
-export function AdOverlay({ ui, onSkip, style }: AdOverlayProps): ReactElement | null {
+export function AdOverlay({ ui, onSkip, showWhy = false, style }: AdOverlayProps): ReactElement | null {
   const announced = useRef<string | null>(null);
   /** This ad has shown a Skip countdown, so "you can skip now" is news. */
   const skipWaited = useRef(false);
@@ -51,6 +53,11 @@ export function AdOverlay({ ui, onSkip, style }: AdOverlayProps): ReactElement |
   return (
     <View style={[styles.root, style]} pointerEvents="box-none">
       <Text style={styles.label}>{ui.label}</Text>
+      {showWhy && ui.why !== '' && (
+        <Text testID="vega-ads-why" style={styles.why}>
+          {ui.why}
+        </Text>
+      )}
       {!ui.skip.visible && (
         // Nothing to press, but the D-pad focus must stay on the ad, not on the app behind it.
         <TouchableOpacity
@@ -92,6 +99,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: 12,
     paddingVertical: 6,
+  },
+  why: {
+    position: 'absolute',
+    left: 48,
+    top: 88,
+    maxWidth: 1100,
+    color: '#fff',
+    fontSize: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
   skip: {
     position: 'absolute',

@@ -30,7 +30,16 @@ async function settle(): Promise<void> {
 
 function setup(
   body: string,
-  options: { budgetMs?: number; maxAds?: number; standby?: boolean; maxPlayers?: number; repeats?: RepeatGuard; contentLoudness?: number } = {},
+  options: {
+    budgetMs?: number;
+    maxAds?: number;
+    standby?: boolean;
+    maxPlayers?: number;
+    repeats?: RepeatGuard;
+    contentLoudness?: number;
+    blockedAdCategories?: string[];
+    sceneSignals?: string[];
+  } = {},
 ) {
   const http = new FakeHttp().on(TAG, { body });
   const clock = new FakeClock(1_000_000);
@@ -61,6 +70,8 @@ function setup(
     maxAds: options.maxAds,
     repeats: options.repeats,
     contentLoudness: options.contentLoudness,
+    blockedAdCategories: options.blockedAdCategories,
+    sceneSignals: options.sceneSignals,
     onChange: (snapshot) => states.push(snapshot),
     onEvent: (name) => events.push(name),
   });
@@ -1015,5 +1026,54 @@ describe('AdBreakSession loudness', () => {
       'volume:1',
       'src:https://cdn.test/pod-2.mp4',
     ]);
+  });
+});
+
+describe('AdBreakSession – why the break looks as it does', () => {
+  const NO_REASON = { blockedAfterScene: [], sceneSignals: [], repeatsLeftOut: 0, quieter: false };
+
+  it('names the advertiser left out after the scene, and what the scene showed', async () => {
+    const pod = fixture('pod-cat.xml').replace('<AdTitle>car</AdTitle>', '<AdTitle>car</AdTitle><Advertiser>Voltaro</Advertiser>');
+    const ctx = setup(pod, { blockedAdCategories: ['1571'], sceneSignals: ['vehicle crash'] });
+    await loadReady(ctx);
+    await ctx.session.start();
+    expect(last(ctx.states)?.why).toEqual({ ...NO_REASON, blockedAfterScene: ['Voltaro'], sceneSignals: ['vehicle crash'] });
+  });
+
+  it('keeps an ad without an advertiser as null, and the scene signals only when an ad was left out', async () => {
+    const blocked = setup(fixture('pod-cat.xml'), { blockedAdCategories: ['1571'], sceneSignals: ['vehicle crash'] });
+    await loadReady(blocked);
+    expect(last(blocked.states)?.why?.blockedAfterScene).toEqual([null]);
+
+    const fits = setup(fixture('pod-cat.xml'), { blockedAdCategories: ['1004'], sceneSignals: ['drinking'] });
+    await loadReady(fits);
+    expect(last(fits.states)?.why).toEqual(NO_REASON);
+  });
+
+  it('counts the ads the household saw recently', async () => {
+    const repeats = new RepeatGuard(new FakeClock(0));
+    const earlier = setup(fixture('pod-optimized.xml'), { repeats });
+    const first = await loadReady(earlier);
+    await earlier.session.start();
+    await first.flush();
+
+    const ctx = setup(fixture('pod-optimized.xml'), { repeats });
+    await loadReady(ctx);
+    expect(last(ctx.states)?.why).toEqual({ ...NO_REASON, repeatsLeftOut: 1 });
+  });
+
+  it('says when the ad on screen plays quieter than its file, to match the content', async () => {
+    const loud = fixture('pod-optimized.xml').replace(
+      /(pod-1\.mp4\]\]><\/MediaFile>\s*<\/MediaFiles>)<\/Linear><\/Creative>/,
+      '$1</Linear><CreativeExtensions><CreativeExtension type="loudness"><IntegratedLoudness unit="LUFS">-16</IntegratedLoudness></CreativeExtension></CreativeExtensions></Creative>',
+    );
+    const ctx = setup(loud, { contentLoudness: -24 });
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    expect(last(ctx.states)?.why?.quieter).toBe(true);
+    player.emitEnded(); // pod-2 has no loudness: full volume
+    await settle();
+    expect(last(ctx.states)?.why?.quieter).toBe(false);
   });
 });

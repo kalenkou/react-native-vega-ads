@@ -30,6 +30,19 @@ export interface SessionSnapshot {
   skipIn: number | null;
   /** The ad surface that must be visible (on top); null when no ad player is active. */
   adSurface: string | null;
+  /** Why the break looks as it does, for a "why these ads" line. */
+  why?: BreakWhy;
+}
+
+export interface BreakWhy {
+  /** The advertiser of each ad left out because the scene before the break blocks its category; null when the ad names none. */
+  blockedAfterScene: Array<string | null>;
+  /** What that scene shows (`SessionDeps.sceneSignals`); empty when no ad was left out for it. */
+  sceneSignals: string[];
+  /** Ads left out because the viewer saw them recently. */
+  repeatsLeftOut: number;
+  /** The ad on screen plays quieter than its file, to match the content. */
+  quieter: boolean;
 }
 
 export interface SessionDeps {
@@ -82,6 +95,8 @@ export interface SessionDeps {
    * with one of them is left out with VAST error 205 and the event `skipped:category`.
    */
   blockedAdCategories?: readonly string[];
+  /** What the scene before the break shows (`ScheduledBreak.sceneSignals`); only explains the blocked ads. */
+  sceneSignals?: readonly string[];
   /** IAB events sent, plus `error:<code>`, `skipped:repeat|advertiser|category|budget` and `breakEnd`. */
   onEvent?: (name: string) => void;
 }
@@ -153,6 +168,10 @@ export class AdBreakSession {
   /** The ad that advance() already moved on from: a second event of the same ad is late. */
   private advancedFrom: Current | null = null;
   private previousTimer: unknown = null;
+  private blockedAfterScene: Array<string | null> = [];
+  private repeatsLeftOut = 0;
+  /** The players whose ad is turned down to the content's loudness. */
+  private readonly quieter = new WeakSet<PlayerPort>();
 
   constructor(deps: SessionDeps) {
     this.deps = deps;
@@ -314,6 +333,7 @@ export class AdBreakSession {
           return true;
         }
         this.trackerFor(linear).error(CATEGORY_BLOCKED);
+        this.blockedAfterScene.push(linear.ad.advertiser?.value?.trim() || null);
         this.deps.onEvent?.('skipped:category');
         return false;
       }),
@@ -327,6 +347,7 @@ export class AdBreakSession {
     }
     const { responses: kept, dropped } = this.deps.repeats.filter(responses);
     dropped.forEach(({ ad, reason }) => this.notUsed(ad, reason));
+    this.repeatsLeftOut += dropped.filter(({ reason }) => reason === 'repeat').length;
     return kept;
   }
 
@@ -427,6 +448,11 @@ export class AdBreakSession {
       const loudness = adLoudness(ad);
       const gain = loudness === null ? 1 : loudnessGain(loudness, content);
       player.setVolume(gain);
+      if (gain < 1) {
+        this.quieter.add(player);
+      } else {
+        this.quieter.delete(player);
+      }
       if (gain < 1 && loudness !== null) {
         this.deps.onEvent?.(`loudness:${(content - loudness).toFixed(1)}`);
       }
@@ -789,6 +815,12 @@ export class AdBreakSession {
       canSkip: current?.tracker.canSkip() ?? false,
       skipIn: current?.tracker.secondsUntilSkip() ?? null,
       adSurface: this.player ? this.shownSurface : null,
+      why: {
+        blockedAfterScene: [...this.blockedAfterScene],
+        sceneSignals: this.blockedAfterScene.length > 0 ? [...(this.deps.sceneSignals ?? [])] : [],
+        repeatsLeftOut: this.repeatsLeftOut,
+        quieter: this.player !== null && this.quieter.has(this.player),
+      },
     });
   }
 }

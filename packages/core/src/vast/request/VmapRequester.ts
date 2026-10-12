@@ -33,13 +33,35 @@ export interface ScheduledBreak {
    * this break, for example because of the scene before it. From the `vega-ads:context` extension.
    */
   blockedAdCategories?: string[];
+  /** What the scene before the break shows, for example `injury`: the names of its `<Signals>`. */
+  sceneSignals?: string[];
+}
+
+function contextOf(adBreak: VMAPAdBreak) {
+  return (adBreak.extensions ?? []).find((ext) => ext.attributes.type === 'vega-ads:context');
 }
 
 /** The `<BlockedAdCategories>` of a break's `vega-ads:context` extension, space or comma separated. */
 function blockedCategoriesOf(adBreak: VMAPAdBreak): string[] {
-  const context = (adBreak.extensions ?? []).find((ext) => ext.attributes.type === 'vega-ads:context');
-  const value = context?.children.BlockedAdCategories?.value;
+  const value = contextOf(adBreak)?.children.BlockedAdCategories?.value;
   return typeof value === 'string' ? value.split(/[\s,]+/).filter(Boolean) : [];
+}
+
+/**
+ * The `names` attribute of `<Signals>`, comma separated. A signal name can have a space
+ * ("vehicle crash"), and the VMAP parser keeps only one `<Signal>` child per element name.
+ */
+function sceneSignalsOf(adBreak: VMAPAdBreak): string[] {
+  const names = contextOf(adBreak)?.children.Signals?.attributes.names ?? '';
+  return names
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+/** `existing` plus the new values, without duplicates; undefined while there are none. */
+function merged(existing: string[] | undefined, values: string[]): string[] | undefined {
+  return values.length > 0 ? [...new Set([...(existing ?? []), ...values])] : existing;
 }
 
 export type VmapResult =
@@ -168,9 +190,13 @@ export async function requestVmap(url: string, deps: UrlHandlerDeps): Promise<Vm
 
     const key = offsetKey(offset);
     const scheduled = breaks.get(key) ?? { id: adBreak.breakId || key, offset, sources: [] };
-    const blocked = blockedCategoriesOf(adBreak);
-    if (blocked.length > 0) {
-      scheduled.blockedAdCategories = [...new Set([...(scheduled.blockedAdCategories ?? []), ...blocked])];
+    const blocked = merged(scheduled.blockedAdCategories, blockedCategoriesOf(adBreak));
+    if (blocked) {
+      scheduled.blockedAdCategories = blocked;
+    }
+    const signals = merged(scheduled.sceneSignals, sceneSignalsOf(adBreak));
+    if (signals) {
+      scheduled.sceneSignals = signals;
     }
     scheduled.sources.push({
       id: adBreak.adSource?.id ?? null,

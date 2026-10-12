@@ -167,7 +167,15 @@ describe('buildVmap break context', () => {
         {
           time: 139.917,
           vastUrl: 'https://ads.test/mid.xml',
-          context: { mood: 'violent', scene: 'Robots fight <soldiers> & fire', signals: [{ name: 'vehicle crash', evidence: 'A car hits a <wall>.' }], blockedAdCategories: ['1551', '1571'] },
+          context: {
+            mood: 'violent',
+            scene: 'Robots fight <soldiers> & fire',
+            signals: [
+              { name: 'vehicle crash', evidence: 'A car hits a <wall>.' },
+              { name: 'injury', evidence: 'A soldier bleeds.' },
+            ],
+            blockedAdCategories: ['1551', '1571'],
+          },
         },
         { time: 441.2, vastUrl: 'https://ads.test/mid2.xml' },
       ],
@@ -178,6 +186,7 @@ describe('buildVmap break context', () => {
     expect(xml).toContain('<Signal name="vehicle crash">A car hits a &lt;wall&gt;.</Signal>');
     const result = await load(xml);
     expect(result.status === 'ok' && result.breaks.map((b) => b.blockedAdCategories)).toEqual([['1551', '1571'], undefined]);
+    expect(result.status === 'ok' && result.breaks.map((b) => b.sceneSignals)).toEqual([['vehicle crash', 'injury'], undefined]);
   });
 
   it('writes the mood even when nothing is blocked, and refuses a bad category code', () => {

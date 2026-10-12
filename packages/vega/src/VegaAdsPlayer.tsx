@@ -54,6 +54,11 @@ export interface VegaAdsPlayerProps extends Omit<UseVegaAdsOptions, 'source' | '
    */
   renderOverlay?: (ads: VegaAds) => ReactNode;
   /**
+   * Show under the ad label why the break looks as it does, for example "No Kettlo ad after a
+   * scene with injury · Volume matched to the movie" (`ads.ui.why`). Default false.
+   */
+  showWhy?: boolean;
+  /**
    * "Ad in 5" before each mid-roll whose ads are ready. false: draw your own from
    * `ads.timeline.nextBreakIn`. Default true.
    */
@@ -85,6 +90,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
     children,
     contentSurface = true,
     renderOverlay,
+    showWhy = false,
     countdown = true,
     pauseAdStyle,
     scalingMode,
@@ -131,7 +137,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
       )}
       {countdown && !ads.playing && <AdCountdown nextBreakIn={ads.timeline.nextBreakIn} strings={options.strings} />}
       <PauseAd view={ads.pauseAd} strings={options.strings} style={pauseAdStyle} />
-      {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} />}
+      {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} showWhy={showWhy} />}
     </View>
   );
 }

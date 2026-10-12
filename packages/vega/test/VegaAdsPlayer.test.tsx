@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { FakeClock } from '../../core/test/fakes/FakeClock';
 import { FakeHttp } from '../../core/test/fakes/FakeHttp';
 import { FakePlayer } from '../../core/test/fakes/FakePlayer';
+import { AdOverlay } from '../src/AdOverlay';
 import { VegaAdsPlayer, VegaAdsPlayerProps } from '../src/VegaAdsPlayer';
 import { FakeW3cPlayer } from './fakes/FakeW3cPlayer';
 
@@ -162,6 +163,16 @@ describe('VegaAdsPlayer – customising', () => {
     await settle();
     expect(ctx.renderer.root.findAllByProps({ testID: 'my-overlay' }).length).toBeGreaterThan(0);
     expect(ctx.renderer.root.findAllByProps({ testID: 'vega-ads-focus' })).toHaveLength(0);
+  });
+
+  it('passes showWhy on to the default ad overlay', async () => {
+    const overlay = async (props: Partial<VegaAdsPlayerProps>) => {
+      const ctx = setup(props);
+      await settle();
+      return ctx.renderer.root.findAll((node) => node.type === AdOverlay)[0]?.props.showWhy;
+    };
+    expect(await overlay({})).toBe(false);
+    expect(await overlay({ showWhy: true })).toBe(true);
   });
 
   it('shows "Ad in N" before a mid-roll; countdown={false} leaves it to the app', async () => {

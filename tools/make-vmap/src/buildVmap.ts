@@ -112,7 +112,8 @@ function contextExtension(context: BreakContext): string[] {
     ...(context.scene ? [`        <Scene>${escapeXml(context.scene)}</Scene>`] : []),
     ...(context.signals?.length
       ? [
-          '        <Signals>',
+          // The names again in one attribute: VMAP readers keep one <Signal> child per element name.
+          `        <Signals names="${escapeXml(context.signals.map((signal) => signal.name).join(','))}">`,
           ...context.signals.map((signal) => `          <Signal name="${escapeXml(signal.name)}">${escapeXml(signal.evidence)}</Signal>`),
           '        </Signals>',
         ]

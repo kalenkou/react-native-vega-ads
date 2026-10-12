@@ -9,7 +9,9 @@ import { PreloadedAds, resolveSchedule, scheduleKey } from './preloadAds';
 /** Where the breaks come from: a VMAP document, or a list of VAST tags with their times. */
 export type AdSchedule =
   | { vmapUrl: string }
-  | { breaks: Array<{ offset: 'start' | 'end' | number; vastUrl: string; blockedAdCategories?: string[] }> };
+  | {
+      breaks: Array<{ offset: 'start' | 'end' | number; vastUrl: string; blockedAdCategories?: string[]; sceneSignals?: string[] }>;
+    };
 
 export interface AdManagerDeps {
   http: HttpPort;
@@ -420,6 +422,7 @@ export class AdManager {
       maxAds: this.maxAds === undefined ? undefined : Math.floor(this.maxAds),
       repeats: this.repeats,
       blockedAdCategories: adBreak.blockedAdCategories,
+      sceneSignals: adBreak.sceneSignals,
       contentLoudness: this.deps.contentLoudness,
       onChange: (snapshot) => this.onSessionChange(id, session, snapshot),
       onEvent: (name) => {

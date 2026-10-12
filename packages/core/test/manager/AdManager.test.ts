@@ -829,6 +829,17 @@ describe('AdManager', () => {
       expect(ctx.lastAdPlayer().src).toBe('https://cdn.test/coffee.mp4');
     });
 
+    it('passes the scene signals on, so the break can say why an ad is missing', async () => {
+      const ctx = setup({ 'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml') });
+      const starting = ctx.manager.start({
+        breaks: [{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml', blockedAdCategories: ['1571'], sceneSignals: ['vehicle crash'] }],
+      });
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      expect(ctx.last()?.why).toMatchObject({ blockedAfterScene: [null], sceneSignals: ['vehicle crash'] });
+    });
+
     it('plays every ad of a break without context', async () => {
       const ctx = setup({ 'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml') });
       const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml' }]));

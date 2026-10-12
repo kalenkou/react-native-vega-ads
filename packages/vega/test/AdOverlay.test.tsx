@@ -12,6 +12,7 @@ function ui(overrides: Partial<AdUiState> = {}): AdUiState {
     skip: { visible: false, enabled: false, label: '' },
     announcement: 'Ad 1 of 3, 12 seconds',
     skipAnnouncement: '',
+    why: '',
     ...overrides,
   };
 }
@@ -42,6 +43,26 @@ describe('AdOverlay', () => {
   it('shows the ad label', () => {
     const { texts } = render(ui());
     expect(texts()).toContain('Ad 1 of 3 · 0:12');
+  });
+
+  it('shows why the break looks as it does when the app turns it on', () => {
+    const why = 'No Kettlo ad after a scene with injury';
+    expect(render(ui({ why })).texts()).not.toContain(why);
+
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<AdOverlay ui={ui({ why })} onSkip={jest.fn()} showWhy />);
+    });
+    const line = renderer.root.findAll((n) => n.props.testID === 'vega-ads-why' && (n.type as unknown) === 'Text')[0];
+    expect(line?.props.children).toBe(why);
+  });
+
+  it('shows no empty why line', () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<AdOverlay ui={ui()} onSkip={jest.fn()} showWhy />);
+    });
+    expect(renderer.root.findAll((n) => n.props.testID === 'vega-ads-why')).toHaveLength(0);
   });
 
   it('has no Skip button for a non-skippable ad', () => {

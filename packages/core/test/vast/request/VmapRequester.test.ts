@@ -203,6 +203,13 @@ describe('requestVmap break context', () => {
     expect(result.status === 'ok' && result.breaks[0]?.blockedAdCategories).toEqual(['1551', '1571', '1133']);
   });
 
+  it('reads the names of the scene signals, for a "why" line', async () => {
+    const signals =
+      '<vmap:Extension type="vega-ads:context"><Signals names="vehicle crash, injury"><Signal name="vehicle crash">A car hits a wall.</Signal><Signal name="injury">He bleeds.</Signal></Signals></vmap:Extension>';
+    const result = await load(doc(adBreak('a', signals), adBreak('b', context('1551'))));
+    expect(result.status === 'ok' && result.breaks[0]?.sceneSignals).toEqual(['vehicle crash', 'injury']);
+  });
+
   it('ignores other extensions', async () => {
     const other = '<vmap:Extension type="other"><BlockedAdCategories>1551</BlockedAdCategories></vmap:Extension>';
     const result = await load(doc(adBreak('a', other)));

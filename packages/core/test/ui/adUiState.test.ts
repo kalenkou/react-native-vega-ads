@@ -6,6 +6,38 @@ function snapshot(overrides: Partial<SessionSnapshot>): SessionSnapshot {
 }
 
 describe('adUiState (R26)', () => {
+  describe('why line', () => {
+    const why = (overrides: Partial<NonNullable<SessionSnapshot['why']>>) =>
+      adUiState(snapshot({ why: { blockedAfterScene: [], sceneSignals: [], repeatsLeftOut: 0, quieter: false, ...overrides } })).why;
+
+    it('is empty when nothing was changed for the viewer', () => {
+      expect(why({})).toBe('');
+      expect(adUiState(snapshot({})).why).toBe('');
+    });
+
+    it('names the advertiser left out after the scene, the repeats and the volume', () => {
+      expect(why({ blockedAfterScene: ['Kettlo'], sceneSignals: ['weapons', 'injury'], repeatsLeftOut: 1, quieter: true })).toBe(
+        'No Kettlo ad after a scene with weapons and injury · An ad you saw recently was left out · Volume matched to the movie',
+      );
+    });
+
+    it('lists several advertisers, and counts the ads when one has no name', () => {
+      expect(why({ blockedAfterScene: ['Kettlo', 'Voltaro', 'Kettlo'], sceneSignals: ['injury'] })).toBe('No Kettlo or Voltaro ad after a scene with injury');
+      expect(why({ blockedAfterScene: ['Kettlo', null], sceneSignals: ['death', 'grief', 'violence'] })).toBe(
+        '2 ads left out after a scene with death, grief and violence',
+      );
+      expect(why({ blockedAfterScene: [null] })).toBe('1 ad left out after this scene');
+      expect(why({ repeatsLeftOut: 3 })).toBe('3 ads you saw recently were left out');
+    });
+
+    it('takes the app\'s own words', () => {
+      const ui = adUiState(snapshot({ why: { blockedAfterScene: [], sceneSignals: [], repeatsLeftOut: 0, quieter: true } }), {
+        whyQuieter: 'Leiser, wie der Film',
+      });
+      expect(ui.why).toBe('Leiser, wie der Film');
+    });
+  });
+
   it('shows the ad number and the time left, rounded up', () => {
     expect(adUiState(snapshot({}))).toMatchObject({ visible: true, label: 'Ad 1 of 2 · 0:12' });
   });

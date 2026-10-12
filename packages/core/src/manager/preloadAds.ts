@@ -35,6 +35,7 @@ export async function resolveSchedule(
         offset: b.offset === 'start' || b.offset === 'end' ? { kind: b.offset } : { kind: 'time', seconds: b.offset },
         sources: [{ id: null, source: { kind: 'url', url: b.vastUrl }, allowMultipleAds: true, track: () => undefined }],
         blockedAdCategories: b.blockedAdCategories,
+        sceneSignals: b.sceneSignals,
       })),
     };
   }

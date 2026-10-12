@@ -1,4 +1,4 @@
-import type { SessionSnapshot } from '../machine/AdBreakSession';
+import type { BreakWhy, SessionSnapshot } from '../machine/AdBreakSession';
 
 export interface AdUiStrings {
   ad: string;
@@ -17,6 +17,26 @@ export interface AdUiStrings {
   /** Next to a pause ad's QR code. */
   scanQr: string;
   announcePauseAd: string;
+  /** Ads left out because of the scene before the break: their advertisers (null: no name) and what the scene shows. */
+  whyLeftOut: (advertisers: ReadonlyArray<string | null>, sceneSignals: readonly string[]) => string;
+  /** Ads left out because the viewer saw them recently. */
+  whyRepeats: (count: number) => string;
+  /** The ad plays quieter, to match the content. */
+  whyQuieter: string;
+}
+
+/** "a", "a and b", "a, b and c". */
+function andList(items: readonly string[]): string {
+  return items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+function whyLeftOut(advertisers: ReadonlyArray<string | null>, sceneSignals: readonly string[]): string {
+  const scene = sceneSignals.length > 0 ? `a scene with ${andList(sceneSignals)}` : 'this scene';
+  const names = [...new Set(advertisers)];
+  if (names.every((name) => name !== null)) {
+    return `No ${names.join(' or ')} ad after ${scene}`;
+  }
+  return `${advertisers.length} ${advertisers.length === 1 ? 'ad' : 'ads'} left out after ${scene}`;
 }
 
 export const defaultAdUiStrings: AdUiStrings = {
@@ -32,6 +52,9 @@ export const defaultAdUiStrings: AdUiStrings = {
   pauseAdHint: 'Back closes the ad',
   scanQr: 'Scan to learn more',
   announcePauseAd: 'Ad while paused. Press Back to close it.',
+  whyLeftOut,
+  whyRepeats: (count) => (count === 1 ? 'An ad you saw recently was left out' : `${count} ads you saw recently were left out`),
+  whyQuieter: 'Volume matched to the movie',
 };
 
 export interface AdUiState {
@@ -43,6 +66,19 @@ export interface AdUiState {
   announcement: string;
   /** Text for the screen reader while Skip is possible; empty otherwise. */
   skipAnnouncement: string;
+  /** Why the break looks as it does: "No Kettlo ad after a scene with injury · Volume matched to the movie". Empty when nothing changed. */
+  why: string;
+}
+
+function whyLine(why: BreakWhy | undefined, s: AdUiStrings): string {
+  if (!why) {
+    return '';
+  }
+  const parts: string[] = [];
+  if (why.blockedAfterScene.length > 0) parts.push(s.whyLeftOut(why.blockedAfterScene, why.sceneSignals));
+  if (why.repeatsLeftOut > 0) parts.push(s.whyRepeats(why.repeatsLeftOut));
+  if (why.quieter) parts.push(s.whyQuieter);
+  return parts.join(' · ');
 }
 
 function clock(seconds: number): string {
@@ -71,7 +107,7 @@ export function adUiState(snapshot: SessionSnapshot, strings: Partial<AdUiString
   if (skippable && !snapshot.canSkip) parts.push(s.announceSkipIn(waitSeconds));
 
   const skipAnnouncement = skippable && snapshot.canSkip ? s.announceCanSkip : '';
-  return { visible, label, skip, announcement: parts.join(', '), skipAnnouncement };
+  return { visible, label, skip, announcement: parts.join(', '), skipAnnouncement, why: whyLine(snapshot.why, s) };
 }
 
 export interface AdCountdownState {
