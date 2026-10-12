@@ -15,6 +15,14 @@ Vega apps have no ready, open way to play VAST/VMAP ads:
 - **The options that exist are closed.** FreeWheel's Vega AdManager is a beta for FreeWheel customers only ([forum t/5679](https://community.amazondeveloper.com/t/5679)). Logituit Logix Ads Manager runs the IMA HTML5 SDK inside a WebView, VOD only ([forum t/7536](https://community.amazondeveloper.com/t/7536)). Dolby OptiView for Vega uses the same Logix IMA integration, and its sample notes: "Skippable ads are not supported" ([OptiView Vega sample, ads.md](https://github.com/THEOplayer/react-native-optiview-vega-sample/blob/main/doc/ads.md)).
 - **Developers ask for it.** "Dealing with ads these days usually means working with VAST XML data" ([forum t/20419](https://community.amazondeveloper.com/t/20419), 25.09.2025).
 
+### The break watches the movie first
+
+`tools/make-vmap` places the breaks before the ads are ever requested, on your computer, with no cloud, no cost and no viewer data:
+
+1. **Where:** ffmpeg finds shot changes and silent black frames; whisper.cpp finds speech. A break never lands inside a line of dialogue or within 1 s of it.
+2. **What comes after:** a local vision model (Qwen3.6-35B-A3B through llama.cpp) looks at three frames and the last minute of dialogue before each break and reports what it clearly sees: weapons, violence, injury, death, grief, vehicle crash, drinking, child in danger, each with its evidence. Fixed rules turn them into IAB ad categories to leave out after that scene, for example no car ads right after a car crash. The player enforces them (VAST error 205).
+3. **How well:** the author labelled 24 breaks blind, before seeing any model answer. The model finds most sensitive breaks (10 of 13 on the set we chose it on, 4 of 5 on a film we kept aside) but still leaves out categories after some calm scenes. Method and every number: [`tools/make-vmap/eval`](tools/make-vmap/eval/README.md).
+
 ### Options on Vega today
 
 | | react-native-vega-ads | Logix Ads Manager | Dolby OptiView Vega | FreeWheel AdManager |
@@ -452,10 +460,16 @@ While building `react-native-vega-ads`, I logged platform issues with steps, exp
 - The video sample's DRM title never asks for the hardware-secure path: it compares a boolean with the string `'true'`.
 - The Vega Virtual Device docs list other media keys than the SDK's keyboard mapping.
 - There is no table of Alexa phrases to media controls commands for Vega.
+- With the TV off, the screenshot tool hangs or writes an empty file, without an error.
+- Amazon's automated device testing does not take Vega packages.
+- A default release build fails `vpt validate`: its build number is 0.
+- The media controls manifest check gave different answers for the same manifest (9 times true, 4 times false).
 
 ## Credits
 
-Device tests and the demo use *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Soundtrack (C) Joram Letwory – www.tearsofsteel.org, CC BY-ND 3.0. The demo's second title is *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0. The demo ads use the Inter font (SIL Open Font License).
+Device tests and the demo use *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Soundtrack (C) Joram Letwory – www.tearsofsteel.org, CC BY-ND 3.0. The demo's second title is *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0. The eval also uses *Big Buck Bunny*, (CC) Blender Foundation | [www.bigbuckbunny.org](https://www.bigbuckbunny.org), CC BY 3.0. The demo ads use the Inter font (SIL Open Font License).
+
+`make-vmap` runs [ffmpeg](https://ffmpeg.org) (LGPL/GPL, called as a program), [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (MIT) with its `ggml-base.en` model (MIT) and [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) with [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (Apache-2.0). None of them is in this repository or in the npm packages; you install them yourself. The packages depend on [@dailymotion/vast-client](https://github.com/dailymotion/vast-client-js), [@dailymotion/vmap](https://github.com/dailymotion/vmap-js) and [@xmldom/xmldom](https://github.com/xmldom/xmldom), all MIT.
 
 ## License
 

@@ -159,7 +159,6 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Workaround:** `--build-number 1` in the `build:release` script; all three then pass with 0 errors (info only: no app icon).
 - **Suggestion:** start the template's build number at 1, or make `build-vega --build-type Release` warn when it is 0.
 
-
 ## FL-18 · The media controls manifest check gives different answers for the same manifest (11.10.2026)
 - **Task:** make remote and Alexa play/pause reach our players, Fire TV Stick 4K Select, Vega OS 2.0.
 - **Steps:** launch the same build with the same `manifest.toml` 13 times; read `checkClientManifestForKMC: … has KMC:` in the system log.
