@@ -281,3 +281,7 @@ Demo with `showWhy`, Sintel with the model's own context for the first mid-roll 
 |---|---|
 | Pixels | PASS: Kettlo `error code=205` when the pod loads; Brewnord, then Voltaro play |
 | Line under the label | PASS: "No Kettlo ad after a scene with weapons and injury · Volume matched to the movie" |
+
+## Ad plan before Play (12.10.2026)
+
+Details screen of Tears of Steel with `useAdPlan`: "Ads: 4 ad breaks · first: 1 ad, 10 s, skippable after 5 s". It comes from the preloaded VMAP and pre-roll VAST, so the pre-roll after Play needs no new request.
