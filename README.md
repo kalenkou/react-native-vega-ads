@@ -427,6 +427,10 @@ npm ci
 npm run check   # lint, types and all tests
 ```
 
+## Requirements
+
+The rules the library was built against, R1–R28, with where each one is in the code: [`docs/requirements.md`](docs/requirements.md). Two are not built: a separate lost-audio-focus handler (R22) and a debug panel (R27).
+
 ## Amazon requirements
 
 How the library meets the Appstore advertising policy, the Advertising ID policy and the Fire TV / Vega test criteria (ad fraud, audio focus, Home, Back, Alexa during ads, opt-out): [`docs/amazon-requirements.md`](docs/amazon-requirements.md).
