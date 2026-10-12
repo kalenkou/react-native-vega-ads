@@ -100,9 +100,9 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Task:** keep an ad playing correctly while the viewer talks to Alexa, Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1.
 - **Steps:** during an ad, say "Alexa, next" (or any request); watch the ad's `timeupdate`, `pause`, `playing`, `waiting` events and its tracking pixels.
 - **Expected:** a `pause` (or an audio focus / interruption event) when the system takes over, and `playing` when it gives the player back.
-- **Actual:** the ad stops advancing for 6–13 s (quartile pixels 6 s and 16 s apart instead of 2.5 s) with no `pause`, `waiting` or `playing` event. An app cannot tell this from a stalled stream: our 10 s stall watchdog ended one ad with VAST error 405 after a voice request.
+- **Actual:** the ad stops advancing for 6–13 s (quartile pixels 6 s and 16 s apart instead of 2.5 s) with no `pause`, `waiting` or `playing` event. An app cannot tell this from a stalled stream: our 10 s stall watchdog ended one ad with VAST error 405 after a voice request. Also, "Alexa, pause" on the content then reaches the media controls handler, but the player sends no `pause` event: it was already frozen, so its state does not change. Anything that waits for `pause` (a pause ad, an analytics event) misses a voice pause.
 - **Severity:** medium (ads cut short after a voice request; wrong error reporting to ad servers).
-- **Workaround:** two stall timeouts: 10 s after a `waiting` event (real buffering), 30 s when the time stops with no event at all (voice request).
+- **Workaround:** two stall timeouts: 10 s after a `waiting` event (real buffering), 30 s when the time stops with no event at all (voice request). For pause ads we listen to the pause command in the content's media controls handler, not only to the `pause` event.
 - **Suggestion:** emit `pause`/`playing` (or a documented interruption event) when Alexa takes and returns the media session.
 
 ## FL-12 · The video sample's DRM title never asks for the hardware-secure path (11.10.2026)
