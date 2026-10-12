@@ -311,3 +311,14 @@ Demo, Tears of Steel, played up to the end of the first mid-roll, then Back. The
 The first build sent `loudness:<dB>` when an ad's file was loaded: in the Play run the log shows it for the prebuffered Voltaro before Voltaro started. Now it follows the ad's `impression`, so in the Back run the prebuffered Voltaro, never seen, is not counted. We did not run the first build with Back.
 
 The lines match the pixels: 3 impressions in the first two runs, 2 in the Back run; in Play mode the pod's Kettlo got `notUsed` (seen in the pre-roll). The device log (`loggingctl`) lost some `[ads]` lines in this run; the report counts in the app, so it does not depend on the log.
+
+## Package validation before Appstore submission (12.10.2026)
+
+`vega exec vpt validate` on the three release packages of the demo (armv7, aarch64, x86_64), with the strict ABI check that Amazon requires before submission ([docs](https://developer.amazon.com/docs/vega/0.24/abi-check)).
+
+| Build | Result |
+|---|---|
+| `build-vega --build-type Release` | FAIL on all three: "build_number must be greater than 0, found: 0" |
+| `--build-number 1` (now in `npm run build:release`) | PASS on all three: manifest valid, 0 errors. Info only: no app icon, the system default is used |
+
+The Appstore wants a higher build number for each upload; raise it before a real submission.
