@@ -65,6 +65,7 @@ The server prints its address and serves:
 - `vmap/movie.xml` – pre-roll, the mid-rolls (the first one is the pod), post-roll;
 - `vmap/sintel.xml` – the same for Sintel, mid-rolls at 2:42.1 and 9:03.1 (`--sintel-midrolls`). The first one carries the break context in `contexts/sintel.json`: a local vision model saw a sword and heard a line about blood, so the break blocks Toys and Games, Life Insurance and Sporting Goods, and the player leaves out Kettlo (Sporting Goods) with error 205. `--sintel-context FILE` replaces it;
 - `vmap/timer.xml` – the same with mid-rolls at fixed times, 2:00 and 6:00, to compare with;
+- `vmap/classic.xml` – ads as usual, for the demo's "Compare" button: Kettlo as the pre-roll, then a mid-roll on a timer at 0:32 of Tears of Steel that cuts a line, with Kettlo again and Brewnord (`vast/classic-pre.xml`, `vast/classic-mid.xml`). The app plays it without the loudness guard and the no-repeat rules;
 - `p?ad=…&e=…` – tracking pixels, logged to the console; `stats` – counts;
 - any other file in `media/`, for example a `poster.jpg`.
 

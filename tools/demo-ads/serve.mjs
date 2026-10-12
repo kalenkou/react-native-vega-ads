@@ -141,6 +141,15 @@ const documents = {
   'vmap/movie.xml': vmap(times('midrolls'), readContexts(values.context)),
   'vmap/sintel.xml': vmap(times('sintel-midrolls'), readContexts(values['sintel-context'])),
   'vmap/timer.xml': vmap([120, 360]),
+  // Ads as usual, to compare with: a mid-roll on a timer that cuts a line of Tears of Steel at
+  // 0:32 ("...that you're freaked out | by my robot hand?"), and the pre-roll's ad again in it.
+  // The app plays it without loudness guard and without no-repeat rules.
+  'vast/classic-pre.xml': buildVast([ad('kettlo', 5)]),
+  'vast/classic-mid.xml': buildVast([ad('kettlo'), ad('brewnord', 5)]),
+  'vmap/classic.xml': buildVmap({
+    preroll: base + 'vast/classic-pre.xml',
+    midrolls: [{ time: 32, vastUrl: base + 'vast/classic-mid.xml' }],
+  }),
 };
 
 const types = { '.mp4': 'video/mp4', '.xml': 'application/xml', '.jpg': 'image/jpeg', '.png': 'image/png' };
