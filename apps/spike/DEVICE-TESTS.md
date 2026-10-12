@@ -322,3 +322,14 @@ The lines match the pixels: 3 impressions in the first two runs, 2 in the Back r
 | `--build-number 1` (now in `npm run build:release`) | PASS on all three: manifest valid, 0 errors. Info only: no app icon, the system default is used |
 
 The Appstore wants a higher build number for each upload; raise it before a real submission.
+
+## Back during an ad goes to the app (12.10.2026)
+
+New default `backDuringAd: 'app'`: Back during an ad is not taken by the library, so the demo's own Back handler closes the player, as during the movie. An ad without Skip cannot be skipped with Back. The earlier behaviour (end the break, go on with the movie) is `backDuringAd: 'content'`. `back-run.sh` (kept outside the repo): Back 3 s into the pre-roll.
+
+| Check | Result |
+|---|---|
+| Screen | PASS: the details screen, "Last watch: 1 ad · 1 ad turned down, up to 8 dB" |
+| Pixels after Back | PASS: none (impression, start, firstQuartile before it; no midpoint, complete, skip or close) |
+
+Sintel why line again, clean install, after the Compare button moved Next one step right: PASS, "No Kettlo ad after a scene with weapons and injury · Volume matched to the movie" over Brewnord.
