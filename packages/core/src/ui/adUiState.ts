@@ -1,4 +1,5 @@
 import type { BreakWhy, SessionSnapshot } from '../machine/AdBreakSession';
+import type { AdPlan } from '../manager/adPlan';
 
 export interface AdUiStrings {
   ad: string;
@@ -23,6 +24,23 @@ export interface AdUiStrings {
   whyRepeats: (count: number) => string;
   /** The ad plays quieter, to match the content. */
   whyQuieter: string;
+  /** Before Play, on the title's page: how many breaks, and the first one when it is known. */
+  adPlan: (plan: AdPlan) => string;
+}
+
+function plural(count: number, one: string): string {
+  return `${count} ${one}${count === 1 ? '' : 's'}`;
+}
+
+function adPlan({ breaks, preroll }: AdPlan): string {
+  if (breaks === 0) {
+    return 'No ads';
+  }
+  if (!preroll) {
+    return plural(breaks, 'ad break');
+  }
+  const skip = preroll.skipAfter === null ? '' : `, skippable after ${preroll.skipAfter} s`;
+  return `${plural(breaks, 'ad break')} · first: ${plural(preroll.ads, 'ad')}, ${preroll.seconds} s${skip}`;
 }
 
 /** "a", "a and b", "a, b and c". */
@@ -55,6 +73,7 @@ export const defaultAdUiStrings: AdUiStrings = {
   whyLeftOut,
   whyRepeats: (count) => (count === 1 ? 'An ad you saw recently was left out' : `${count} ads you saw recently were left out`),
   whyQuieter: 'Volume matched to the movie',
+  adPlan,
 };
 
 export interface AdUiState {

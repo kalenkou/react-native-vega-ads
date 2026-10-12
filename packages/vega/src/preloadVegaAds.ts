@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
 import {
   adIdMacros,
+  AdPlan,
+  adPlan,
   AdSchedule,
   ClockPort,
   HttpPort,
@@ -68,4 +71,33 @@ export function takePreload(key: string): Promise<PreloadedAds> | undefined {
   const entry = waiting.get(key);
   waiting.delete(key);
   return entry?.promise;
+}
+
+/**
+ * Preloads a title's ads (like preloadVegaAds) and returns what the viewer will see: the number of
+ * breaks and the first one, for a line such as `adPlanLabel(plan)` next to Play. Null until the
+ * schedule is known, or when it could not be loaded.
+ *
+ * ```tsx
+ * const plan = useAdPlan({ vmapUrl }, { adId: AdIdRetriever });
+ * <Text>{adPlanLabel(plan)}</Text>
+ * ```
+ */
+export function useAdPlan(schedule: AdSchedule, options: PreloadVegaAdsOptions = {}): AdPlan | null {
+  const key = JSON.stringify(schedule);
+  const [plan, setPlan] = useState<{ key: string; plan: AdPlan | null } | null>(null);
+  useEffect(() => {
+    preloadVegaAds(schedule, options);
+    let live = true;
+    void waiting.get(key)?.promise.then((preloaded) => {
+      if (live) {
+        setPlan({ key, plan: adPlan(preloaded) });
+      }
+    });
+    return () => {
+      live = false;
+    };
+    // The schedule is compared by its key; the options are read once per schedule, as by the player.
+  }, [key]);
+  return plan?.key === key ? plan.plan : null;
 }

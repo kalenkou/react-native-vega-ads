@@ -2,7 +2,8 @@ import { readFileSync } from 'fs';
 import TestRenderer, { act } from 'react-test-renderer';
 import { FakeClock } from '../../core/test/fakes/FakeClock';
 import { FakeHttp } from '../../core/test/fakes/FakeHttp';
-import { preloadVegaAds, takePreload } from '../src/preloadVegaAds';
+import type { AdPlan, AdSchedule } from 'react-native-ads-core';
+import { preloadVegaAds, takePreload, useAdPlan } from '../src/preloadVegaAds';
 import { useVegaAds, UseVegaAdsOptions, VegaAds } from '../src/useVegaAds';
 import { FakeW3cPlayer } from './fakes/FakeW3cPlayer';
 
@@ -147,5 +148,28 @@ describe('preloadVegaAds', () => {
     await settle();
     expect(takePreload(JSON.stringify(titles[0]?.schedule))).toBeUndefined();
     titles.slice(1).forEach((t) => expect(takePreload(JSON.stringify(t.schedule))).toBeDefined());
+  });
+});
+
+describe('useAdPlan', () => {
+  function PlanHarness({ schedule, http, clock, out }: { schedule: AdSchedule; http: FakeHttp; clock: FakeClock; out: { current: AdPlan | null } }): null {
+    out.current = useAdPlan(schedule, { http, clock });
+    return null;
+  }
+
+  it('preloads the schedule and tells the page what the viewer will see', async () => {
+    const { url, schedule } = fresh();
+    const http = new FakeHttp().on(url, { body: inline });
+    const clock = new FakeClock(0);
+    const out: { current: AdPlan | null } = { current: null };
+    act(() => {
+      mounted.push(TestRenderer.create(<PlanHarness schedule={schedule} http={http} clock={clock} out={out} />));
+    });
+    expect(out.current).toBeNull();
+    await settle();
+    expect(out.current).toEqual({ breaks: 1, preroll: { ads: 1, seconds: 10, skipAfter: null } });
+    expect(http.requests).toEqual([url]);
+    // The player still gets the same answers: no second request after Play.
+    expect(takePreload(JSON.stringify(schedule))).toBeDefined();
   });
 });
