@@ -306,5 +306,8 @@ Demo, Tears of Steel, played up to the end of the first mid-roll, then Back. The
 |---|---|
 | Play (vega-ads) | "Last watch: 3 ads · 1 repeat left out · 3 ads turned down, up to 8 dB" |
 | Compare: ads as usual | "Last watch, ads as usual: 3 ads · none left out or turned down" |
+| Play, Back 3 s into Brewnord, Voltaro prebuffered | "Last watch: 2 ads · 1 repeat left out · 2 ads turned down, up to 8 dB" |
 
-Both match the pixels: 3 impressions in each run; in Play mode the pod's Kettlo got `notUsed` (seen in the pre-roll). The device log (`loggingctl`) lost some `[ads]` lines in this run; the report counts in the app, so it does not depend on the log.
+The first build sent `loudness:<dB>` when an ad's file was loaded: in the Play run the log shows it for the prebuffered Voltaro before Voltaro started. Now it follows the ad's `impression`, so in the Back run the prebuffered Voltaro, never seen, is not counted. We did not run the first build with Back.
+
+The lines match the pixels: 3 impressions in the first two runs, 2 in the Back run; in Play mode the pod's Kettlo got `notUsed` (seen in the pre-roll). The device log (`loggingctl`) lost some `[ads]` lines in this run; the report counts in the app, so it does not depend on the log.
