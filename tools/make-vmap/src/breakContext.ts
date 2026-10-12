@@ -161,6 +161,32 @@ export function llamaVisionArgs(vision: VisionModel, prompt: string, images: rea
   ];
 }
 
+/**
+ * A chat request for llama.cpp's `llama-server` (OpenAI-compatible `/v1/chat/completions`):
+ * the frames as JPEG data URLs, then the prompt; greedy decoding, the answer bound to the schema.
+ * Start the server with `--reasoning off`: models with a thinking channel (Gemma 4, Qwen3.6)
+ * then answer with the JSON only.
+ */
+export function llamaServerRequest(prompt: string, jpegs: readonly Uint8Array[], schema: object): object {
+  return {
+    messages: [
+      {
+        role: 'user',
+        content: [
+          ...jpegs.map((jpeg) => ({
+            type: 'image_url',
+            image_url: { url: `data:image/jpeg;base64,${Buffer.from(jpeg).toString('base64')}` },
+          })),
+          { type: 'text', text: prompt },
+        ],
+      },
+    ],
+    temperature: 0,
+    max_tokens: 256,
+    response_format: { type: 'json_schema', json_schema: { name: 'break_context', schema } },
+  };
+}
+
 export interface BreakContextDeps {
   /** Writes the frames before a break at `at` seconds and resolves with their files. */
   frames(at: number): Promise<string[]>;

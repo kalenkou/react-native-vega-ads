@@ -4,14 +4,17 @@
 //
 //   npm run build
 //   node eval/run.mjs --media DIR --context-model FILE --context-mmproj FILE --speech-model FILE
+//   node eval/run.mjs --media DIR --context-server http://127.0.0.1:8091 --speech-model FILE
 //
-// Needs ffmpeg, whisper-cli and llama-mtmd-cli on PATH. Everything runs locally.
+// --films a.mp4,b.mp4 runs only those films. --answers-out FILE saves the model's answers;
+// --answers-in FILE compares saved answers with the labels without running any model.
+// Needs ffmpeg, whisper-cli and llama-mtmd-cli (or a running llama-server) on PATH. Everything runs locally.
 import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { breakContexts, contextSchema, frameArgs, frameTimes, llamaVisionArgs } from '../dist/breakContext.js';
+import { breakContexts, contextSchema, frameArgs, frameTimes, llamaServerRequest, llamaVisionArgs } from '../dist/breakContext.js';
 import { whisperTranscript } from '../dist/whisperSpeech.js';
 
 const { values: flags } = parseArgs({
@@ -20,10 +23,18 @@ const { values: flags } = parseArgs({
     labels: { type: 'string', default: new URL('labels.json', import.meta.url).pathname },
     'context-model': { type: 'string' },
     'context-mmproj': { type: 'string' },
+    'context-server': { type: 'string' },
     'speech-model': { type: 'string' },
+    films: { type: 'string' },
+    'answers-out': { type: 'string' },
+    'answers-in': { type: 'string' },
   },
 });
-for (const name of ['media', 'context-model', 'context-mmproj', 'speech-model']) {
+const useModel = !flags['answers-in'];
+const required = useModel
+  ? ['media', 'speech-model', ...(flags['context-server'] ? [] : ['context-model', 'context-mmproj'])]
+  : [];
+for (const name of required) {
   if (!flags[name]) throw new Error(`--${name} is required`);
 }
 
@@ -35,11 +46,38 @@ const run = (command, args) =>
   });
 
 const vision = { model: flags['context-model'], mmproj: flags['context-mmproj'] };
-const { films } = JSON.parse(await readFile(flags.labels, 'utf8'));
+const only = flags.films?.split(',');
+const films = JSON.parse(await readFile(flags.labels, 'utf8')).films.filter((film) => !only || only.includes(film.file));
 const dir = await mkdtemp(join(tmpdir(), 'make-vmap-eval-'));
 const rows = [];
 
-try {
+/** Asks a running llama-server (started with --reasoning off). */
+async function askServer(prompt, images) {
+  const jpegs = await Promise.all(images.map((image) => readFile(image)));
+  const response = await fetch(`${flags['context-server']}/v1/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(llamaServerRequest(prompt, jpegs, contextSchema())),
+  });
+  if (!response.ok) throw new Error(`llama-server answered ${response.status}`);
+  return (await response.json()).choices[0].message.content;
+}
+
+const saved = flags['answers-in'] ? JSON.parse(await readFile(flags['answers-in'], 'utf8')) : null;
+
+/** The answers saved by an earlier run, matched to the labelled breaks. */
+function savedRows() {
+  return films.flatMap((film) =>
+    film.breaks.map((label) => {
+      const context = saved.answers.find((a) => a.film === film.file && a.at === label.at)?.context ?? null;
+      return { film: film.file, label, context, said: context?.signals?.map((s) => s.name) ?? [] };
+    }),
+  );
+}
+
+/** Runs whisper.cpp and the vision model on each film's breaks. */
+async function modelRows() {
+  const result = [];
   const schema = join(dir, 'schema.json');
   await writeFile(schema, JSON.stringify(contextSchema()));
   for (const film of films) {
@@ -52,29 +90,49 @@ try {
       makeTempDir: () => mkdtemp(join(dir, 'whisper-')),
       removeDir: (path) => rm(path, { recursive: true, force: true }),
     });
-    const times = film.breaks.map((b) => b.at);
-    const contexts = await breakContexts(times, {
-      lines,
-      frames: async (at) => {
-        const images = [];
-        for (const time of frameTimes(at)) {
-          const out = join(dir, `${at}-${time}.jpg`);
-          await run('ffmpeg', frameArgs(file, time, out));
-          images.push(out);
-        }
-        return images;
+    const contexts = await breakContexts(
+      film.breaks.map((b) => b.at),
+      {
+        lines,
+        frames: async (at) => {
+          const images = [];
+          for (const time of frameTimes(at)) {
+            const out = join(dir, `${at}-${time}.jpg`);
+            await run('ffmpeg', frameArgs(file, time, out));
+            images.push(out);
+          }
+          return images;
+        },
+        ask: flags['context-server']
+          ? askServer
+          : (prompt, images) => run('llama-mtmd-cli', llamaVisionArgs(vision, prompt, images, schema)).then((r) => r.stdout),
       },
-      ask: (prompt, images) => run('llama-mtmd-cli', llamaVisionArgs(vision, prompt, images, schema)).then((r) => r.stdout),
-    });
+    );
     film.breaks.forEach((label, index) => {
       const context = contexts[index];
-      const said = context?.signals?.map((s) => s.name) ?? [];
-      process.stderr.write(`${film.file} ${label.at}: ${said.join(', ') || 'none'}\n`);
-      rows.push({ film: film.file, label, context, said });
+      process.stderr.write(`${film.file} ${label.at}: done\n`);
+      result.push({ film: film.file, label, context, said: context?.signals?.map((s) => s.name) ?? [] });
     });
   }
+  return result;
+}
+
+try {
+  rows.push(...(saved ? savedRows() : await modelRows()));
 } finally {
   await rm(dir, { recursive: true, force: true });
+}
+
+if (flags['answers-out']) {
+  const answers = rows.map(({ film, label, context }) => ({ film, at: label.at, context }));
+  const model = flags['context-server'] ? flags['context-server'] : flags['context-model'];
+  await writeFile(flags['answers-out'], `${JSON.stringify({ model, answers }, null, 2)}\n`);
+  process.stderr.write(`Saved ${answers.length} answers to ${flags['answers-out']}\n`);
+}
+
+// Without labels (the break points only) there is nothing to compare yet.
+if (!rows.every((r) => Array.isArray(r.label.signals))) {
+  process.exit(0);
 }
 
 const same = (a, b) => a.length === b.length && a.every((x) => b.includes(x));

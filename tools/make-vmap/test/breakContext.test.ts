@@ -6,6 +6,7 @@ import {
   contextSchema,
   dialogueBefore,
   frameTimes,
+  llamaServerRequest,
   llamaVisionArgs,
   parseContext,
 } from '../src/breakContext';
@@ -131,6 +132,29 @@ describe('llamaVisionArgs', () => {
       '-m', 'm.gguf', '--mmproj', 'p.gguf', '--image', 'a.jpg', '--image', 'b.jpg',
       '-p', 'PROMPT', '-jf', 'schema.json', '--temp', '0', '-n', '256',
     ]);
+  });
+});
+
+describe('llamaServerRequest', () => {
+  // llama-server, not llama-mtmd-cli: models with a thinking channel (Gemma 4, Qwen3.6) answer
+  // with plain JSON only when the server is started with --reasoning off.
+  it('sends the frames as JPEG data URLs, then the prompt, bound to the schema with no randomness', () => {
+    const body = llamaServerRequest('PROMPT', [Buffer.from('jpeg-1'), Buffer.from('jpeg-2')], { type: 'object' });
+    expect(body).toEqual({
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${Buffer.from('jpeg-1').toString('base64')}` } },
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${Buffer.from('jpeg-2').toString('base64')}` } },
+            { type: 'text', text: 'PROMPT' },
+          ],
+        },
+      ],
+      temperature: 0,
+      max_tokens: 256,
+      response_format: { type: 'json_schema', json_schema: { name: 'break_context', schema: { type: 'object' } } },
+    });
   });
 });
 
