@@ -66,7 +66,8 @@ export interface SessionDeps {
   budgetMs?: number;
   /**
    * The content's integrated loudness in LUFS. An ad that says it is louder (`loudness`
-   * creative extension) is turned down to it; event `loudness:<dB>`.
+   * creative extension) is turned down to it; event `loudness:<dB>` right after the ad's
+   * `impression`, so a prebuffered ad nobody saw is not counted.
    */
   contentLoudness?: number;
   /** Play at most this many ads in the break. */
@@ -172,6 +173,8 @@ export class AdBreakSession {
   private repeatsLeftOut = 0;
   /** The players whose ad is turned down to the content's loudness. */
   private readonly quieter = new WeakSet<PlayerPort>();
+  /** How much each loaded ad was turned down ("-8.0" dB), told to the app when the ad starts. */
+  private readonly turnedDown = new WeakMap<LinearAd, string>();
 
   constructor(deps: SessionDeps) {
     this.deps = deps;
@@ -317,6 +320,10 @@ export class AdBreakSession {
           this.deps.repeats?.shown(ad);
         }
         this.deps.onEvent?.(name);
+        const down = name === 'impression' ? this.turnedDown.get(ad) : undefined;
+        if (down !== undefined) {
+          this.deps.onEvent?.(`loudness:${down}`);
+        }
       },
     });
   }
@@ -454,7 +461,7 @@ export class AdBreakSession {
         this.quieter.delete(player);
       }
       if (gain < 1 && loudness !== null) {
-        this.deps.onEvent?.(`loudness:${(content - loudness).toFixed(1)}`);
+        this.turnedDown.set(ad, (content - loudness).toFixed(1));
       }
     }
     player.setSrc(url);

@@ -12,7 +12,7 @@ export interface WatchReport {
   sameAdvertiserLeftOut: number;
   /** Ads left out because the scene before the break blocks their category. */
   blockedAfterScene: number;
-  /** Ads loaded quieter than their file, to match the content. */
+  /** Ads that started quieter than their file, to match the content. */
   quieter: number;
   /** The most an ad was turned down, dB; 0 when none was. */
   mostTurnedDownDb: number;

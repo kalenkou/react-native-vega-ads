@@ -1012,6 +1012,37 @@ describe('AdBreakSession loudness', () => {
     ]);
   });
 
+  it('reports how much quieter an ad plays when it starts, not when it is prebuffered', async () => {
+    const ctx = setup(loudPod(), { standby: true, contentLoudness: -24 });
+    const first = await loadReady(ctx);
+    await ctx.session.start();
+    await first.flush();
+    await settle();
+    // pod-2 is turned down on the standby player already, but nobody has seen it yet.
+    expect(ctx.events.filter((e) => e.startsWith('loudness') || e === 'impression')).toEqual(['impression', 'loudness:-8.0']);
+    await ctx.session.cancel();
+    expect(ctx.events.filter((e) => e.startsWith('loudness'))).toEqual(['loudness:-8.0']);
+  });
+
+  it('reports the next ad of the pod when it starts', async () => {
+    const ctx = setup(loudPod(), { standby: true, contentLoudness: -24 });
+    const first = await loadReady(ctx);
+    await ctx.session.start();
+    await first.flush();
+    await settle();
+    const second = ctx.adPlayers[1] as FakePlayer;
+    second.emitCanPlay();
+    first.emitEnded();
+    await settle();
+    await second.flush();
+    expect(ctx.events.filter((e) => e.startsWith('loudness') || e === 'impression')).toEqual([
+      'impression',
+      'loudness:-8.0',
+      'impression',
+      'loudness:-10.0',
+    ]);
+  });
+
   it('sets the volume again for each ad on one player, back to full for an ad without loudness', async () => {
     const pod = loudPod().replace(/<CreativeExtensions>.*?-14.*?<\/CreativeExtensions>/, '');
     const ctx = setup(pod, { contentLoudness: -24 });

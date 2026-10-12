@@ -256,7 +256,10 @@ describe('AdManager', () => {
         'volume:0.398',
         'src:https://cdn.test/ad-720.mp4',
       ]);
-      expect(ctx.events).toContain('loudness:-8.0');
+      // Told to the app when the ad starts, after its impression.
+      expect(ctx.events).not.toContain('loudness:-8.0');
+      await ctx.lastAdPlayer().flush();
+      expect(ctx.events.slice(ctx.events.indexOf('impression'))).toContain('loudness:-8.0');
     });
 
     it('never turns a quieter ad up', async () => {
