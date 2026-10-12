@@ -285,3 +285,15 @@ Demo with `showWhy`, Sintel with the model's own context for the first mid-roll 
 ## Ad plan before Play (12.10.2026)
 
 Details screen of Tears of Steel with `useAdPlan`: "Ads: 4 ad breaks · first: 1 ad, 10 s, skippable after 5 s". It comes from the preloaded VMAP and pre-roll VAST, so the pre-roll after Play needs no new request.
+
+## Compare: ads as usual (12.10.2026)
+
+Demo, Tears of Steel, the "Compare: ads as usual" button (`vmap/classic.xml`). `classic-run.sh` (kept outside the repo) presses Right and Select, takes screenshots and reads the pixels.
+
+| Check | Result |
+|---|---|
+| Schedule | PASS: Kettlo pre-roll; the movie pauses at 32.2 s, in the middle of the line "...that you're freaked out by my robot hand?" |
+| Repeats | PASS: the mid-roll plays Kettlo again, then Brewnord ("Ad 1 of 2"): no repeat rule in this mode |
+| Screen | PASS: "Ads as usual · for comparison" over the movie and over the ads; no "Ad in 5" and no why line. First build: the badge was under the ad surfaces (zIndex 2–3), fixed with zIndex 6 |
+
+Loudness was not measured in this run: without `contentLoudness` the ads play at their own level.
