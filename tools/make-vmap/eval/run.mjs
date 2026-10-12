@@ -6,6 +6,8 @@
 //   node eval/run.mjs --media DIR --context-model FILE --context-mmproj FILE --speech-model FILE
 //   node eval/run.mjs --media DIR --context-server http://127.0.0.1:8091 --speech-model FILE
 //
+// --frames 28,21,14,7,2 and --frame-width 960 change which frames the model sees;
+// --plain-prompt leaves out what counts as each signal (the prompt before the eval).
 // --films a.mp4,b.mp4 runs only those films. --answers-out FILE saves the model's answers;
 // --answers-in FILE compares saved answers with the labels without running any model.
 // Needs ffmpeg, whisper-cli and llama-mtmd-cli (or a running llama-server) on PATH. Everything runs locally.
@@ -26,6 +28,9 @@ const { values: flags } = parseArgs({
     'context-server': { type: 'string' },
     'speech-model': { type: 'string' },
     films: { type: 'string' },
+    frames: { type: 'string' },
+    'frame-width': { type: 'string' },
+    'plain-prompt': { type: 'boolean' },
     'answers-out': { type: 'string' },
     'answers-in': { type: 'string' },
   },
@@ -46,6 +51,9 @@ const run = (command, args) =>
   });
 
 const vision = { model: flags['context-model'], mmproj: flags['context-mmproj'] };
+// --frames 28,21,14,7,2 (seconds before the break) and --frame-width 960 try other frame sets.
+const offsets = flags.frames?.split(',').map(Number);
+const frameWidth = flags['frame-width'] ? Number(flags['frame-width']) : undefined;
 const only = flags.films?.split(',');
 const films = JSON.parse(await readFile(flags.labels, 'utf8')).films.filter((film) => !only || only.includes(film.file));
 const dir = await mkdtemp(join(tmpdir(), 'make-vmap-eval-'));
@@ -94,11 +102,12 @@ async function modelRows() {
       film.breaks.map((b) => b.at),
       {
         lines,
+        prompt: { definitions: !flags['plain-prompt'] },
         frames: async (at) => {
           const images = [];
-          for (const time of frameTimes(at)) {
+          for (const time of frameTimes(at, offsets)) {
             const out = join(dir, `${at}-${time}.jpg`);
-            await run('ffmpeg', frameArgs(file, time, out));
+            await run('ffmpeg', frameArgs(file, time, out, frameWidth));
             images.push(out);
           }
           return images;

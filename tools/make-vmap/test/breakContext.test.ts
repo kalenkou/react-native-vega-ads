@@ -2,9 +2,11 @@ import {
   AD_CATEGORIES,
   breakContexts,
   SENSITIVITY_RULES,
+  SIGNAL_DEFINITIONS,
   contextPrompt,
   contextSchema,
   dialogueBefore,
+  frameArgs,
   frameTimes,
   llamaServerRequest,
   llamaVisionArgs,
@@ -23,6 +25,17 @@ describe('frameTimes', () => {
     expect(frameTimes(120)).toEqual([92, 105, 118]);
     expect(frameTimes(20)).toEqual([5, 18]);
   });
+
+  it('takes the frames at other offsets when asked', () => {
+    expect(frameTimes(120, [28, 21, 14, 7, 2])).toEqual([92, 99, 106, 113, 118]);
+  });
+});
+
+describe('frameArgs', () => {
+  it('writes one frame 640 pixels wide by default, or as wide as asked', () => {
+    expect(frameArgs('film.mp4', 92, 'f.jpg')).toContain('scale=640:-2');
+    expect(frameArgs('film.mp4', 92, 'f.jpg', 1280)).toContain('scale=1280:-2');
+  });
 });
 
 describe('dialogueBefore', () => {
@@ -39,6 +52,18 @@ describe('contextSchema and contextPrompt', () => {
     expect(schema.properties.mood.enum).toEqual(['calm', 'happy', 'romantic', 'sad', 'tense', 'violent']);
     expect(schema.properties.signals.items.properties.signal.enum).toEqual(Object.keys(SENSITIVITY_RULES));
     expect(schema.properties.signals.items.required).toEqual(['signal', 'evidence']);
+  });
+
+  it('defines every signal once, the same words the labelling page shows', () => {
+    expect(Object.keys(SIGNAL_DEFINITIONS)).toEqual(Object.keys(SENSITIVITY_RULES));
+    expect(SIGNAL_DEFINITIONS.violence).toBe('Someone hits, shoots, fights or attacks; blasts in a fight.');
+  });
+
+  // The eval (eval/README.md) chose this on the selection set: F1 0.43 -> 0.51 with Qwen3.6.
+  it('tells the model what counts as each signal, unless turned off', () => {
+    const prompt = contextPrompt('', 3);
+    Object.entries(SIGNAL_DEFINITIONS).forEach(([signal, meaning]) => expect(prompt).toContain(`${signal}: ${meaning}`));
+    expect(contextPrompt('', 3, { definitions: false })).not.toContain(SIGNAL_DEFINITIONS.violence);
   });
 
   it('gives the model the dialogue and every signal, and no category codes', () => {
@@ -174,5 +199,16 @@ describe('breakContexts', () => {
     expect(result).toEqual([{ scene: 'Calm talk.', mood: 'calm', signals: [], blockedAdCategories: [] }, null, null]);
     expect(asked[0]?.images).toEqual(['f92.jpg', 'f105.jpg', 'f118.jpg']);
     expect(asked[0]?.prompt).toContain('"(explosion) Get down!"');
+  });
+
+  it('passes the prompt options to every question', async () => {
+    const prompts: string[] = [];
+    await breakContexts([120], {
+      frames: async () => ['f.jpg'],
+      lines: [],
+      prompt: { definitions: false },
+      ask: async (prompt) => (prompts.push(prompt), '{}'),
+    });
+    expect(prompts[0]).not.toContain(SIGNAL_DEFINITIONS.weapons);
   });
 });

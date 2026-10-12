@@ -34,6 +34,18 @@ export const SENSITIVITY_RULES: Readonly<Record<string, readonly string[]>> = {
   'child in danger': ['1248'],
 };
 
+/** What counts as each signal: the labelling page (eval/label-kit.mjs) shows the same words. */
+export const SIGNAL_DEFINITIONS: Readonly<Record<string, string>> = {
+  death: 'Someone dies, or a dead body is shown.',
+  grief: 'Someone mourns or cries over a loss.',
+  violence: 'Someone hits, shoots, fights or attacks; blasts in a fight.',
+  weapons: 'A gun, knife, sword or other weapon is clearly seen or used. Not a toy or a tool.',
+  'vehicle crash': 'A car, plane or other vehicle crashes.',
+  injury: 'A wound, blood, or someone visibly hurt.',
+  drinking: 'People drink alcohol or are drunk.',
+  'child in danger': 'A child is threatened, hurt or in danger.',
+};
+
 export const MOODS = ['calm', 'happy', 'romantic', 'sad', 'tense', 'violent'] as const;
 
 const SCENE_MAX = 200;
@@ -45,19 +57,19 @@ const GUESS = /\b(suggests?|suggesting|potential(ly)?|possibl[ey]|could|may|migh
 const ABSENT = /\b(no evidence|there (is|are) no|no (signs?|mention)|(is|are) not (visible|shown|seen|present|mentioned)|none)\b|^no \w+ (is|are)\b/i;
 
 /** Seconds before the break of the frames the model looks at. */
-const FRAME_OFFSETS = [28, 15, 2];
+export const FRAME_OFFSETS: readonly number[] = [28, 15, 2];
 
 /** Seconds of dialogue before the break the model reads. */
 const DIALOGUE_SECONDS = 60;
 
 /** The times of the frames before a break at `at` seconds; none before the start. */
-export function frameTimes(at: number): number[] {
-  return FRAME_OFFSETS.map((offset) => at - offset).filter((time) => time >= 0);
+export function frameTimes(at: number, offsets: readonly number[] = FRAME_OFFSETS): number[] {
+  return offsets.map((offset) => at - offset).filter((time) => time >= 0);
 }
 
-/** ffmpeg arguments that write the frame at `time` seconds as a 640-pixel-wide JPEG. */
-export function frameArgs(file: string, time: number, out: string): string[] {
-  return ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String(time), '-i', file, '-frames:v', '1', '-vf', 'scale=640:-2', out];
+/** ffmpeg arguments that write the frame at `time` seconds as a JPEG, 640 pixels wide by default. */
+export function frameArgs(file: string, time: number, out: string, width = 640): string[] {
+  return ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String(time), '-i', file, '-frames:v', '1', '-vf', `scale=${width}:-2`, out];
 }
 
 /** The lines spoken (and sound labels) in the minute before a break at `at` seconds. */
@@ -91,14 +103,23 @@ export function contextSchema(): object {
   };
 }
 
-export function contextPrompt(dialogue: string, frames: number): string {
+export interface PromptOptions {
+  /** Tell the model what counts as each signal. Default true: the eval chose it (eval/README.md). */
+  definitions?: boolean;
+}
+
+export function contextPrompt(dialogue: string, frames: number, options: PromptOptions = {}): string {
   const said = dialogue ? `The dialogue of the minute before it: "${dialogue}".` : 'There is no dialogue in the minute before it.';
+  const meanings = (options.definitions ?? true)
+    ? [`What counts: ${Object.entries(SIGNAL_DEFINITIONS).map(([signal, meaning]) => `${signal}: ${meaning}`).join(' ')}`]
+    : [];
   return [
     `You place TV ad breaks. ${frames} frames from the 30 seconds before an ad break are attached. ${said}`,
     'Describe the scene in under 20 words and give its mood. Then list sensitive content the scene clearly',
     `shows or talks about, from: ${Object.keys(SENSITIVITY_RULES).join(', ')}. For each, give the evidence:`,
     'what exactly is visible in a frame or said in a line. Do not guess: if you cannot point to it, leave it',
     'out. Most scenes have none.',
+    ...meanings,
   ].join(' ');
 }
 
@@ -142,7 +163,7 @@ export function parseContext(output: string): BreakContext | null {
 }
 
 export interface VisionModel {
-  /** A GGUF vision-language model, for example Qwen2.5-VL-7B-Instruct. */
+  /** A GGUF vision-language model, for example Qwen3.6-35B-A3B (chosen in eval/README.md). */
   model: string;
   /** Its multimodal projector (mmproj GGUF). */
   mmproj: string;
@@ -194,6 +215,8 @@ export interface BreakContextDeps {
   lines: readonly TimedLine[];
   /** Asks the vision model and resolves with its raw output. */
   ask(prompt: string, images: string[]): Promise<string>;
+  /** How the question is asked. */
+  prompt?: PromptOptions;
 }
 
 /** The context of each break, in order; null where the model failed or gave no usable answer. */
@@ -202,7 +225,7 @@ export async function breakContexts(times: readonly number[], deps: BreakContext
   for (const at of times) {
     try {
       const images = await deps.frames(at);
-      result.push(parseContext(await deps.ask(contextPrompt(dialogueBefore(deps.lines, at), images.length), images)));
+      result.push(parseContext(await deps.ask(contextPrompt(dialogueBefore(deps.lines, at), images.length, deps.prompt), images)));
     } catch {
       result.push(null);
     }
