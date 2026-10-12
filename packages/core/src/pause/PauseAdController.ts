@@ -58,6 +58,14 @@ export class PauseAdController {
     this.prefetch();
   }
 
+  /**
+   * The viewer asked to pause (a media controls command), also when the player sends no pause
+   * event: on Fire TV "Alexa, pause" finds a player the system already froze while Alexa listened.
+   */
+  viewerPaused(): void {
+    this.onPause();
+  }
+
   /** The viewer closed the ad (Back). True when an ad was on screen, so Back is used up. */
   close(): boolean {
     return this.remove(true);

@@ -223,6 +223,11 @@ export class AdManager {
     return this.pauseAds?.close() ?? false;
   }
 
+  /** The viewer paused the content by a media controls command (remote or voice): may show a pause ad. */
+  viewerPaused(): void {
+    this.pauseAds?.viewerPaused();
+  }
+
   /** Viewer pressed Back during an ad: back to the content (R23). */
   async back(): Promise<void> {
     if (this.active?.state === 'playing') {

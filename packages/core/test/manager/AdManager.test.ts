@@ -356,6 +356,17 @@ describe('AdManager', () => {
       expect(views[views.length - 1]).toBeNull();
     });
 
+    // "Alexa, pause": Fire TV freezes the picture while Alexa listens, so the pause command finds
+    // the player already still and the player sends no pause event (seen on the stick, 12.10.2026).
+    it('shows the pause ad on a viewer pause command that brings no pause event', async () => {
+      const views: unknown[] = [];
+      const ctx = await started(views);
+      ctx.content.emitTime(5);
+      ctx.manager.viewerPaused();
+      ctx.clock.advance(1_500);
+      expect(views).toEqual([expect.objectContaining({ imageUrl: 'https://cdn.test/pause.png' })]);
+    });
+
     it('shows no pause ad when the content pauses for a break', async () => {
       const views: unknown[] = [];
       const ctx = await started(views);
