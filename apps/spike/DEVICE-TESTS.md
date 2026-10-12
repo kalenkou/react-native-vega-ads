@@ -297,3 +297,14 @@ Demo, Tears of Steel, the "Compare: ads as usual" button (`vmap/classic.xml`). `
 | Screen | PASS: "Ads as usual · for comparison" over the movie and over the ads; no "Ad in 5" and no why line. First build: the badge was under the ad surfaces (zIndex 2–3), fixed with zIndex 6 |
 
 Loudness was not measured in this run: without `contentLoudness` the ads play at their own level.
+
+## Watch report after the movie (12.10.2026)
+
+Demo, Tears of Steel, played up to the end of the first mid-roll, then Back. The app passes the `onEvent` names of the watch to `watchReport` and shows the line on the details screen. `watch-run.sh` (kept outside the repo).
+
+| Mode | Line on the details screen |
+|---|---|
+| Play (vega-ads) | "Last watch: 3 ads · 1 repeat left out · 3 ads turned down, up to 8 dB" |
+| Compare: ads as usual | "Last watch, ads as usual: 3 ads · none left out or turned down" |
+
+Both match the pixels: 3 impressions in each run; in Play mode the pod's Kettlo got `notUsed` (seen in the pre-roll). The device log (`loggingctl`) lost some `[ads]` lines in this run; the report counts in the app, so it does not depend on the log.
