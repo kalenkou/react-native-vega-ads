@@ -9,6 +9,8 @@ export interface DetailsScreenProps {
   movie: Movie;
   /** Title of the movie the second button switches to. */
   next: string;
+  /** What the last watch of this title showed and spared the viewer; null before one. */
+  lastWatch?: string | null;
   onPlay: () => void;
   /** Plays the movie with ads as usual; no button without it or without a classic schedule. */
   onCompare?: () => void;
@@ -19,6 +21,7 @@ export interface DetailsScreenProps {
 export const DetailsScreen = ({
   movie,
   next,
+  lastWatch = null,
   onPlay,
   onCompare,
   onNext,
@@ -50,6 +53,11 @@ export const DetailsScreen = ({
         {plan && (
           <Text testID="ad-plan" style={styles.adPlan}>
             Ads: {adPlanLabel(plan)}
+          </Text>
+        )}
+        {lastWatch && (
+          <Text testID="last-watch" style={styles.adPlan}>
+            {lastWatch}
           </Text>
         )}
         <Text style={styles.description}>{movie.description}</Text>
