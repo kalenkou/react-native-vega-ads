@@ -272,3 +272,12 @@ Scenarios 1–3 of Amazon's list, run during the pre-roll where we could. `home-
 `vlcm crash-history` on the stick lists one entry for the demo in two days of tests: `AppNotResponding`, reason "Lifecycle Callback", during a LAUNCH transition on 11.10 at 22:04 UTC. Not seen again; we do not know which run caused it.
 
 Not run (need a person or other hardware): HDMI unplugged for 5 minutes, TV input change, restart of the device, screensaver, Bluetooth audio. Alexa during ads passed on 11.10 (see above).
+
+## Why line on ads (12.10.2026)
+
+Demo with `showWhy`, Sintel with the model's own context for the first mid-roll (2:42): signals weapons and injury, blocked 1248 1343 1524. `why-run.sh` (kept outside the repo) takes a screenshot 2 s after Brewnord starts.
+
+| Check | Result |
+|---|---|
+| Pixels | PASS: Kettlo `error code=205` when the pod loads; Brewnord, then Voltaro play |
+| Line under the label | PASS: "No Kettlo ad after a scene with weapons and injury · Volume matched to the movie" |
