@@ -22,7 +22,7 @@ Vega apps have no ready, open way to play VAST/VMAP ads:
 | How ads are played | native w3cmedia players | IMA HTML5 SDK in a WebView | through the Logix IMA integration | FreeWheel SDK (beta) |
 | Your own VAST/VMAP server | yes | through Google Ad Manager | through Google Ad Manager | FreeWheel ad server |
 | Skippable ads | yes, Skip with D-pad focus | not supported in the integration the OptiView sample uses | "not supported" in the sample | not stated |
-| Remote and Alexa during ads | yes (media controls) | not stated | not stated | not stated |
+| Remote and Alexa during ads | yes (media controls) | upstream 0.3.0: the hidden ad WebView can keep remote focus after the break ([Dolby's patch notes](https://github.com/THEOplayer/react-native-optiview-vega-sample/blob/main/lib/LOGIX_AD_MANAGER_PATCH.md)) | yes, with Dolby's patched Logix build (React Native 0.83) | not stated |
 | Licence and access | Apache-2.0, open | commercial | commercial | beta, FreeWheel customers |
 
 Sources are in the list above. "Not stated" means the public pages do not say. If you need Google Ad Manager features (programmatic demand, Open Measurement), an IMA-based option fits better; `react-native-vega-ads` fits when you serve your own VAST/VMAP.
