@@ -9,10 +9,17 @@ import {PlayerScreen} from './screens/PlayerScreen';
 export const App = () => {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [classic, setClassic] = useState(false);
   const movie = MOVIES[index];
   const next = MOVIES[(index + 1) % MOVIES.length];
   const play = useCallback(() => {
     console.log('[demo] play');
+    setClassic(false);
+    setPlaying(true);
+  }, []);
+  const compare = useCallback(() => {
+    console.log('[demo] play, ads as usual');
+    setClassic(true);
     setPlaying(true);
   }, []);
   const close = useCallback(() => setPlaying(false), []);
@@ -25,6 +32,7 @@ export const App = () => {
       {playing ? (
         <PlayerScreen
           movie={movie}
+          classic={classic}
           onClose={close}
           onEvent={(name) => console.log(`[ads] ${name}`)}
         />
@@ -33,6 +41,7 @@ export const App = () => {
           movie={movie}
           next={next.title}
           onPlay={play}
+          onCompare={compare}
           onNext={showNext}
         />
       )}

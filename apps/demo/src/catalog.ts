@@ -14,6 +14,8 @@ export interface Movie {
   pauseAdUrl: string;
   /** Integrated loudness of the movie, LUFS (EBU R128): louder ads are turned down to it. */
   contentLoudness: number;
+  /** Ads as usual, to compare with: a timer break that cuts a line, repeats, no loudness guard. */
+  classicVmapUrl?: string;
 }
 
 export const TEARS_OF_STEEL: Movie = {
@@ -28,6 +30,7 @@ export const TEARS_OF_STEEL: Movie = {
   pauseAdUrl: `${MEDIA_BASE}vast/pause.xml`,
   // tools/demo-ads/get_media.sh brings the sound to -24 LUFS and measures it (loudness.json).
   contentLoudness: -23.7,
+  classicVmapUrl: `${MEDIA_BASE}vmap/classic.xml`,
 };
 
 export const SINTEL: Movie = {

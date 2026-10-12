@@ -10,6 +10,8 @@ export interface DetailsScreenProps {
   /** Title of the movie the second button switches to. */
   next: string;
   onPlay: () => void;
+  /** Plays the movie with ads as usual; no button without it or without a classic schedule. */
+  onCompare?: () => void;
   onNext: () => void;
 }
 
@@ -18,9 +20,12 @@ export const DetailsScreen = ({
   movie,
   next,
   onPlay,
+  onCompare,
   onNext,
 }: DetailsScreenProps) => {
-  const [focused, setFocused] = useState<'play' | 'next' | null>(null);
+  const [focused, setFocused] = useState<'play' | 'compare' | 'next' | null>(
+    null,
+  );
   useEffect(() => {
     // The first screen is ready: Vega's cool-start KPI ends here.
     (
@@ -67,6 +72,28 @@ export const DetailsScreen = ({
               ▶ Play
             </Text>
           </TouchableOpacity>
+          {onCompare && movie.classicVmapUrl && (
+            <TouchableOpacity
+              testID="compare"
+              activeOpacity={1}
+              accessibilityRole="button"
+              accessibilityLabel="Compare: play with ads as usual"
+              onPress={onCompare}
+              onFocus={() => setFocused('compare')}
+              onBlur={() => setFocused(null)}
+              style={[
+                styles.button,
+                focused === 'compare' && styles.buttonFocused,
+              ]}>
+              <Text
+                style={[
+                  styles.buttonText,
+                  focused === 'compare' && styles.buttonTextFocused,
+                ]}>
+                Compare: ads as usual
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             testID="next"
             activeOpacity={1}

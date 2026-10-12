@@ -10,6 +10,8 @@ A small Vega OS app: one movie with ads that do not annoy. It shows what
 - "Ad in 5" before a mid-roll, so a break never comes as a surprise;
 - Skip after 5 s on skippable ads, Back and the remote work as expected.
 
+"Compare: ads as usual" on _Tears of Steel_ plays the same movie the way ads usually work, with a badge on screen: a mid-roll on a timer at 0:32 that cuts a line, the pre-roll's ad again, ads louder than the movie, no "Ad in 5".
+
 The movies are _Tears of Steel_, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0, and _Sintel_, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0. "Next" on the details screen switches between them.
 The ads are invented brands drawn by [`tools/demo-ads`](../../tools/demo-ads).
 
