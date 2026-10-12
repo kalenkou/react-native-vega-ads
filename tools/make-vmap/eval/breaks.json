@@ -1,0 +1,92 @@
+{
+  "about": "Break points to label, no labels. make-vmap --local --speech-model ggml-base.en.bin --min-gap 50 --first-break-after 40. Tears of Steel and Sintel: the set to choose the model and prompt on. Big Buck Bunny: held out, not used for any choice.",
+  "films": [
+    {
+      "file": "tears_of_steel_720p.mp4",
+      "breaks": [
+        {
+          "at": 56.667
+        },
+        {
+          "at": 116.708
+        },
+        {
+          "at": 172.292
+        },
+        {
+          "at": 253.417
+        },
+        {
+          "at": 307.708
+        },
+        {
+          "at": 399.0
+        },
+        {
+          "at": 461.792
+        },
+        {
+          "at": 517.875
+        },
+        {
+          "at": 588.0
+        }
+      ]
+    },
+    {
+      "file": "sintel_720p.mp4",
+      "breaks": [
+        {
+          "at": 42.417
+        },
+        {
+          "at": 162.083
+        },
+        {
+          "at": 214.917
+        },
+        {
+          "at": 271.625
+        },
+        {
+          "at": 322.208
+        },
+        {
+          "at": 436.729
+        },
+        {
+          "at": 543.125
+        },
+        {
+          "at": 678.75
+        }
+      ]
+    },
+    {
+      "file": "big_buck_bunny_720p.mp4",
+      "breaks": [
+        {
+          "at": 52.133
+        },
+        {
+          "at": 104.166
+        },
+        {
+          "at": 160.433
+        },
+        {
+          "at": 211.899
+        },
+        {
+          "at": 304.166
+        },
+        {
+          "at": 377.133
+        },
+        {
+          "at": 465.749
+        }
+      ]
+    }
+  ]
+}
