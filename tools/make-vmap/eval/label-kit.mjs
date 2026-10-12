@@ -31,6 +31,8 @@ const { values: flags } = parseArgs({
     media: { type: 'string' },
     labels: { type: 'string', default: new URL('labels.json', import.meta.url).pathname },
     out: { type: 'string' },
+    // A second labeller gets their own file name, so two people's labels never mix.
+    labeller: { type: 'string' },
   },
 });
 for (const name of ['media', 'out']) {
@@ -45,6 +47,7 @@ const run = (command, args) =>
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
 const { films } = JSON.parse(await readFile(flags.labels, 'utf8'));
+const labeller = flags.labeller ? flags.labeller.replace(/[^A-Za-z0-9_-]/g, '') : '';
 await mkdir(join(flags.out, 'clips'), { recursive: true });
 const breaks = [];
 for (const film of films) {
@@ -126,11 +129,11 @@ document.getElementById('save').onclick = () => {
     const { signals, unsure, seen } = labels[i];
     film.breaks.push({ at: b.at, signals, seen, ...(unsure ? { unsure: true } : {}) });
   });
-  const about = 'Labelled blind from the 30 s of film before each break (label-kit.mjs), ' + new Date().toISOString().slice(0, 10) + '.';
+  const about = 'Labelled blind from the 30 s of film before each break (label-kit.mjs)' + ${JSON.stringify(labeller ? ` by ${labeller}` : '')} + ', ' + new Date().toISOString().slice(0, 10) + '.';
   const blob = new Blob([JSON.stringify({ about, films }, null, 2) + '\\n'], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'labels-blind.json';
+  a.download = ${JSON.stringify(labeller ? `labels-blind-${labeller}.json` : 'labels-blind.json')};
   a.click();
 };
 show();
