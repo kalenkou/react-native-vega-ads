@@ -733,7 +733,7 @@ describe('AdBreakSession – stuck players never keep the content paused (goal 7
   });
 });
 
-describe('AdBreakSession – event order and stuck players (review results-34)', () => {
+describe('AdBreakSession – event order and stuck players', () => {
   const POD3 = (): string => fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">');
   const srcs = (p: FakePlayer): string[] => p.calls.filter((c) => c.startsWith('src:'));
 
