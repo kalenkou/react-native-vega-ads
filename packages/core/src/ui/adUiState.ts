@@ -1,5 +1,6 @@
 import type { BreakWhy, SessionSnapshot } from '../machine/AdBreakSession';
 import type { AdPlan } from '../manager/adPlan';
+import type { WatchReport } from '../manager/watchReport';
 
 export interface AdUiStrings {
   ad: string;
@@ -26,6 +27,8 @@ export interface AdUiStrings {
   whyQuieter: string;
   /** Before Play, on the title's page: how many breaks, and the first one when it is known. */
   adPlan: (plan: AdPlan) => string;
+  /** After a watch: how many ads played and what the viewer was spared. */
+  watchReport: (report: WatchReport) => string;
 }
 
 function plural(count: number, one: string): string {
@@ -41,6 +44,17 @@ function adPlan({ breaks, preroll }: AdPlan): string {
   }
   const skip = preroll.skipAfter === null ? '' : `, skippable after ${preroll.skipAfter} s`;
   return `${plural(breaks, 'ad break')} · first: ${plural(preroll.ads, 'ad')}, ${preroll.seconds} s${skip}`;
+}
+
+function watchReport(r: WatchReport): string {
+  const parts = [plural(r.ads, 'ad')];
+  if (r.repeatsLeftOut > 0) parts.push(`${plural(r.repeatsLeftOut, 'repeat')} left out`);
+  if (r.sameAdvertiserLeftOut > 0) parts.push(`${plural(r.sameAdvertiserLeftOut, 'ad')} of the same brand left out`);
+  if (r.blockedAfterScene > 0) parts.push(`${plural(r.blockedAfterScene, 'ad')} left out after a scene`);
+  if (r.quieter > 0) parts.push(`${plural(r.quieter, 'ad')} turned down, up to ${Math.round(r.mostTurnedDownDb)} dB`);
+  if (parts.length === 1) parts.push('none left out or turned down');
+  if (r.skipped > 0) parts.push(`${r.skipped} skipped`);
+  return parts.join(' · ');
 }
 
 /** "a", "a and b", "a, b and c". */
@@ -74,6 +88,7 @@ export const defaultAdUiStrings: AdUiStrings = {
   whyRepeats: (count) => (count === 1 ? 'An ad you saw recently was left out' : `${count} ads you saw recently were left out`),
   whyQuieter: 'Volume matched to the movie',
   adPlan,
+  watchReport,
 };
 
 export interface AdUiState {

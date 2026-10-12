@@ -19,6 +19,8 @@ export { preloadAds } from './manager/preloadAds';
 export type { PreloadDeps, PreloadedAds } from './manager/preloadAds';
 export { adPlan, adPlanLabel } from './manager/adPlan';
 export type { AdPlan } from './manager/adPlan';
+export { watchReport, watchReportLabel } from './manager/watchReport';
+export type { WatchReport } from './manager/watchReport';
 export type { BreakWhy, SessionDeps, SessionSnapshot, SessionState } from './machine/AdBreakSession';
 export { adCountdownState, adUiState, defaultAdUiStrings } from './ui/adUiState';
 export type { AdCountdownState, AdUiState, AdUiStrings } from './ui/adUiState';

@@ -29,6 +29,8 @@ Required in `manifest.toml`: the media category, the `IMediaPlaybackServer` inte
 | `AdOverlay` | "Ad 1 of 3 · 0:12", Skip button with D-pad focus, VoiceView announcement |
 | `W3cPlayerAdapter` | `PlayerPort` on a w3cmedia `VideoPlayer` |
 | `createAdMediaControlHandler` | media controls during ads: play/pause allowed, seek and skip blocked |
+| `useAdPlan(schedule)`, `adPlanLabel` | before Play: "4 ad breaks · first: 2 ads, 25 s, skippable after 5 s" |
+| `watchReport(events)`, `watchReportLabel` | after a watch, from the `onEvent` names: "3 ads · 1 repeat left out · 2 ads turned down, up to 9 dB" |
 
 Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia`, `@amazon-devices/react-native-kepler`.
 
