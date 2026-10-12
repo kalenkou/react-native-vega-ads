@@ -77,6 +77,17 @@ Nothing was chosen on this film. 5 of its 7 labels are "unsure".
 
 Signal precision 0.50, recall 0.33, F1 0.40. Sensitive or not: 6/7. Calm breaks blocked: 0 of 2. Sensitive breaks missed: 1 of 5.
 
+### 4. Only the labels the author was sure of
+
+Same answers, the "unsure" breaks left out (selection set: 10 of 17 breaks, 8 sensitive, 2 calm).
+
+| Model | Signal precision | Signal recall | Sensitive or not | Calm blocked | Missed |
+|---|---|---|---|---|---|
+| Qwen2.5-VL-7B-Instruct | 0.40 | 0.17 | 5/10 | 0 of 2 | 5 of 8 |
+| Qwen3.6-35B-A3B, chosen prompt | 0.55 | 0.50 | 7/10 | 2 of 2 | 1 of 8 |
+
+The choice holds without the unsure labels.
+
 ### What this means
 
 - The chosen setting finds most sensitive breaks (10 of 13 on the selection set, 4 of 5 on the held-out film); the older model found 3 of 13.
