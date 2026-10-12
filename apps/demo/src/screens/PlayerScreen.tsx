@@ -54,6 +54,7 @@ export const PlayerScreen = ({movie, onClose, onEvent}: PlayerScreenProps) => {
       avoidRepeats={AVOID_REPEATS}
       contentLoudness={movie.contentLoudness}
       adId={AdIdRetriever}
+      showWhy
       onEnd={onClose}
       onEvent={onEvent}>
       {({player, ads}) => (
