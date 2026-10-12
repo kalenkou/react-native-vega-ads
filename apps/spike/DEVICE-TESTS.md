@@ -206,7 +206,6 @@ The content plays on for 0.1–0.2 s after `pause()` on this device, so the view
 |---|---|
 | First layout | PASS for behaviour: `pause.xml` prefetched at start, `impression` and `creativeView` at the pause (1.5 s delay), `overlayViewDuration` and `close` on Back (6.4 s later); the app stayed on the player and the movie resumed (frames differ). But the QR code and the hint covered the app's controls |
 | QR beside the card, `pauseAdStyle={{top: 100, bottom: 220}}` | PASS, same pixels; the card and QR code stay between the title and the controls |
-
 | "Alexa, pause" instead of the key (12.10.2026, after a stick restart) | First FAIL: the movie paused but no pause ad. A trace of the player's events showed no `pause` event on a voice pause: the picture is already frozen while Alexa listens. Fixed: the content's media controls handler reports the pause command. Then PASS: `impression` and `creativeView` 1.5 s after "Alexa, pause", Back closes it, "Alexa, play" resumes the movie. The key still works (regression PASS) |
 
 Before the restart "Alexa, pause/play" did nothing in any app on the stick, YouTube included; a restart fixed it.
