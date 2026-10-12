@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
-import {preloadVegaAds} from 'react-native-vega-ads';
+import {adPlanLabel, useAdPlan} from 'react-native-vega-ads';
 import type {Movie} from '../catalog';
 import {colors} from '../theme';
 
@@ -27,10 +27,9 @@ export const DetailsScreen = ({
       globalThis as {performance?: {reportFullyDrawn?: () => void}}
     ).performance?.reportFullyDrawn?.();
   }, []);
-  // Ask for the schedule and the pre-roll now: after Play the ad only has to buffer.
-  useEffect(() => {
-    preloadVegaAds({vmapUrl: movie.vmapUrl}, {adId: AdIdRetriever});
-  }, [movie.vmapUrl]);
+  // Ask for the schedule and the pre-roll now: after Play the ad only has to buffer,
+  // and the viewer sees how many ads the movie has before pressing Play.
+  const plan = useAdPlan({vmapUrl: movie.vmapUrl}, {adId: AdIdRetriever});
 
   return (
     <View style={styles.root}>
@@ -43,6 +42,11 @@ export const DetailsScreen = ({
       <View style={styles.content}>
         <Text style={styles.title}>{movie.title}</Text>
         <Text style={styles.meta}>{movie.meta}</Text>
+        {plan && (
+          <Text testID="ad-plan" style={styles.adPlan}>
+            Ads: {adPlanLabel(plan)}
+          </Text>
+        )}
         <Text style={styles.description}>{movie.description}</Text>
         <View style={styles.buttons}>
           <TouchableOpacity
@@ -105,6 +109,7 @@ const styles = StyleSheet.create({
   content: {position: 'absolute', left: 96, top: 160, width: 900},
   title: {color: colors.text, fontSize: 72, fontWeight: '700'},
   meta: {color: colors.muted, fontSize: 28, marginTop: 12},
+  adPlan: {color: colors.muted, fontSize: 24, marginTop: 8},
   description: {
     color: colors.text,
     fontSize: 28,
