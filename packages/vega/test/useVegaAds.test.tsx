@@ -415,8 +415,22 @@ describe('useVegaAds', () => {
     expect(ctx.ads().ended).toBe(true);
   });
 
-  it('Back during an ad returns to the content and is consumed (R23)', async () => {
+  it('leaves Back during an ad to the app, as in the content: an ad cannot be skipped with Back (R23)', async () => {
     const ctx = setup();
+    const ad = await ctx.prerollPlaying();
+    let handled = true;
+    act(() => {
+      handled = back.pressBack();
+    });
+    await settle();
+    expect(handled).toBe(false);
+    expect(ad.deinitialized).toBe(false);
+    expect(ctx.content.calls).not.toContain('play');
+    expect(ctx.ads().playing).toBe(true);
+  });
+
+  it("with backDuringAd 'content', Back during an ad returns to the content and is consumed (R23)", async () => {
+    const ctx = setup({ backDuringAd: 'content' });
     const ad = await ctx.prerollPlaying();
     let handled = false;
     act(() => {

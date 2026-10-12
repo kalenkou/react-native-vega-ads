@@ -46,7 +46,7 @@ On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no offi
 - Macros for the Fire TV advertising ID and the user's tracking choice (`IFA`, `LIMITADTRACKING`).
 - Remote and Alexa play/pause during ads. Seek, skip and speed commands are blocked during an ad.
 - 10-foot overlay: "Ad 1 of 3 · 0:12", a Skip button with D-pad focus, VoiceView announcements: each ad with its length and when Skip comes ("Ad 1 of 2, 15 seconds, you can skip in 5 seconds"), then "You can skip the ad now" when it does.
-- Back during an ad returns to the content.
+- Back during an ad goes to your app, as in the movie, so an ad without Skip cannot be skipped with Back. If you want Back to end the break and go on with the movie, set `backDuringAd: 'content'`. Back on a pause ad closes it.
 - Home during an ad releases the ad players, as Amazon requires for apps in the background. On return the content continues; the interrupted break is not shown again.
 - Errors and timeouts never stop playback: the content continues. An ad that shows no frame in 5 s, buffers for 10 s, or stops with no media event for 30 s is skipped with VAST error 405. The long silent timeout covers Alexa requests: Fire TV stops the picture without an event while the viewer talks.
 - Pure-JS XML parsing (`@xmldom/xmldom`). You can pass your own parser.
@@ -304,7 +304,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `avoidRepeats` | `{ withinMs, memory }`: how long a shown creative is not shown again (default 30 minutes), and where to remember it across titles and launches: `{ read, write }` of one string, for example `{ read: () => AsyncStorage.getItem('vega-ads.seen'), write: (v) => AsyncStorage.setItem('vega-ads.seen', v) }` with `@amazon-devices/react-native-async-storage__async-storage`. At most 500 creatives are kept. `false` turns the no-repeat rules off. |
 | `mediaFile` | Media file choice: `maxHeight`, `targetBitrateKbps`, or your own `select`. |
 | `strings` | Overlay texts. English by default. |
-| `handleBack` | Back during an ad returns to the content. Default `true`. |
+| `backDuringAd` | What Back does during an ad. `'app'` (default): Back goes to your app, which usually closes the player. `'content'`: the break ends and the movie plays on, without skip or close pixels. |
 | `adPause` | The viewer may pause ads (remote, voice). Default `true`. |
 | `mediaControls` | Ad and content players take media controls focus. Default `true`; keep it on Vega. |
 | `contentMediaControlHandler` | Your content media controls handler; restored after each break. |

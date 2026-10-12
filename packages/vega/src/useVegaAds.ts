@@ -76,8 +76,12 @@ export interface UseVegaAdsOptions {
   mediaFile?: MediaFileOptions;
   /** Overlay texts; English by default. */
   strings?: Partial<AdUiStrings>;
-  /** Back during an ad returns to the content (R23). Default true. */
-  handleBack?: boolean;
+  /**
+   * What Back does during an ad (R23). `'app'` (default): nothing here, Back goes to your app as
+   * in the content, which usually closes the player; an ad cannot be skipped with Back.
+   * `'content'`: the break ends and the content plays on, without skip or close pixels.
+   */
+  backDuringAd?: 'app' | 'content';
   /** IAB events sent and errors, for logs and analytics. */
   onEvent?: (name: string) => void;
   /** Defaults to the app's own component instance (needed for remote and Alexa play/pause). */
@@ -108,7 +112,7 @@ export interface VegaAds {
   /** Mid-rolls to mark on your timeline, and the countdown to the next one (AdCountdown). */
   timeline: AdTimeline;
   surfaces: AdSurfaces;
-  /** The pause ad to show (`<PauseAd>`), or null. Back closes it while `handleBack` is on. */
+  /** The pause ad to show (`<PauseAd>`), or null. Back closes it. */
   pauseAd: PauseAdView | null;
   /** Close the pause ad. False when none is on screen. */
   closePauseAd: () => boolean;
@@ -246,9 +250,9 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   }, []);
 
   const inAd = snapshot.state === 'playing';
-  const handleBack = options.handleBack ?? true;
+  const backToContent = options.backDuringAd === 'content';
   useEffect(() => {
-    if (!inAd || !handleBack) {
+    if (!inAd || !backToContent) {
       return undefined;
     }
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -256,16 +260,16 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       return true;
     });
     return () => subscription.remove();
-  }, [inAd, handleBack]);
+  }, [inAd, backToContent]);
 
   const pauseAdShown = pauseAd !== null;
   useEffect(() => {
-    if (!pauseAdShown || !handleBack) {
+    if (!pauseAdShown) {
       return undefined;
     }
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => manager.current?.closePauseAd() ?? false);
     return () => subscription.remove();
-  }, [pauseAdShown, handleBack]);
+  }, [pauseAdShown]);
   const closePauseAd = useCallback(() => manager.current?.closePauseAd() ?? false, []);
 
   const skip = useCallback(() => manager.current?.skip() ?? false, []);
