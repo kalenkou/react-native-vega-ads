@@ -2,7 +2,7 @@
   "name": "@vega-ads/make-vmap",
   "version": "0.0.0",
   "private": true,
-  "description": "Finds ad break points in a video with Amazon Rekognition segment detection and writes a VMAP 1.0 file",
+  "description": "Finds ad break points in a video (ffmpeg and whisper.cpp on your computer, or Amazon Rekognition) and writes a VMAP 1.0 file",
   "license": "Apache-2.0",
   "bin": {
     "make-vmap": "dist/main.js"
