@@ -109,6 +109,18 @@ describe('AdManager', () => {
     expect(ctx.lastAdPlayer().calls.find((c) => c.startsWith('src:'))).toContain('pod-1');
   });
 
+  it('treats a break given at 0 s as the pre-roll', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 0, vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    expect(ctx.content.calls).not.toContain('play');
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    expect(ctx.events.some((e) => e.endsWith(':late'))).toBe(false);
+    expect(ctx.last()?.state).not.toBe('idle');
+  });
+
   it('keeps a loading pre-roll when the content player reports time before it plays (Shaka)', async () => {
     const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
     const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));

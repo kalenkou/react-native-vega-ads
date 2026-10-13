@@ -32,7 +32,8 @@ export async function resolveSchedule(
     return {
       breaks: schedule.breaks.map((b, i) => ({
         id: `break-${i + 1}`,
-        offset: b.offset === 'start' || b.offset === 'end' ? { kind: b.offset } : { kind: 'time', seconds: b.offset },
+        // 0 s is the pre-roll: as a timed break it would come after the content started.
+        offset: b.offset === 'start' || b.offset === 'end' ? { kind: b.offset } : b.offset <= 0 ? { kind: 'start' } : { kind: 'time', seconds: b.offset },
         sources: [{ id: null, source: { kind: 'url', url: b.vastUrl }, allowMultipleAds: true, track: () => undefined }],
         blockedAdCategories: b.blockedAdCategories,
         sceneSignals: b.sceneSignals,
