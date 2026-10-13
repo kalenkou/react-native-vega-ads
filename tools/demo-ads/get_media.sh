@@ -18,9 +18,10 @@ MOVIE_URL=https://download.blender.org/demo/movies/ToS/tears_of_steel_720p.mov
 MOVIE_SHA256=efa9062d9cdb7a338e40ad530dfdf234806743f29ae6a1a136b97ece4e588e8f
 SINTEL_URL=https://download.blender.org/durian/movies/Sintel.2010.720p.mkv.zip
 SINTEL_SHA256=d252f898641b20f51c64206f31063e659c28b152a9d988936736d1b56e6e4db3
-FONT_URL='https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz,wght%5D.ttf'
+FONT_URL='https://github.com/google/fonts/raw/e1d6480102fed30739fead0faee463101f892c8f/ofl/inter/Inter%5Bopsz,wght%5D.ttf'
 FONT_SHA256=29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031
-OFL_URL=https://github.com/google/fonts/raw/main/ofl/inter/OFL.txt
+OFL_URL=https://github.com/google/fonts/raw/b0928647ba26c8d55548aa19feb2f7aeba622d4a/ofl/inter/OFL.txt
+OFL_SHA256=5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57
 
 # download URL FILE [SHA256]: skips a file that is already there and checks the hash.
 download() {
@@ -69,7 +70,7 @@ if [ ! -s "$DIR/poster_sintel.jpg" ]; then
 fi
 
 download "$FONT_URL" "$DIR/fonts/Inter.ttf" "$FONT_SHA256"
-download "$OFL_URL" "$DIR/fonts/OFL.txt"
+download "$OFL_URL" "$DIR/fonts/OFL.txt" "$OFL_SHA256"
 if [ ! -x "$DIR/.venv/bin/python" ]; then
   python3 -m venv "$DIR/.venv"
   "$DIR/.venv/bin/pip" install -q --disable-pip-version-check pillow==12.3.0 segno==1.6.6
