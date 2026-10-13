@@ -30,6 +30,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -b",
+    "prepack": "tsc -b",
     "test": "jest"
   },
   "files": [

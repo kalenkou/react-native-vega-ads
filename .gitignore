@@ -19,3 +19,5 @@ tools/demo-ads/media/
 
 # Python bytecode
 __pycache__/
+# npm pack output
+*.tgz

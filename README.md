@@ -87,12 +87,12 @@ The packages are not published yet. Build and pack them from this repository:
 
 ```sh
 npm ci
-npm pack ./packages/core ./packages/vega
+npm pack ./packages/core ./packages/vega   # builds both packages first
 ```
 
-Then, in your app, install the two `.tgz` files: `npm install --no-save path/to/*.tgz`. After the npm release this becomes `npm install react-native-vega-ads`.
+Then, in your app, install the two `.tgz` files: `npm install path/to/react-native-ads-core-0.0.0.tgz path/to/react-native-vega-ads-0.0.0.tgz`. After the npm release this becomes `npm install react-native-vega-ads`.
 
-Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. Your Vega app already has them. The Amazon packages are marked optional, so `react-native-ads-core` also installs in non-Vega projects.
+Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. Your Vega app already has them. The examples below also pass the Fire TV advertising ID: for that, add `@amazon-devices/kepler-adid-retriever` to your app. The Amazon packages are marked optional, so `react-native-ads-core` also installs in non-Vega projects.
 
 ### 2. Add entries to `manifest.toml`
 
@@ -409,6 +409,7 @@ Then pass your adapter as `contentPlayer`, or use `AdManager` from `react-native
 | Vega SDK | React Native | Status |
 |---|---|---|
 | 0.23 | 0.72 | Verified on Fire TV Stick 4K Select, Vega OS 2.0 (`apps/spike`) |
+| 0.24 | 0.72 | Verified on the same device (`apps/demo`, built with SDK 0.24.12112) |
 | 0.24 | 0.83 | Verified on the same device in Amazon's vega-video-sample with Shaka (`examples/vega-video-sample`) |
 
 The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read on 11.10.2026). The Vega Virtual Device of SDK 0.24 runs Vega OS 1.2.
@@ -421,6 +422,8 @@ The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read 
 - [`apps/demo`](apps/demo) is a small Vega app on `<VegaAdsPlayer>`: a movie page that preloads the ads, and a player with break marks, "Ad in 5", Skip and Back.
 
 ## Development
+
+You need Node.js 22 and npm 10 (as in CI). For the demo app: the Vega SDK (we use 0.24.12112), and for its media: curl, shasum, unzip, ffmpeg with libx264 and AAC, and Python 3.
 
 ```sh
 npm ci
