@@ -25,9 +25,21 @@ describe('ad media controls handler (R21)', () => {
   it('ignores pause when the publisher does not allow pausing ads', async () => {
     const handler = make(false);
     await handler.handlePause?.();
-    await handler.handleTogglePlayPause?.();
     await handler.handlePlay?.();
     expect(handler.handled).toEqual(['play']);
+  });
+
+  it('ignores stop ("Alexa, stop") when the publisher does not allow pausing ads', async () => {
+    const handler = make(false);
+    await handler.handleStop?.();
+    expect(handler.handled).toEqual([]);
+  });
+
+  it('play/pause key only plays when pausing is not allowed, so an ad the system paused can go on', async () => {
+    const handler = make(false);
+    await handler.handlePause?.({ id: 1 }, { source: 'SYSTEM_DISPLAY_OFF' });
+    await handler.handleTogglePlayPause?.();
+    expect(handler.handled).toEqual(['pause', 'play']);
   });
 
   it('pauses on display off even when the publisher does not allow pausing ads', async () => {

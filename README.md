@@ -313,7 +313,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `mediaFile` | Media file choice: `maxHeight`, `targetBitrateKbps`, or your own `select`. |
 | `strings` | Overlay texts. English by default. |
 | `backDuringAd` | What Back does during an ad. `'app'` (default): Back goes to your app, which usually closes the player. `'content'`: the break ends and the movie plays on, without skip or close pixels. |
-| `adPause` | The viewer may pause ads (remote, voice). Default `true`. |
+| `adPause` | The viewer may pause ads (remote, voice). Default `true`. With `false`, pause and "Alexa, stop" are ignored and play/pause only plays; a system pause (TV off) still pauses. |
 | `mediaControls` | Ad and content players take media controls focus. Default `true`; keep it on Vega. |
 | `contentMediaControlHandler` | Your content media controls handler; restored after each break. |
 | `onEvent` | Called with IAB events and errors, for logs and analytics. |
