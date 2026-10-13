@@ -124,32 +124,50 @@ export class RepeatGuard {
     this.memory.write(JSON.stringify({ v: 1, seen: Object.fromEntries(recent) })).catch(() => undefined);
   }
 
-  /** Removes from the responses of one break the ads the rules do not allow. */
+  /**
+   * Removes from the responses of one break the ads the rules do not allow. The ads that will
+   * play (each pod, or the first allowed ad of a response without sequence numbers) take their
+   * place first; spare ads, which play only when one of those fails, are then checked against them.
+   */
   filter(responses: LinearAd[][]): { responses: LinearAd[][]; dropped: DroppedAd[] } {
     const now = this.clock.now();
     const inBreak = new Set<string>();
     const advertisers = new Set<string>();
     const dropped: DroppedAd[] = [];
-    const kept = responses.map((ads) => {
-      const allowed = new Set<LinearAd>();
-      for (const linear of playOrder(ads)) {
-        const keys = creativeKeys(linear);
-        const advertiser = advertiserKey(linear);
-        const seenAt = keys.map((key) => this.seen.get(key)).filter((at): at is number => at !== undefined);
-        if (keys.some((key) => inBreak.has(key)) || seenAt.some((at) => now - at < this.withinMs)) {
-          dropped.push({ ad: linear, reason: 'repeat' });
-        } else if (advertiser && advertisers.has(advertiser)) {
-          dropped.push({ ad: linear, reason: 'advertiser' });
-        } else {
-          allowed.add(linear);
-          keys.forEach((key) => inBreak.add(key));
-          if (advertiser) {
-            advertisers.add(advertiser);
-          }
-        }
+    const allowed = new Set<LinearAd>();
+    const check = (linear: LinearAd, keys: Set<string>, brands: Set<string>): boolean => {
+      const creative = creativeKeys(linear);
+      const advertiser = advertiserKey(linear);
+      const seenAt = creative.map((key) => this.seen.get(key)).filter((at): at is number => at !== undefined);
+      if (creative.some((key) => inBreak.has(key) || keys.has(key)) || seenAt.some((at) => now - at < this.withinMs)) {
+        dropped.push({ ad: linear, reason: 'repeat' });
+        return false;
       }
-      return ads.filter((a) => allowed.has(a));
+      if (advertiser && (advertisers.has(advertiser) || brands.has(advertiser))) {
+        dropped.push({ ad: linear, reason: 'advertiser' });
+        return false;
+      }
+      allowed.add(linear);
+      creative.forEach((key) => keys.add(key));
+      if (advertiser) {
+        brands.add(advertiser);
+      }
+      return true;
+    };
+    const spares: LinearAd[][] = responses.map((ads) => {
+      const pod = playOrder(ads).filter((a) => a.sequence !== null);
+      const standalone = ads.filter((a) => a.sequence === null);
+      if (pod.length > 0) {
+        pod.forEach((linear) => check(linear, inBreak, advertisers));
+        return standalone;
+      }
+      const slot = standalone.findIndex((linear) => check(linear, inBreak, advertisers));
+      return slot === -1 ? [] : standalone.slice(slot + 1);
     });
+    const spareKeys = new Set<string>();
+    const spareBrands = new Set<string>();
+    spares.forEach((ads) => ads.forEach((linear) => check(linear, spareKeys, spareBrands)));
+    const kept = responses.map((ads) => ads.filter((a) => allowed.has(a)));
     return { responses: kept, dropped };
   }
 }

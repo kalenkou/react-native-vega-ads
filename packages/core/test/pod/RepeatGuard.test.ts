@@ -64,6 +64,23 @@ describe('RepeatGuard', () => {
     expect(ids(guard.filter([[ad('kettlo')]]).responses)).toEqual([['kettlo']]);
   });
 
+  it('lets a spare ad that will not play take no place from the ads that will', () => {
+    const guard = new RepeatGuard(new FakeClock(0));
+    const yoyo = ad('b1', { advertiser: { value: 'Yoyo' } });
+    const spareZeta = ad('b2', { advertiser: { value: 'Zeta' } });
+    const zeta = ad('c', { advertiser: { value: 'Zeta' } });
+    // Source 1 plays b1 only (no sequence numbers: the rest is spare); source 2 plays c.
+    const result = guard.filter([[yoyo, spareZeta], [zeta]]);
+    expect(ids(result.responses)).toEqual([['b1'], ['c']]);
+    expect(result.dropped.map((d) => [d.ad.ad.id, d.reason])).toEqual([['b2', 'advertiser']]);
+  });
+
+  it('keeps a spare that can still replace the ad that will play', () => {
+    const guard = new RepeatGuard(new FakeClock(0));
+    const result = guard.filter([[ad('b1'), ad('b2')], [ad('c')]]);
+    expect(ids(result.responses)).toEqual([['b1', 'b2'], ['c']]);
+  });
+
   it('takes the window from the options', () => {
     const clock = new FakeClock(0);
     const guard = new RepeatGuard(clock, { withinMs: 60_000 });
