@@ -18,8 +18,8 @@ export interface PlayerScreenProps {
 }
 
 /**
- * Back outside ads closes the player. During ads VegaAdsPlayer returns to the movie first, and
- * on a pause ad it closes the ad first.
+ * Back closes the player, also during an ad (VegaAdsPlayer's default `backDuringAd: 'app'`, so an
+ * ad without Skip cannot be skipped with Back). On a pause ad, Back closes the ad first.
  */
 function useBackToClose(onClose: () => void): void {
   useEffect(() => {
