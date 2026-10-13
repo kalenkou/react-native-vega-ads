@@ -25,9 +25,9 @@ Required:
 Options:
   --speech-model FILE     whisper.cpp model (ggml .bin) for --local: keep mid-rolls
                           out of speech (needs whisper-cli)
-  --context-model FILE    vision-language model (GGUF) for --local: from the frames and
-                          lines before each mid-roll, write its mood and the ad
-                          categories it blocks (needs llama-mtmd-cli)
+  --context-model FILE    vision-language model (GGUF) for --local with --speech-model:
+                          from the frames and lines before each mid-roll, write its
+                          mood and the ad categories it blocks (needs llama-mtmd-cli)
   --context-mmproj FILE   the model's multimodal projector (GGUF)
   --preroll URL           VAST tag URL for a pre-roll
   --postroll URL          VAST tag URL for a post-roll
