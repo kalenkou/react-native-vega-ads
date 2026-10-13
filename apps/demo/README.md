@@ -17,23 +17,27 @@ The ads are invented brands drawn by [`tools/demo-ads`](../../tools/demo-ads).
 
 ## Run it
 
-You need the Vega SDK, a Fire TV device on the same network as your computer, and the
-media from [`tools/demo-ads`](../../tools/demo-ads).
+You need Node.js 22, the Vega SDK (tested with 0.24.12112; `vega sdk list` shows the active
+one), a Fire TV device on the same network as your computer, and the media from
+[`tools/demo-ads`](../../tools/demo-ads).
 
-1. Get the movie and the ads, and start the media server on your computer:
+1. From the repository root, install and build the tools, get the movie and the ads, and
+   start the media server on your computer:
 
    ```sh
+   npm ci
+   npm run build -w tools/make-vmap
    cd tools/demo-ads
    sh get_media.sh
    node serve.mjs --dir media --midrolls 139.917,441.208
    ```
 
-   It prints its address, for example `http://192.168.1.20:8080/`.
+   It prints its address, for example `http://192.168.1.20:8080/`. Keep it running.
 
-2. Copy `src/media.example.ts` to `src/media.local.ts` and set `MEDIA_BASE` to that address.
-   `media.local.ts` is not committed.
+2. In another terminal, from the repository root, `cd apps/demo`. Copy `src/media.example.ts`
+   to `src/media.local.ts` and set `MEDIA_BASE` to that address. `media.local.ts` is not committed.
 
-3. Let the app load `http://` media from your computer. Add to `manifest.toml`:
+3. Let the app load `http://` media from your computer. Add to `apps/demo/manifest.toml`:
 
    ```toml
    [network-traffic-policy.cleartext]
@@ -42,14 +46,17 @@ media from [`tools/demo-ads`](../../tools/demo-ads).
 
    Do not commit this: it is for a development network only.
 
-4. Install the packages from this repository and build:
+4. Still in `apps/demo`, install the packages from this repository and build (step 1's
+   `npm ci` at the root is needed for `use-core`):
 
    ```sh
-   cd apps/demo
    npm install
    npm run use-core
    npm run build:release
    ```
+
+   The build adds `[[needs.module]]` entries to `manifest.toml` for the Amazon modules the app
+   uses. That is expected.
 
 5. Install and start the app on the device:
 
@@ -57,7 +64,8 @@ media from [`tools/demo-ads`](../../tools/demo-ads).
    vega run-app build/armv7-release/demo_armv7.vpkg -d DEVICE
    ```
 
-   Use `build/aarch64-release/demo_aarch64.vpkg` on a 64-bit device.
+   `vega device list` shows the device ID. Use `build/aarch64-release/demo_aarch64.vpkg` on a
+   64-bit device.
 
 ## Remote
 

@@ -18,14 +18,14 @@ QR code that points to `https://brewnord.example/pause`, a reserved `.example` d
 
 ## Get all the media
 
-Needs curl, ffmpeg with libx264 and aac, and Python 3. The script puts Pillow and segno
-(for the QR code) into `media/.venv`.
+Needs curl, shasum, unzip, ffmpeg with libx264 and aac, and Python 3. The script puts Pillow and segno
+(for the QR code) into `media/.venv`. It downloads about 1.1 GB (Tears of Steel 372 MB, Sintel 681 MB).
 
 ```sh
 sh get_media.sh
 ```
 
-It fills `media/` (not committed) in about a minute:
+It fills `media/` (not committed). After the downloads, the rest takes about a minute:
 
 - `tears_of_steel_720p.mp4` – the movie, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Downloaded from `download.blender.org` and checked by SHA-256. The video is copied as it is; the MP3 sound becomes AAC, which w3cmedia plays, at -24 LUFS (the TV level of ATSC A/85; the web release is about -12 LUFS).
 - `poster.jpg` – a frame of the movie;
