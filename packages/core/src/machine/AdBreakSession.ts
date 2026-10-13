@@ -185,7 +185,11 @@ export class AdBreakSession {
    * answers already received for the sources, in the same order (see preloadAds()); a source
    * whose preloaded request failed is asked again.
    */
-  async load(sources: AdSourceRef[], preloaded: readonly VastResult[] = []): Promise<'ready' | 'empty'> {
+  async load(
+    sources: AdSourceRef[],
+    preloaded: readonly VastResult[] = [],
+    oneAdOnly: readonly boolean[] = [],
+  ): Promise<'ready' | 'empty'> {
     this.setState('loading');
     const responses: LinearAd[][] = [];
     for (const [index, source] of sources.entries()) {
@@ -197,7 +201,9 @@ export class AdBreakSession {
       if (this.state !== 'loading') {
         return 'empty'; // interrupted while the ad server answered
       }
-      responses.push(result.status === 'ok' ? result.ads : []);
+      const ads = result.status === 'ok' ? result.ads : [];
+      // VMAP allowMultipleAds="false": the source's first ad only, no pod and no buffet.
+      responses.push(oneAdOnly[index] ? firstAd(ads) : ads);
     }
     await this.deps.repeats?.ready(); // what the household saw in other titles
     if (this.state !== 'loading') {
@@ -856,4 +862,10 @@ export class AdBreakSession {
       },
     });
   }
+}
+
+/** The ad a response plays first: the lowest sequence of its pod, or its first ad. */
+function firstAd(ads: LinearAd[]): LinearAd[] {
+  const first = new PodController([ads]).next();
+  return first ? [first.ad] : [];
 }

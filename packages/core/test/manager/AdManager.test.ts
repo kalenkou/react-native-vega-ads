@@ -95,6 +95,20 @@ describe('AdManager', () => {
     expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
   });
 
+  it('plays one ad from an ad source with allowMultipleAds="false", even when it answers with a pod', async () => {
+    const ctx = setup({
+      [VMAP]: fixture('vmap/pre-mid-post.xml'),
+      'https://ads.test/pre.xml': fixture('vast/pod-optimized.xml'),
+    });
+    const starting = ctx.manager.start({ vmapUrl: VMAP });
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    expect(ctx.last()).toMatchObject({ position: 1, total: 1 });
+    expect(ctx.lastAdPlayer().calls.find((c) => c.startsWith('src:'))).toContain('pod-1');
+  });
+
   it('keeps a loading pre-roll when the content player reports time before it plays (Shaka)', async () => {
     const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
     const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));

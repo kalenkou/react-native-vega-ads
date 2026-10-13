@@ -443,7 +443,11 @@ export class AdManager {
     });
     const entry: Prepared = {
       session,
-      loading: session.load(adBreak.sources.map((s) => s.source), this.takePreloaded(id)),
+      loading: session.load(
+        adBreak.sources.map((s) => s.source),
+        this.takePreloaded(id),
+        adBreak.sources.map((s) => !s.allowMultipleAds),
+      ),
       loaded: false,
       ready: false,
     };
