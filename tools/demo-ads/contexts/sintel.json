@@ -1,16 +1,17 @@
 [
   {
-    "mood": "sad",
-    "scene": "A lone hunter is searching for a kindred spirit or a dragon, embarking on a dangerous quest. The scene conveys a sense of solitude and determination.",
-    "signals": [
-      { "name": "weapons", "evidence": "The character is carrying a sword, which is a weapon." },
-      { "name": "injury", "evidence": "The dialogue mentions that the character is unprepared and lucky their blood is still flowing, which" }
-    ],
-    "blockedAdCategories": ["1248", "1343", "1524"]
+    "mood": "tense",
+    "scene": "A person holds a bowl of glowing liquid in a dimly lit room.",
+    "signals": [{ "name": "injury", "evidence": "dialogue mentions 'your blood's still flowing'" }],
+    "blockedAdCategories": ["1343", "1524"]
   },
   {
     "mood": "tense",
-    "scene": "A character with red hair is seen in a dimly lit environment, possibly a cave. The character appears to be in a state of alertness or surprise. The scene transitions to show the character facing a ser",
-    "blockedAdCategories": []
+    "scene": "A woman with pink hair stares in shock at a large, dead creature in a dark cave.",
+    "signals": [
+      { "name": "death", "evidence": "A large, dead creature is lying on the ground in the second and third frames." },
+      { "name": "weapons", "evidence": "A sword is lying on the ground next to the dead creature in the second and third frames." }
+    ],
+    "blockedAdCategories": ["1343", "1248", "1002", "1003", "1004", "1005", "1006", "1007"]
   }
 ]

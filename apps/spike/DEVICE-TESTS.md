@@ -262,6 +262,8 @@ Sintel (H.264 High, 1280×544, -23.0 LUFS after `get_media.sh`) is the second ti
 |---|---|
 | 1 | PASS: "Next: Sintel" switched the details screen (poster, text, credit) and kept the focus on the button; the app preloaded `vmap/sintel.xml`. Sintel played with its own pre-roll. At 2:42 Kettlo (1524, Sporting Goods) got the error pixel with `code=205` and no impression; Brewnord, then Voltaro played |
 
+13.10.2026: the context is now from Qwen3.6-35B-A3B, the model the eval chose (`tools/make-vmap/eval`). Same two mid-rolls. At 2:42 it reports only `injury` (the line about blood), so the break blocks 1343 and 1524; Kettlo is still left out. At 9:03 it reports `death` and `weapons` (a dead creature, a sword), where Qwen2.5-VL-7B reported nothing; none of the demo ads is in the blocked categories. On the stick: to run again.
+
 ## Amazon "test before submission": Home, Back, another app (12.10.2026)
 
 Scenarios 1–3 of Amazon's list, run during the pre-roll where we could. `home-run.sh` and `lifecycle-run.sh` (kept outside the repo); the key is sent with `inputd-cli`. `KEY_HOME` does nothing on the stick (no key mapping, the app stays on screen); `KEY_HOMEPAGE` is the Home button.
