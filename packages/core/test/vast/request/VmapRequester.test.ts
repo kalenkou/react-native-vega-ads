@@ -101,6 +101,21 @@ describe('requestVmap (R18)', () => {
     expect(result.breaks.map((b) => b.id)).toEqual(['t30', 't60']);
   });
 
+  it('keeps two breaks apart when they share a breakId (VMAP does not require it to be unique)', async () => {
+    const doc = `<?xml version="1.0"?>
+<vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
+  <vmap:AdBreak timeOffset="00:05:00" breakType="linear" breakId="midroll">
+    <vmap:AdSource><vmap:AdTagURI templateType="vast3"><![CDATA[https://ads.test/m1.xml]]></vmap:AdTagURI></vmap:AdSource>
+  </vmap:AdBreak>
+  <vmap:AdBreak timeOffset="00:10:00" breakType="linear" breakId="midroll">
+    <vmap:AdSource><vmap:AdTagURI templateType="vast3"><![CDATA[https://ads.test/m2.xml]]></vmap:AdTagURI></vmap:AdSource>
+  </vmap:AdBreak>
+</vmap:VMAP>`;
+    const result = await load(doc);
+    if (result.status !== 'ok') throw new Error(result.status);
+    expect(result.breaks.map((b) => b.id)).toEqual(['midroll', 'midroll@t600']);
+  });
+
   it('allows multiple ads when the AdSource leaves allowMultipleAds out (C2-9)', async () => {
     const doc = `<?xml version="1.0"?>
 <vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">

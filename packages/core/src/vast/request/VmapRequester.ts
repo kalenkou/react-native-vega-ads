@@ -165,6 +165,14 @@ export async function requestVmap(url: string, deps: UrlHandlerDeps): Promise<Vm
   }
 
   const breaks = new Map<string, ScheduledBreak>();
+  // VMAP does not require breakId to be unique; the player needs one id per break.
+  const usedIds = new Set<string>();
+  const breakIdFor = (breakId: string | null | undefined, key: string): string => {
+    const wanted = breakId || key;
+    const id = usedIds.has(wanted) ? `${wanted}@${key}` : wanted;
+    usedIds.add(id);
+    return id;
+  };
   for (const adBreak of vmap.adBreaks) {
     if (!isLinearBreak(adBreak)) {
       track(adBreak, 'error', VMAP_BREAK_TYPE_NOT_SUPPORTED);
@@ -189,7 +197,7 @@ export async function requestVmap(url: string, deps: UrlHandlerDeps): Promise<Vm
     }
 
     const key = offsetKey(offset);
-    const scheduled = breaks.get(key) ?? { id: adBreak.breakId || key, offset, sources: [] };
+    const scheduled = breaks.get(key) ?? { id: breakIdFor(adBreak.breakId, key), offset, sources: [] };
     const blocked = merged(scheduled.blockedAdCategories, blockedCategoriesOf(adBreak));
     if (blocked) {
       scheduled.blockedAdCategories = blocked;
