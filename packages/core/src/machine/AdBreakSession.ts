@@ -253,7 +253,8 @@ export class AdBreakSession {
       return;
     }
     this.armWatchdog();
-    await player.play();
+    // A play() that fails is a player that shows no frame: the watchdog fails the ad (405).
+    await player.play().catch(() => undefined);
   }
 
   /** Viewer pressed Skip. @returns false when skipping is not allowed yet (R8). */
@@ -281,7 +282,7 @@ export class AdBreakSession {
       player.pause();
       this.disarmWatchdog();
     } else {
-      void player.play();
+      void player.play().catch(() => undefined); // the watchdog below covers a failed play()
       if (this.framed) {
         this.armStallWatchdog();
       } else {
@@ -297,6 +298,8 @@ export class AdBreakSession {
     if (this.state !== 'playing') {
       return;
     }
+    // Leaving now: a second Back while the players are released must not end the break again.
+    this.setState('resuming');
     await this.releasePlayer();
     await this.backToContent();
   }
@@ -382,7 +385,13 @@ export class AdBreakSession {
   /** A new ad player on a surface. Its events count only while it is the active player. */
   private async createPlayer(surface: string): Promise<PlayerPort> {
     const player = this.deps.createAdPlayer();
-    await player.initialize();
+    try {
+      await player.initialize();
+    } catch (error) {
+      // For example no free video decoder: release what was started.
+      await player.deinitialize().catch(() => undefined);
+      throw error;
+    }
     player.attachSurface(surface);
     const active = (action: () => void) => () => {
       if (this.player === player) {
@@ -441,7 +450,13 @@ export class AdBreakSession {
 
   private async ensurePlayer(): Promise<PlayerPort> {
     if (!this.player) {
-      this.player = await this.createPlayer(this.deps.adSurface);
+      const player = await this.createPlayer(this.deps.adSurface);
+      if (this.state !== 'loading') {
+        // Back or Home came while the player started: it must not take the surface or a decoder.
+        await player.deinitialize().catch(() => undefined);
+        throw new Error('ad break left while the ad player started');
+      }
+      this.player = player;
       this.playerSurface = this.deps.adSurface;
       this.shownSurface = this.deps.adSurface;
     }
@@ -468,7 +483,12 @@ export class AdBreakSession {
   }
 
   private async prebuffer(ad: LinearAd, url: string): Promise<boolean> {
-    const player = await this.ensurePlayer();
+    let player: PlayerPort;
+    try {
+      player = await this.ensurePlayer();
+    } catch {
+      return false;
+    }
     player.setAutoplay(false);
     const ready = new Promise<boolean>((resolve) => {
       const timer = this.deps.clock.setTimeout(() => {
@@ -618,6 +638,10 @@ export class AdBreakSession {
 
   private onTime(): void {
     this.whilePlaying((c) => {
+      // Before the ad's first frame a timeupdate may still carry the previous source's time.
+      if (!this.framed) {
+        return;
+      }
       const time = this.player?.getCurrentTime() ?? 0;
       this.buffering = false;
       if (this.framed && !this.adPaused) {
@@ -738,7 +762,7 @@ export class AdBreakSession {
       this.loadAd(player, item.ad, url);
       this.emitChange();
       this.armWatchdog();
-      await player.play();
+      await player.play().catch(() => undefined);
       return;
     }
     await this.releasePlayer();
@@ -763,20 +787,22 @@ export class AdBreakSession {
     this.current = { item: standby.item, tracker: this.trackerFor(standby.item.ad) };
     this.emitChange();
     this.armWatchdog();
-    await standby.player.play();
+    await standby.player.play().catch(() => undefined);
   }
 
   private async backToContent(): Promise<void> {
     const { content } = this.deps;
     this.current = null;
     this.setState('resuming');
+    // The break ends even when the content player refuses a call: a stuck break would block
+    // every later break and the pause ads.
     if (this.resumeContentAfter) {
       if (Math.abs(content.getCurrentTime() - this.savedContentTime) > RESUME_SEEK_TOLERANCE_S) {
         content.setCurrentTime(this.savedContentTime);
       }
-      await content.play();
+      await content.play().catch(() => undefined);
     }
-    await content.takeMediaControlFocus();
+    await content.takeMediaControlFocus().catch(() => undefined);
     this.setState('finished');
     this.deps.onEvent?.('breakEnd');
   }
@@ -799,7 +825,7 @@ export class AdBreakSession {
     this.previous = null;
     for (const player of players) {
       if (player) {
-        await player.deinitialize();
+        await player.deinitialize().catch(() => undefined); // a release that fails still ends the break
       }
     }
     // The finishing player is gone too: whoever waits for it must not wait forever.

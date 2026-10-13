@@ -39,11 +39,13 @@ function setup(
     contentLoudness?: number;
     blockedAdCategories?: string[];
     sceneSignals?: string[];
+    content?: FakePlayer;
+    holdInit?: (player: FakePlayer) => void;
   } = {},
 ) {
   const http = new FakeHttp().on(TAG, { body });
   const clock = new FakeClock(1_000_000);
-  const content = new FakePlayer({ duration: 600 });
+  const content = options.content ?? new FakePlayer({ duration: 600 });
   void content.initialize(); // the app's content player is ready before any break
   const adPlayers: FakePlayer[] = [];
   const states: SessionSnapshot[] = [];
@@ -63,6 +65,7 @@ function setup(
         return failing;
       }
       const player = new FakePlayer({ duration: 10 });
+      options.holdInit?.(player);
       adPlayers.push(player);
       return player;
     },
@@ -1106,5 +1109,103 @@ describe('AdBreakSession – why the break looks as it does', () => {
     player.emitEnded(); // pod-2 has no loudness: full volume
     await settle();
     expect(last(ctx.states)?.why?.quieter).toBe(false);
+  });
+});
+
+describe('AdBreakSession – a player call that fails', () => {
+  const twoSkippable = (): string => {
+    const ad = (n: number) => `<Ad id="a${n}" sequence="${n}"><InLine><AdSystem>x</AdSystem><AdTitle>t${n}</AdTitle>
+      <Impression><![CDATA[https://t.test/imp-${n}]]></Impression>
+      <Creatives><Creative><Linear skipoffset="00:00:05"><Duration>00:00:10</Duration>
+      <TrackingEvents><Tracking event="start"><![CDATA[https://t.test/start-${n}]]></Tracking>
+      <Tracking event="firstQuartile"><![CDATA[https://t.test/q1-${n}]]></Tracking></TrackingEvents>
+      <MediaFiles><MediaFile delivery="progressive" type="video/mp4" width="1280" height="720"><![CDATA[https://cdn.test/a${n}.mp4]]></MediaFile></MediaFiles>
+      </Linear></Creative></Creatives></InLine></Ad>`;
+    return `<VAST version="4.2">${ad(1)}${ad(2)}</VAST>`;
+  };
+
+  it.each([
+    ['takes media controls focus', (c: FakePlayer) => (c.takeMediaControlFocus = () => Promise.reject(new Error('focus failed')))],
+    ['plays', (c: FakePlayer) => (c.play = () => Promise.reject(new Error('play failed')))],
+  ])('ends the break when the content player fails as it %s again', async (_name, breakIt) => {
+    const content = new FakePlayer({ duration: 600 });
+    const ctx = setup(fixture('inline.xml'), { content });
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    breakIt(content);
+    player.emitTime(10);
+    player.emitEnded();
+    await settle();
+    expect(ctx.session.state).toBe('finished');
+    expect(ctx.events.filter((e) => e === 'breakEnd')).toHaveLength(1);
+  });
+
+  it('fails an ad whose play() is refused and goes back to the content, without throwing', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    player.play = () => Promise.reject(new Error('play refused'));
+    await expect(ctx.session.start()).resolves.toBeUndefined();
+    ctx.clock.advance(5000); // no frame: the watchdog fails the ad
+    await settle();
+    expect(ctx.events).toContain('error:405');
+    expect(ctx.session.state).toBe('finished');
+  });
+
+  it('ends the break once when Back comes twice while the ad player is released', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    let release = (): void => undefined;
+    player.deinitialize = () => new Promise<void>((resolve) => (release = resolve));
+    const first = ctx.session.cancel();
+    const second = ctx.session.cancel();
+    await settle();
+    release();
+    await Promise.all([first, second]);
+    expect(ctx.events.filter((e) => e === 'breakEnd')).toHaveLength(1);
+    expect(ctx.content.calls.filter((c) => c === 'play')).toHaveLength(1);
+  });
+
+  it('sends no start or quartile and allows no Skip on a late timeupdate before the next ad shows a frame', async () => {
+    const ctx = setup(twoSkippable());
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitTime(6);
+    expect(ctx.session.skip()).toBe(true);
+    await settle();
+    pixels.requests.splice(0);
+    player.emitTime(6); // the previous source's time, after the switch
+    await settle();
+    expect(pixels.requests).toEqual([]);
+    expect(ctx.session.skip()).toBe(false);
+  });
+
+  it('fails the ad and stays out of the way when the ad player cannot start', async () => {
+    const ctx = setup(fixture('inline.xml'), { maxPlayers: 0 });
+    await expect(ctx.session.load([{ kind: 'url', url: TAG }])).resolves.toBe('empty');
+    expect(ctx.events).toContain('error:400');
+    expect(ctx.adPlayers.every((p) => p.deinitialized)).toBe(true);
+  });
+
+  it('does not keep a player that finished starting after the break was left', async () => {
+    let started = (): void => undefined;
+    const ctx = setup(fixture('inline.xml'), {
+      holdInit: (player) => {
+        player.initialize = async () => {
+          await new Promise<void>((resolve) => (started = resolve));
+          await FakePlayer.prototype.initialize.call(player);
+        };
+      },
+    });
+    const loading = ctx.session.load([{ kind: 'url', url: TAG }]);
+    await settle();
+    await ctx.session.interrupt(); // Back or Home while the ad player is still starting
+    started();
+    await expect(loading).resolves.toBe('empty');
+    expect(ctx.adPlayers[0]?.calls.some((c) => c.startsWith('src:'))).toBe(false);
+    expect(ctx.adPlayers[0]?.deinitialized).toBe(true);
   });
 });
