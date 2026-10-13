@@ -162,6 +162,23 @@ function readFlags(argv: string[]) {
   }
 }
 
+/** An ad tag URL must be http or https; checked before any work starts. */
+function tagUrl<T extends string | undefined>(flag: string, url: T): T {
+  if (url === undefined) {
+    return url;
+  }
+  let protocol: string;
+  try {
+    protocol = new URL(url).protocol;
+  } catch {
+    throw new UsageError(`--${flag} is not a URL: "${url}"`);
+  }
+  if (protocol !== 'https:' && protocol !== 'http:') {
+    throw new UsageError(`--${flag} must use http or https: "${url}"`);
+  }
+  return url;
+}
+
 export function parseCliArgs(argv: string[]): CliOptions {
   const flags = readFlags(argv);
   const local = flags.local;
@@ -179,9 +196,16 @@ export function parseCliArgs(argv: string[]): CliOptions {
   if (model !== undefined && local === undefined) {
     throw new UsageError('--context-model needs the video on this computer: use it with --local');
   }
+  if (model !== undefined && flags['speech-model'] === undefined) {
+    // Without speech the model would be told there was no dialogue before the break.
+    throw new UsageError('--context-model reads the dialogue too: add --speech-model');
+  }
   const key = local === undefined ? required('key', flags.key) : undefined;
   const bucket = local === undefined ? required('bucket', flags.bucket) : undefined;
-  const vastUrl = required('vast-url', flags['vast-url']);
+  const vastUrl = tagUrl('vast-url', required('vast-url', flags['vast-url']));
+  // Checked now, before any paid detection job or long local run.
+  tagUrl('preroll', flags.preroll);
+  tagUrl('postroll', flags.postroll);
   const source = local ?? key!;
   const fileName = flags.out ? baseName(flags.out) : `${baseName(source).replace(/\.[^.]*$/, '')}.vmap`;
 

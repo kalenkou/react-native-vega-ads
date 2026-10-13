@@ -102,6 +102,10 @@ describe('parseCliArgs', () => {
     [[...REQUIRED, '--min-gap', '-5'], /--min-gap/],
     [[...REQUIRED, '--colour', 'red'], /colour/],
     [[...REQUIRED, 'extra'], /extra/],
+    [['--bucket', 'b', '--key', 'k', '--vast-url', 'not a url'], /--vast-url/],
+    [[...REQUIRED, '--preroll', 'ftp://ads.test/pre.xml'], /--preroll/],
+    [[...REQUIRED, '--postroll', 'post.xml'], /--postroll/],
+    [['--local', 'film.mp4', '--vast-url', VAST, '--context-model', 'm.gguf', '--context-mmproj', 'p.gguf'], /--speech-model/],
   ])('rejects %p', (argv, message) => {
     expect(() => parseCliArgs(argv)).toThrow(UsageError);
     expect(() => parseCliArgs(argv)).toThrow(message);
@@ -289,7 +293,7 @@ describe('break context (local vision model, no AWS)', () => {
   }
 
   it('reads the model flags, only both together and only with --local', () => {
-    expect(parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST, ...CONTEXT])).toMatchObject({ context: { model: 'vl.gguf', mmproj: 'mmproj.gguf' } });
+    expect(parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST, '--speech-model', 'base.bin', ...CONTEXT])).toMatchObject({ context: { model: 'vl.gguf', mmproj: 'mmproj.gguf' } });
     expect(() => parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST, '--context-model', 'vl.gguf'])).toThrow(/--context-mmproj/);
     expect(() => parseCliArgs([...REQUIRED, ...CONTEXT])).toThrow(/--local/);
   });
