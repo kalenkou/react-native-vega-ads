@@ -26,4 +26,15 @@ describe('contentMediaControlHandler', () => {
     expect(app.handled).toEqual(['pause']);
     expect(paused).toHaveBeenCalledTimes(1);
   });
+
+  it('tells the player screen that uses the handler now, not the first one (one handler for the app)', async () => {
+    const firstScreen = jest.fn();
+    const secondScreen = jest.fn();
+    const app = new KeplerMediaControlHandler() as unknown as Handler;
+    contentMediaControlHandler(app, firstScreen);
+    contentMediaControlHandler(app, secondScreen);
+    await app.handlePause();
+    expect(firstScreen).not.toHaveBeenCalled();
+    expect(secondScreen).toHaveBeenCalledTimes(1);
+  });
 });
