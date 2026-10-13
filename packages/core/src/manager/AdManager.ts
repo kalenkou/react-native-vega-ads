@@ -348,7 +348,7 @@ export class AdManager {
     if (!decisions.some((d) => d.type === 'start')) {
       this.deps.onEvent?.('content:ended');
     }
-    void this.apply(decisions);
+    void this.apply(decisions).catch(() => undefined); // a break that fails never stops the content
   }
 
   private isPostRoll(id: string): boolean {
@@ -370,7 +370,7 @@ export class AdManager {
     const starting = new Set(decisions.filter((d) => d.type === 'start').map((d) => d.breakId));
     this.releasePassed(scheduler, starting);
     this.reportTimeline(scheduler, time);
-    void this.apply(decisions);
+    void this.apply(decisions).catch(() => undefined); // a break that fails never stops the content
   }
 
   private reportTimeline(scheduler: BreakScheduler, time: number | null): void {
@@ -400,11 +400,15 @@ export class AdManager {
   }
 
   private async apply(decisions: Decision[]): Promise<void> {
+    // A break requested and started in one step (after a seek over it) is waited for:
+    // the content is buffering at its new position anyway, and the break is what the seek owes.
+    const requestedNow = new Set<string>();
     for (const decision of decisions) {
       if (decision.type === 'prefetch') {
         this.prefetch(decision.breakId);
+        requestedNow.add(decision.breakId);
       } else {
-        await this.startBreak(decision.breakId);
+        await this.startBreak(decision.breakId, requestedNow.has(decision.breakId));
       }
     }
   }
@@ -450,12 +454,12 @@ export class AdManager {
     this.prepared.set(id, entry);
   }
 
-  private async startBreak(id: string): Promise<void> {
+  private async startBreak(id: string, waitForLoad = false): Promise<void> {
     const entry = this.prepared.get(id);
     if (!entry || this.active) {
       return;
     }
-    if (!entry.loaded && this.contentStarted) {
+    if (!entry.loaded && this.contentStarted && !waitForLoad) {
       // Pausing the content to wait for a slow ad server is worse than losing the break.
       this.prepared.delete(id);
       this.deps.onEvent?.(`break:${id}:late`);

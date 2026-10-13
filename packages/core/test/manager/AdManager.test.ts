@@ -527,6 +527,23 @@ describe('AdManager', () => {
     expect(prefetched.deinitialized).toBe(true);
   });
 
+  it('plays the break a seek jumped over, even when it was not requested before the seek (R24)', async () => {
+    const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 300, vastUrl: 'https://ads.test/mid.xml' }]));
+    ctx.content.emitTime(10);
+    await settle();
+    expect(ctx.http.requests).toEqual([]);
+
+    ctx.content.emitTime(400); // seek from 0:10 to 6:40, over the break at 5:00
+    await settle();
+    const ad = ctx.lastAdPlayer();
+    ad.emitCanPlay();
+    await settle();
+    expect(ctx.events.some((e) => e.endsWith(':late'))).toBe(false);
+    expect(ad.calls).toContain('play');
+    expect(ctx.content.calls).toContain('pause');
+  });
+
   it('resumes without repeating the pre-roll or passed breaks', async () => {
     const ctx = setup({
       'https://ads.test/pre.xml': fixture('vast/inline.xml'),
