@@ -2,11 +2,27 @@ import React, {useEffect} from 'react';
 import {BackHandler, StyleSheet, Text} from 'react-native';
 import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
 import AsyncStorage from '@amazon-devices/react-native-async-storage__async-storage';
-import {VegaAdsPlayer, type RepeatOptions} from 'react-native-vega-ads';
+import {VideoPlayer} from '@amazon-devices/react-native-w3cmedia';
+import {
+  VegaAdsPlayer,
+  type RepeatOptions,
+  type W3cVideoPlayer,
+} from 'react-native-vega-ads';
 import {adsMode} from '../adsMode';
 import type {Movie} from '../catalog';
 import {PlayerChrome} from '../components/PlayerChrome';
+import {MUTED} from '../media.local';
 import {colors} from '../theme';
+
+/** Content and ad players that stay muted: set again on every play, in case a new source resets it. */
+const createMutedPlayer = (): W3cVideoPlayer => {
+  const player = new VideoPlayer() as unknown as W3cVideoPlayer;
+  player.muted = true;
+  player.addEventListener('playing', () => {
+    player.muted = true;
+  });
+  return player;
+};
 
 export interface PlayerScreenProps {
   movie: Movie;
@@ -67,7 +83,8 @@ export const PlayerScreen = ({
       showWhy={mode.showWhy}
       countdown={mode.countdown}
       onEnd={onClose}
-      onEvent={onEvent}>
+      onEvent={onEvent}
+      createVideoPlayer={MUTED ? createMutedPlayer : undefined}>
       {({player, ads}) => (
         <>
           <PlayerChrome title={movie.title} player={player} ads={ads} />

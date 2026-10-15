@@ -4,3 +4,6 @@
  * manifest: [network-traffic-policy.cleartext] allowed-domains = ["<host>"].
  */
 export const MEDIA_BASE = 'http://your-computer.local:8080/';
+
+/** true mutes every player, content and ads: for device test runs where the TV must stay silent. */
+export const MUTED = false;
