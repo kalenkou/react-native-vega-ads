@@ -57,5 +57,9 @@
       "tv"
     ]
   },
-  "description": "Demo app: a movie with ads that do not annoy, on Vega OS"
+  "description": "Demo app: a movie with ads that do not annoy, on Vega OS",
+  "overrides": {
+    "logkitty": "^0.7.1",
+    "shell-quote": "^1.8.5"
+  }
 }

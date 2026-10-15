@@ -57,5 +57,9 @@
     "targets": [
       "tv"
     ]
+  },
+  "overrides": {
+    "logkitty": "^0.7.1",
+    "shell-quote": "^1.8.5"
   }
 }
