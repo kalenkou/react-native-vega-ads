@@ -19,6 +19,9 @@ export interface PreloadVegaAdsOptions {
   adId?: VegaAdIdRetriever;
   /** Pass the same `macros` as to the player. */
   macros?: Macros;
+  /** Pass the same break limits as to the player: the early request tells them to the ad server. */
+  maxBreakAds?: number;
+  maxBreakSeconds?: number;
   /** For tests and other runtimes. */
   http?: HttpPort;
   clock?: ClockPort;
@@ -55,7 +58,13 @@ export function preloadVegaAds(schedule: AdSchedule, options: PreloadVegaAdsOpti
   installImagePolyfill(http);
   waiting.delete(key);
   waiting.set(key, {
-    promise: preloadAds(schedule, { http, clock, macros: vegaMacros(options.adId, options.macros) }),
+    promise: preloadAds(schedule, {
+      http,
+      clock,
+      macros: vegaMacros(options.adId, options.macros),
+      maxBreakAds: options.maxBreakAds,
+      maxBreakSeconds: options.maxBreakSeconds,
+    }),
     at: clock.now(),
   });
   for (const oldest of waiting.keys()) {

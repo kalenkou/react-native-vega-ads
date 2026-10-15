@@ -1008,6 +1008,20 @@ describe('AdManager', () => {
       await settle();
     }
 
+    it('preloadAds() tells the ad server the break limits, as the player would', async () => {
+      const tag = 'https://ads.test/pod.xml?ads=[BREAKMAXADS]&dur=[BREAKMAXDURATION]';
+      const asked = 'https://ads.test/pod.xml?ads=2&dur=45';
+      const ctx = setup({ [asked]: fixture('vast/pod-optimized.xml') });
+      const preloaded = await preloadAds(manual([{ offset: 'start', vastUrl: tag }]), {
+        http: ctx.http,
+        clock: ctx.clock,
+        maxBreakAds: 2,
+        maxBreakSeconds: 45.9,
+      });
+      expect(ctx.http.requests).toEqual([asked]);
+      expect(preloaded.preroll?.results.map((r) => r.status)).toEqual(['ok']);
+    });
+
     it('preloadAds() requests the VMAP and the pre-roll VAST, not the later breaks', async () => {
       const ctx = setup(routes());
       const preloaded = await preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock });

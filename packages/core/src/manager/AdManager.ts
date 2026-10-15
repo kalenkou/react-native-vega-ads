@@ -4,7 +4,7 @@ import { BreakMark, BreakScheduler, Decision } from '../schedule/BreakScheduler'
 import type { PlayerPort } from '../ports';
 import { RepeatGuard, RepeatOptions } from '../pod/RepeatGuard';
 import { PauseAdController, PauseAdView } from '../pause/PauseAdController';
-import { PreloadedAds, resolveSchedule, scheduleKey } from './preloadAds';
+import { PreloadedAds, resolveSchedule, scheduleKey, withBreakLimits } from './preloadAds';
 
 /** Where the breaks come from: a VMAP document, or a list of VAST tags with their times. */
 export type AdSchedule =
@@ -140,10 +140,7 @@ export class AdManager {
     this.repeats = deps.avoidRepeats === false ? undefined : new RepeatGuard(deps.clock, deps.avoidRepeats);
     this.maxAds = positive(deps.maxBreakAds);
     this.maxSeconds = positive(deps.maxBreakSeconds);
-    const limits: Macros = {};
-    if (this.maxAds !== undefined) limits.BREAKMAXADS = String(Math.floor(this.maxAds));
-    if (this.maxSeconds !== undefined) limits.BREAKMAXDURATION = String(Math.floor(this.maxSeconds));
-    this.macros = deps.macros || Object.keys(limits).length > 0 ? { ...deps.macros, ...limits } : undefined;
+    this.macros = withBreakLimits(deps.macros, this.maxAds, this.maxSeconds);
   }
 
   /**

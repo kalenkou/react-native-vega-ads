@@ -100,6 +100,15 @@ describe('preloadVegaAds', () => {
     expect(http.requests).toEqual([url.replace('[IFA]', 'id-1').replace('[LIMITADTRACKING]', '0')]);
   });
 
+  it('sends the same break limits as the player with the early request', async () => {
+    const { url, schedule } = fresh('?ads=[BREAKMAXADS]&dur=[BREAKMAXDURATION]');
+    const http = new FakeHttp();
+    const clock = new FakeClock(1_000_000);
+    preloadVegaAds(schedule, { http, clock, maxBreakAds: 2, maxBreakSeconds: 45 });
+    await settle();
+    expect(http.requests).toEqual([url.replace('[BREAKMAXADS]', '2').replace('[BREAKMAXDURATION]', '45')]);
+  });
+
   it('a second call within a minute keeps the first preload', async () => {
     const { url, schedule } = fresh();
     const http = new FakeHttp().on(url, { body: inline });

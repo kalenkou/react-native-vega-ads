@@ -18,6 +18,22 @@ export interface PreloadDeps {
   clock: ClockPort;
   /** The same ad tag macros the player will use (for example `adIdMacros()`). */
   macros?: Macros;
+  /** The same break limits as the player's, sent as `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. */
+  maxBreakAds?: number;
+  maxBreakSeconds?: number;
+}
+
+const positive = (value: number | undefined): number | undefined =>
+  value !== undefined && Number.isFinite(value) && value > 0 ? value : undefined;
+
+/** The app's macros plus the VAST 4.2 break limit macros; undefined when there are none. */
+export function withBreakLimits(macros: Macros | undefined, maxAds?: number, maxSeconds?: number): Macros | undefined {
+  const limits: Macros = {};
+  const ads = positive(maxAds);
+  const seconds = positive(maxSeconds);
+  if (ads !== undefined) limits.BREAKMAXADS = String(Math.floor(ads));
+  if (seconds !== undefined) limits.BREAKMAXDURATION = String(Math.floor(seconds));
+  return macros || Object.keys(limits).length > 0 ? { ...macros, ...limits } : undefined;
 }
 
 /** The identity of a schedule, for matching a preload to the playback it was made for. */
@@ -62,10 +78,9 @@ export async function preloadAds(schedule: AdSchedule, deps: PreloadDeps): Promi
       return { key, at, breaks: null, preroll: null };
     }
     const pre = breaks.find((b) => b.offset.kind === 'start');
+    const macros = withBreakLimits(deps.macros, deps.maxBreakAds, deps.maxBreakSeconds);
     const results = pre
-      ? await Promise.all(
-          pre.sources.map((s) => requestVast(s.source, { http: deps.http, clock: deps.clock, macros: deps.macros })),
-        )
+      ? await Promise.all(pre.sources.map((s) => requestVast(s.source, { http: deps.http, clock: deps.clock, macros })))
       : null;
     return { key, at, breaks, preroll: pre && results ? { breakId: pre.id, results } : null };
   } catch {
