@@ -176,3 +176,12 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Severity:** medium (looks like a broken ad or network; an ad that is paid for is not seen).
 - **Workaround:** create the ad surfaces after the content surface (`AdSurfaceLayers` docs now say so).
 - **Suggestion:** document how video surfaces are ordered (creation order, not zIndex), or apply zIndex to video surfaces.
+
+## FL-20 · The launch tool reports "fully drawn" for an app that never reports it (16.10.2026)
+- **Task:** measure the demo's cold launch on a Fire TV Stick 4K Select, Vega OS 2.0, with `vega exec perf kpi-visualizer --kpi cool-start-latency --certification` (Perf CLI 0.24.0), then follow Amazon's slow-launch workflow.
+- **Steps:** run 30 cold launches of an app that does not call `useReportFullyDrawn()` (no `@amazon-devices/kepler-performance-api` in the app). Read the report, then the Perfetto trace of an iteration.
+- **Expected:** no "fully drawn" value, or a clear note that the marker is missing. Amazon's TTFD workflow says: "If TTFD KPI values are null/undefined, this indicates missing or incorrect `useReportFullyDrawn()` API usage."
+- **Actual:** the report showed "Application launch to fully drawn" for 29 of 30 launches, marked statistically sound (√), almost equal to first frame (mean 2398.2 ms vs 2393.4 ms, max 4243.8 ms vs 4243.7 ms). In the two traces we read, a `fully_drawn` slice from the `stem-init` process comes 67–87 ms before the app's `gwsi_firstFrame`, although the app never asked for one. After we added the hook, the trace has two `fully_drawn` slices per launch, and the tool reported fully drawn at mean 2129 ms, P90 2494 ms.
+- **Severity:** low (a developer can believe the TTFD KPI is met and implemented, and the TTFD workflow's own check for a missing marker never fires).
+- **Workaround:** check the app code for `useReportFullyDrawn()` instead of trusting a non-empty TTFD value.
+- **Suggestion:** report TTFD as missing when the app did not emit the marker, or document which component emits the automatic `fully_drawn` and when.
