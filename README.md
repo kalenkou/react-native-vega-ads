@@ -106,7 +106,7 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11–16.10.2026. Details: [`apps/spike/DEV
 | Full demo run after the last fixes (pre-roll, seek into the mid-roll pod, repeat left out), 16.10 | 3/3 cold launches |
 | Seek over a mid-roll | 4/4: the break plays, then the movie resumes at the seek target |
 | In Amazon's multi-TV sample, Google IMA sample VMAP | pre-, mid- and post-roll with all quartiles; remote pause, Back and Skip |
-| Cold launch, launch → first frame (30 launches, `kpi-visualizer --certification`) | mean 2.39 s, P90 3.35 s. Amazon's target is 1.5 s; Amazon's own empty template gets a mean of 2.07 s on this stick. Fully drawn: P90 3.36 s (target: 8 s) |
+| Demo cold launch (30 launches, `kpi-visualizer --certification`), 16.10 | launch → first frame: mean 0.92 s, P90 1.08 s (Amazon's target: 1.5 s), with the native splash screen. Before it: mean 2.39 s, P90 3.35 s; Amazon's empty template: mean 2.07 s on this stick. Fully drawn (poster on screen, `useReportFullyDrawn`): mean 2.13 s, P90 2.49 s (target: 8 s) |
 
 ## Quick start
 
