@@ -1,6 +1,32 @@
 # react-native-vega-ads
 
-Client-side ad insertion (CSAI) for React Native apps on Amazon Vega OS (Fire TV).
+**Ads that watch the movie first.** Client-side ad insertion (CSAI) for React Native apps on Amazon Vega OS (Fire TV).
+
+- **Never mid-sentence.** `make-vmap` places each break on a shot change or a silent moment, never inside a line of dialogue.
+- **Never louder than the movie.** An ad louder than the film is turned down to the film's loudness (EBU R128), never up.
+- **Never the same ad twice.** A creative is not shown again within 30 minutes, and a break has one ad per advertiser.
+- **No unfitting ad after a hard scene.** A local vision model looks at the scene before each break, so there are no car ads right after a car crash. The player leaves out the blocked categories.
+
+```mermaid
+flowchart LR
+  subgraph prep["Before release, on your computer: make-vmap"]
+    film["Film"] --> ffmpeg["ffmpeg: shot changes, silent black frames"]
+    film --> whisper["whisper.cpp: speech"]
+    film --> vision["Local vision model: what the scene shows"]
+    ffmpeg --> vmap["VMAP: break times + categories to leave out"]
+    whisper --> vmap
+    vision --> vmap
+  end
+  vmap --> server["Your ad server"]
+  subgraph tv["On the TV: react-native-vega-ads"]
+    core["core: schedule, pods, no repeats, loudness, categories, IAB tracking"]
+    vega["vega: two w3cmedia players, overlay, media controls, VoiceView"]
+    core --> vega
+  end
+  server -- "VMAP and VAST" --> core
+  core -- "tracking pixels, VAST errors" --> server
+  vega --> viewer["Viewer: remote, Alexa, screen"]
+```
 
 `react-native-vega-ads` reads VAST 4 and VMAP 1, plays pre-, mid- and post-rolls on native w3cmedia players, switches between content and ads without a black frame, and sends IAB tracking events. It is for Vega app developers who have their own ad server and need video ads without a vendor SDK. It is open source under Apache-2.0.
 
