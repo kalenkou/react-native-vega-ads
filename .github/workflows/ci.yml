@@ -9,3 +9,5 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run check
+      # Known vulnerabilities in what the published packages install (dev tools are not shipped).
+      - run: npm audit --omit=dev
