@@ -56,6 +56,8 @@ export interface AdSurfaceLayersProps {
 /**
  * For apps that already render their own content surface (for example a Shaka player screen):
  * place this above it, covering the same area. It adds only the two ad surfaces.
+ * Mount it after your content surface exists (after its `onSurfaceViewCreated`): on Vega a video
+ * surface created later is drawn above the earlier ones, whatever the zIndex (FL-19).
  */
 export function AdSurfaceLayers({ surfaces, scalingMode = 'fit', style }: AdSurfaceLayersProps): ReactElement {
   const { onContentSurface } = surfaces;

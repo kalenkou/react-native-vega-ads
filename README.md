@@ -260,6 +260,8 @@ A full integration into Amazon's sample app (Shaka, MP4 and DASH) is in [`exampl
 
 Some apps own their content surface, for example a Shaka player screen. Use `AdSurfaceLayers` instead of `DualSurfaceView`. Place it above your surface, over the same area. It adds only the two ad surfaces.
 
+Mount `AdSurfaceLayers` after your content surface is created, for example once its `onSurfaceViewCreated` has run. On Vega a video surface created later is drawn above the earlier ones, whatever the zIndex. Mounted first, the ads play behind the content surface and the screen stays black (FL-19).
+
 ```tsx
 <View style={{ flex: 1 }}>
   <YourContentSurface />
@@ -493,6 +495,7 @@ While building `react-native-vega-ads`, I logged platform issues with steps, exp
 - During an Alexa request the video stops with no media event; an app cannot tell it from a stalled stream.
 - The video sample's DRM title never asks for the hardware-secure path: it compares a boolean with the string `'true'`.
 - The Vega Virtual Device docs list other media keys than the SDK's keyboard mapping.
+- Video surfaces are stacked in the order they are created, not by zIndex. Ad surfaces created before the content surface play hidden behind it, with no warning.
 - There is no table of Alexa phrases to media controls commands for Vega.
 - With the TV off, the screenshot tool hangs or writes an empty file, without an error.
 - Amazon's automated device testing does not take Vega packages.
