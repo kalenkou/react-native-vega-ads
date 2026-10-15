@@ -338,3 +338,25 @@ New default `backDuringAd: 'app'`: Back during an ad is not taken by the library
 | Pixels after Back | PASS: none (impression, start, firstQuartile before it; no midpoint, complete, skip or close) |
 
 Sintel why line again, clean install, after the Compare button moved Next one step right: PASS, "No Kettlo ad after a scene with weapons and injury · Volume matched to the movie" over Brewnord.
+
+## Regression after the 13–15.10 fixes (15.10.2026)
+
+Demo release build with the fixes up to `75bdd4c`, scripted runs (remote keys with `inputd-cli`, ads judged by the media server's pixel log).
+
+| Check | Result |
+|---|---|
+| Full demo run: pre-roll, movie, seek to ~2:05, mid-roll pod, movie (cold launches) | 3/3 PASS |
+| Seek over the mid-roll at 2:19.9 | 4/4 PASS: the pod plays right after the seek, then the movie resumes at the seek target (141–149 s) |
+| Back during the pre-roll | PASS: details screen; no midpoint, complete, skip or close pixels after Back |
+| Home during the pre-roll, return | PASS: no ad audio on the launcher, the movie continues on return |
+| Sintel "why" line | PASS: "No Kettlo ad after a scene with injury · Volume matched to the movie"; Kettlo left out with VAST error 205 |
+
+## Regression and Amazon's multi-TV sample (16.10.2026)
+
+| Check | Result |
+|---|---|
+| Full demo run (as above), build with the fixes up to `1f0c927` | 3/3 PASS. An earlier attempt failed once: after a long idle the stick opened its screensaver over the fresh launch and took the Play key. The run scripts now press a key before each launch |
+| `react-native-vega-ads` in Amazon's `react-native-multi-tv-app-sample` (Vega player screen), Google IMA sample VMAP | pre-roll, mid-roll at 0:15 and post-roll, all quartiles; the player closes after the post-roll |
+| Same, remote keys during an ad | play/pause pauses the ad (12 s) and resumes it; right (seek) does nothing; Back closes the player and no ad pixel follows |
+| Same, Google's skippable sample | Skip with the remote's select key after 5 s: `skip`, then the movie |
+| Ad surfaces created before the content surface | ad plays (all quartiles) but the picture is black, 2 of 2 runs; created after it: visible, 5 of 5 (FL-19) |

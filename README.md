@@ -76,18 +76,18 @@ On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no offi
 - Break context: a break can block ad categories, for example cars right after a car crash. The list comes from the VMAP (`<vmap:Extension type="vega-ads:context"><BlockedAdCategories>1551 1571</BlockedAdCategories>`, IAB Ad Product Taxonomy codes, written by `make-vmap`) or with a break given by hand (`blockedAdCategories`). An ad whose VAST `<Category>` is blocked is left out with VAST error 205, the code VAST 4.1 gives a category that a wrapper's `BlockedAdCategories` does not allow; the app hears `skipped:category`.
 - Never louder than the movie: with `contentLoudness` (the content's integrated loudness in LUFS, EBU R128), an ad that is louder is turned down to it through the player volume, never up. VAST 4.x has no loudness field, so the ad's own loudness comes in a creative extension, `<CreativeExtension type="loudness"><IntegratedLoudness unit="LUFS">-16.0</IntegratedLoudness></CreativeExtension>`; `make-vmap`'s `buildVast` writes it. Event `loudness:<dB>`.
 - Short breaks, if you want them: `maxBreakAds` and `maxBreakSeconds` cap every break on the device (an ad that would end later is not started) and go to the ad server as the VAST 4.2 macros `[BREAKMAXADS]` and `[BREAKMAXDURATION]` (pass them to `preloadVegaAds` too). Ads left out send their `notUsed` pixels.
-- IAB tracking: impression, start, quartiles, complete, pause, resume, skip, error codes.
+- IAB tracking: impression, start, quartiles, complete, pause, resume, skip, error codes. VMAP `breakStart`, `breakEnd` and break `error` pixels, with VMAP 1.0.1 error codes.
 - Macros for the Fire TV advertising ID and the user's tracking choice (`IFA`, `LIMITADTRACKING`). `[ASSETURI]` names the media file that actually plays (vast-client alone puts the first file of the list there).
 - Remote and Alexa play/pause during ads. Seek, skip and speed commands are blocked during an ad.
 - 10-foot overlay: "Ad 1 of 3 · 0:12", a Skip button with D-pad focus, VoiceView announcements: each ad with its length and when Skip comes ("Ad 1 of 2, 15 seconds, you can skip in 5 seconds"), then "You can skip the ad now" when it does.
 - Back during an ad goes to your app, as in the movie, so an ad without Skip cannot be skipped with Back. If you want Back to end the break and go on with the movie, set `backDuringAd: 'content'`. Back on a pause ad closes it.
 - Home during an ad releases the ad players, as Amazon requires for apps in the background. On return the content continues; the interrupted break is not shown again.
-- Errors and timeouts never stop playback: the content continues. An ad that shows no frame in 5 s, buffers for 10 s, or stops with no media event for 30 s is skipped with VAST error 405. The long silent timeout covers Alexa requests: Fire TV stops the picture without an event while the viewer talks.
+- Errors and timeouts never stop playback: the content continues. An ad whose player is not ready in 8 s is skipped with VAST error 402. An ad that shows no frame in 5 s, buffers for 10 s, or stops with no media event for 30 s is skipped with VAST error 405. The long silent timeout covers Alexa requests: Fire TV stops the picture without an event while the viewer talks.
 - Pure-JS XML parsing (`@xmldom/xmldom`). You can pass your own parser.
 
 ### Measured on a real device
 
-Fire TV Stick 4K Select, Vega OS 2.0, 11.10.2026. Details: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
+Fire TV Stick 4K Select, Vega OS 2.0, 11–16.10.2026. Details: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
 
 | Check | Result |
 |---|---|
@@ -103,6 +103,9 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11.10.2026. Details: [`apps/spike/DEVICE-T
 | Cold launch: ad's first frame → impression pixel | 143 ms |
 | Play → pre-roll's first frame, ad server answering in 600 ms per request (10 cold launches each) | median 2.4 s without preload, 1.7 s with `preloadVegaAds` on the title page |
 | Phone video, content → pod of 3 → content | no black frame, no content frame between ads |
+| Full demo run after the last fixes (pre-roll, seek into the mid-roll pod, repeat left out), 16.10 | 3/3 cold launches |
+| Seek over a mid-roll | 4/4: the break plays, then the movie resumes at the seek target |
+| In Amazon's multi-TV sample, Google IMA sample VMAP | pre-, mid- and post-roll with all quartiles; remote pause, Back and Skip |
 | Cold launch, launch → first frame (30 launches, `kpi-visualizer --certification`) | mean 2.39 s, P90 3.35 s. Amazon's target is 1.5 s; Amazon's own empty template gets a mean of 2.07 s on this stick. Fully drawn: P90 3.36 s (target: 8 s) |
 
 ## Quick start

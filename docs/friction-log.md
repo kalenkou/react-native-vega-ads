@@ -171,7 +171,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 ## FL-19 · A video surface created later is drawn on top, whatever its zIndex (15.10.2026)
 - **Task:** add client-side ads to an existing Vega player screen (Amazon's `react-native-multi-tv-app-sample`) on a Fire TV Stick 4K Select, Vega OS 2.0: two ad `KeplerVideoSurfaceView`s above the app's content `KeplerVideoSurfaceView`.
 - **Steps:** content surface at `zIndex: 0`; ad surfaces in an absolute overlay at `zIndex: 3` (inner 2 and 3). The ad overlay mounts at once; the screen mounts its content surface only after `loadedmetadata`, so the ad surfaces are created first (handles 1 and 2, content 3).
-- **Expected:** the ad video above the content surface, as the zIndex says.
+- **Expected:** the ad video above the content surface, as the zIndex says. Amazon's CSAI guide (docs 0.24, "Dual surface") says: "The ad surface overlays the main content surface using `zIndex` positioning." Its example mounts both surfaces together, content first, so the order hides the problem.
 - **Actual:** during the pre-roll the screen was black: the ad played (all quartile events, the countdown in the UI overlay counted down), but its picture was hidden. Mounting the ad overlay only after the content surface's `onSurfaceViewCreated` made the ad visible. Black in 2 of 2 runs before the change, visible in 5 of 5 after. No warning in the log.
 - **Severity:** medium (looks like a broken ad or network; an ad that is paid for is not seen).
 - **Workaround:** create the ad surfaces after the content surface (`AdSurfaceLayers` docs now say so).
