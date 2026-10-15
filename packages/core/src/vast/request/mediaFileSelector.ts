@@ -16,7 +16,8 @@ const MP4 = 'video/mp4';
 const HLS = new Set(['application/x-mpegurl', 'application/vnd.apple.mpegurl']);
 
 function isPlayable(file: VastMediaFile): boolean {
-  if (!file.fileURL || file.apiFramework) {
+  // An apiFramework means an interactive creative (VPAID, SIMID); "VAST" is a plain video.
+  if (!file.fileURL || (file.apiFramework && file.apiFramework.trim().toLowerCase() !== 'vast')) {
     return false;
   }
   const mime = (file.mimeType ?? '').toLowerCase();
@@ -26,9 +27,12 @@ function isPlayable(file: VastMediaFile): boolean {
   if (mime !== MP4) {
     return false;
   }
-  const codec = (file.codec ?? '').toLowerCase();
-  return codec === '' || codec.startsWith('avc1') || codec.startsWith('avc3');
+  const codec = (file.codec ?? '').trim().toLowerCase();
+  return codec === '' || codec === '0' || codec.startsWith('avc1') || codec.startsWith('avc3') || H264_NAMES.has(codec);
 }
+
+/** H.264 as ad servers write it outside RFC 6381; the IAB VAST samples use "H.264" (and "0" for none). */
+const H264_NAMES = new Set(['h.264', 'h264', 'avc']);
 
 function isProgressiveMp4(file: VastMediaFile): boolean {
   return (file.mimeType ?? '').toLowerCase() === MP4;

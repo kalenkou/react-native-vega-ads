@@ -63,10 +63,25 @@ describe('selectMediaFile (R6, R25)', () => {
     expect(selectMediaFile(files).file?.height).toBe(480);
   });
 
+  it('plays a file marked apiFramework="VAST" (a plain video, as in the IAB samples), not SIMID or VPAID', () => {
+    expect(selectMediaFile([mp4(720, 2500, { apiFramework: 'VAST' })]).file).toBeDefined();
+    expect(selectMediaFile([mp4(720, 2500, { apiFramework: 'vast' })]).file).toBeDefined();
+    expect(selectMediaFile([mp4(720, 2500, { apiFramework: 'SIMID' })])).toEqual({ errorCode: 403 });
+  });
+
   it('accepts H.264 codecs and an empty codec, rejects other codecs', () => {
     expect(selectMediaFile([mp4(720, 2500, { codec: 'avc1.4D401F' })]).file).toBeDefined();
     expect(selectMediaFile([mp4(720, 2500, { codec: '' })]).file).toBeDefined();
     expect(selectMediaFile([mp4(720, 2500, { codec: 'av01.0.05M.08' })])).toEqual({ errorCode: 403 });
+  });
+
+  it('accepts the H.264 names ad servers write besides RFC 6381 (the IAB VAST samples use "H.264", and "0" for none)', () => {
+    for (const codec of ['H.264', 'h264', 'H264', 'avc', 'AVC1', ' H.264 ', '0']) {
+      expect(selectMediaFile([mp4(720, 2500, { codec })]).file).toBeDefined();
+    }
+    for (const codec of ['H.265', 'hevc', 'hvc1.1.6.L93.B0', 'vp9']) {
+      expect(selectMediaFile([mp4(720, 2500, { codec })])).toEqual({ errorCode: 403 });
+    }
   });
 
   it('accepts HLS but prefers a progressive mp4 when both exist', () => {
