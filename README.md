@@ -77,7 +77,7 @@ On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no offi
 - Never louder than the movie: with `contentLoudness` (the content's integrated loudness in LUFS, EBU R128), an ad that is louder is turned down to it through the player volume, never up. VAST 4.x has no loudness field, so the ad's own loudness comes in a creative extension, `<CreativeExtension type="loudness"><IntegratedLoudness unit="LUFS">-16.0</IntegratedLoudness></CreativeExtension>`; `make-vmap`'s `buildVast` writes it. Event `loudness:<dB>`.
 - Short breaks, if you want them: `maxBreakAds` and `maxBreakSeconds` cap every break on the device (an ad that would end later is not started) and go to the ad server as the VAST 4.2 macros `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. Ads left out send their `notUsed` pixels.
 - IAB tracking: impression, start, quartiles, complete, pause, resume, skip, error codes.
-- Macros for the Fire TV advertising ID and the user's tracking choice (`IFA`, `LIMITADTRACKING`).
+- Macros for the Fire TV advertising ID and the user's tracking choice (`IFA`, `LIMITADTRACKING`). `[ASSETURI]` names the media file that actually plays (vast-client alone puts the first file of the list there).
 - Remote and Alexa play/pause during ads. Seek, skip and speed commands are blocked during an ad.
 - 10-foot overlay: "Ad 1 of 3 · 0:12", a Skip button with D-pad focus, VoiceView announcements: each ad with its length and when Skip comes ("Ad 1 of 2, 15 seconds, you can skip in 5 seconds"), then "You can skip the ad now" when it does.
 - Back during an ad goes to your app, as in the movie, so an ad without Skip cannot be skipped with Back. If you want Back to end the break and go on with the movie, set `backDuringAd: 'content'`. Back on a pause ad closes it.

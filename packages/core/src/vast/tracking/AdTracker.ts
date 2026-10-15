@@ -29,18 +29,30 @@ export class AdTracker {
   private isPaused = false;
   private position = 0;
   private hasDuration: boolean;
+  // A copy: vast-client fills [ASSETURI] from the first media file, so playsFile() reorders it.
+  private readonly mediaFiles: LinearAd['creative']['mediaFiles'];
 
   constructor(linear: LinearAd, options: AdTrackerOptions = {}) {
     this.macros = options.macros ?? {};
     this.onEvent = options.onEvent ?? (() => undefined);
     this.skipAfter = linear.skipAfter;
-    this.tracker = new VASTTracker(linear.client, linear.ad as never, linear.creative as never);
+    this.mediaFiles = [...linear.creative.mediaFiles];
+    const creative = { ...linear.creative, mediaFiles: this.mediaFiles };
+    this.tracker = new VASTTracker(linear.client, linear.ad as never, creative as never);
     this.hasDuration = linear.creative.duration > 0;
     if (this.hasDuration) {
       this.tracker.setDuration(linear.creative.duration);
     }
     const emitter = this.tracker as unknown as { on(event: string, listener: () => void): void };
     REPORTED.forEach((name) => emitter.on(name, () => this.onEvent(name)));
+  }
+
+  /** The media file the player plays; [ASSETURI] in the pixels names it. */
+  playsFile(url: string): void {
+    const index = this.mediaFiles.findIndex((file) => file.fileURL === url);
+    if (index > 0) {
+      this.mediaFiles.unshift(...this.mediaFiles.splice(index, 1));
+    }
   }
 
   /** The first frame of the ad is on screen. */

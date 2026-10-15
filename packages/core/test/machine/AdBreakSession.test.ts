@@ -425,6 +425,28 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
     expect(next.hasMediaControlFocus).toBe(true);
   });
 
+  it('names the file that plays in [ASSETURI], also for the prebuffered ad', async () => {
+    const xml = fixture('pod-optimized.xml')
+      .replace('https://t.test/imp-pod-1', 'https://t.test/imp-pod-1?asset=[ASSETURI]')
+      .replace('https://t.test/imp-pod-2', 'https://t.test/imp-pod-2?asset=[ASSETURI]')
+      .replace(
+        /(<MediaFile [^>]*><!\[CDATA\[https:\/\/cdn\.test\/pod-(\d)\.mp4)/g,
+        '<MediaFile delivery="progressive" type="video/mp4" width="640" height="360" bitrate="800"><![CDATA[https://cdn.test/pod-$2-360.mp4]]></MediaFile>$1',
+      );
+    const ctx = setup(xml, { standby: true });
+    const first = await playFirst(ctx);
+    const next = ctx.adPlayers[1] as FakePlayer;
+    next.emitCanPlay();
+    await settle();
+    first.emitEnded();
+    await settle();
+    await next.flush();
+    await settle();
+    const asset = (url: string): string => `?asset=${encodeURIComponent(url)}`;
+    expect(pixels.requests).toContain(`https://t.test/imp-pod-1${asset('https://cdn.test/pod-1.mp4')}`);
+    expect(pixels.requests).toContain(`https://t.test/imp-pod-2${asset('https://cdn.test/pod-2.mp4')}`);
+  });
+
   it('starts the next ad just before the current one ends, so its first frame covers the end (no content frame between ads)', async () => {
     const ctx = setup(fixture('pod-optimized.xml'), { standby: true });
     const first = await playFirst(ctx);

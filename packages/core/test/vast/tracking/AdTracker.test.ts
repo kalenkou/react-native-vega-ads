@@ -29,6 +29,25 @@ async function loadAd(body = INLINE): Promise<LinearAd> {
 
 const sent = (): string[] => pixels.requests.splice(0);
 
+describe('AdTracker [ASSETURI]', () => {
+  const withAssetUri = INLINE.replace('https://t.test/start', 'https://t.test/start?asset=[ASSETURI]');
+
+  it('fills [ASSETURI] with the file that plays, not the first file in the list', async () => {
+    const tracker = new AdTracker(await loadAd(withAssetUri));
+    tracker.playsFile('https://cdn.test/ad-720.mp4');
+    tracker.firstFrame();
+    tracker.progress(0.1);
+    const start = sent().find((u) => u.startsWith('https://t.test/start'));
+    expect(start).toBe(`https://t.test/start?asset=${encodeURIComponent('https://cdn.test/ad-720.mp4')}`);
+  });
+
+  it('leaves the parsed ad as it was', async () => {
+    const ad = await loadAd(withAssetUri);
+    new AdTracker(ad).playsFile('https://cdn.test/ad-720.mp4');
+    expect(ad.creative.mediaFiles[0]?.fileURL).toBe('https://cdn.test/ad-360.mp4');
+  });
+});
+
 describe('AdTracker (R1, R2, R8, R20)', () => {
   it('sends every impression URL once, on the first frame', async () => {
     const tracker = new AdTracker(await loadAd());

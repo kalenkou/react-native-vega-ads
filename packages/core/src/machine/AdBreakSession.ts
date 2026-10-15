@@ -128,6 +128,8 @@ interface Standby {
   player: PlayerPort;
   surface: string;
   item: PodItem;
+  /** The media file it buffers. */
+  url: string;
   ready: boolean;
 }
 
@@ -378,6 +380,7 @@ export class AdBreakSession {
   private pickFile(ad: LinearAd, tracker: AdTracker): string | null {
     const choice = selectMediaFile(ad.creative.mediaFiles, this.deps.mediaFile);
     if (choice.file?.fileURL) {
+      tracker.playsFile(choice.file.fileURL);
       return choice.file.fileURL;
     }
     this.fail(tracker, MEDIA_NOT_SUPPORTED);
@@ -627,7 +630,7 @@ export class AdBreakSession {
       await player.deinitialize();
       return;
     }
-    const standby: Standby = { player, surface, item, ready: false };
+    const standby: Standby = { player, surface, item, url, ready: false };
     this.standby = standby;
     standby.player.setAutoplay(false);
     const off = standby.player.on('canplay', () => {
@@ -793,7 +796,9 @@ export class AdBreakSession {
     if (standby.surface === this.deps.standbySurface || !this.previous) {
       this.shownSurface = standby.surface;
     }
-    this.current = { item: standby.item, tracker: this.trackerFor(standby.item.ad) };
+    const tracker = this.trackerFor(standby.item.ad);
+    tracker.playsFile(standby.url);
+    this.current = { item: standby.item, tracker };
     this.emitChange();
     this.armWatchdog();
     await standby.player.play().catch(() => undefined);
