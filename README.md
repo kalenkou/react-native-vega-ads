@@ -445,7 +445,7 @@ The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read 
 - [`tools/demo-ads`](tools/demo-ads) draws five demo ad creatives (invented brands, no third-party footage) and serves them with VAST, VMAP and a pixel log on the local network.
 - [`tools/pixel-collector`](tools/pixel-collector) collects tracking pixels on AWS Lambda and DynamoDB.
 - [`tools/make-vmap`](tools/make-vmap) finds mid-roll points in a video and writes a VMAP file for `react-native-vega-ads`: with Amazon Rekognition (shot cuts, black frames, credits), or on your computer with ffmpeg (shot cuts, silent black frames) and, optionally, whisper.cpp, so no break cuts a line of dialogue.
-- [`tools/vast-samples`](tools/vast-samples) runs every IAB Tech Lab VAST sample through the core: 46 of 46 linear H.264 samples and 7 of 7 live wrappers play (VAST 2.0–4.2).
+- [`tools/vast-samples`](tools/vast-samples) runs every IAB Tech Lab VAST sample through the core: 46 of 46 linear H.264 samples and 7 of 7 live wrappers play (VAST 2.0–4.2). Google's public Ad Manager sample tags play too: VAST, wrapper, skippable, VMAP with a pod.
 - [`apps/demo`](apps/demo) is a small Vega app on `<VegaAdsPlayer>`: a movie page that preloads the ads, and a player with break marks, "Ad in 5", Skip and Back.
 
 ## Development

@@ -22,3 +22,9 @@ Result on 15.10.2026 (`--online`, samples commit `6a60797`):
 | VAST 1.0 | 0 of 6, not supported |
 
 The first run found three ways real ad servers describe a plain H.264 file that the player had refused: `codec="H.264"`, `codec="0"` and `apiFramework="VAST"`. They play since then.
+
+## Google Ad Manager sample tags
+
+`node check-ima.mjs` requests Google's public [IMA sample tags](https://developers.google.com/interactive-media-ads/docs/sdks/html5/client-side/tags) (a test network of Google Ad Manager) through the core. Put `correlator=[CACHEBUSTING]` in a Google Ad Manager tag: the core fills a new random number for every request, and Google returns no ad for a repeated correlator.
+
+Result on 15.10.2026: single linear, skippable (Skip after 5 s) and redirect (wrapper) tags played 15 of 15 times; the redirect error tag gave VAST error 303 5 of 5 times. Every ad the VMAP tags returned played: pre-, mid- and post-rolls and a mid-roll pod of 3. Google's test server does not always fill: after many requests in a row it returned VMAP breaks without ads.
