@@ -1,0 +1,44 @@
+# Dependency updates. Security updates (turned on in the repository settings) cover every
+# lockfile, including the Vega apps; version updates below are kept small on purpose.
+version: 2
+updates:
+  # Library packages and tools (npm workspaces).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      runtime:
+        dependency-type: production
+      dev-tools:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # Vega apps run React Native 0.72 with React 18.2; the packages are tested against them.
+      - dependency-name: react-native
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-test-renderer
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/react"
+        update-types: [version-update:semver-major]
+
+  # The Vega demo apps follow the Vega SDK project template: security updates only.
+  - package-ecosystem: npm
+    directories:
+      - /apps/demo
+      - /apps/spike
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
