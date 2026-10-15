@@ -36,6 +36,7 @@ one), a Fire TV device on the same network as your computer, and the media from
 
 2. In another terminal, from the repository root, `cd apps/demo`. Copy `src/media.example.ts`
    to `src/media.local.ts` and set `MEDIA_BASE` to that address. `media.local.ts` is not committed.
+   Set `MUTED = true` there to mute the movie and the ads, for test runs where the TV must stay silent.
 
 3. Let the app load `http://` media from your computer. Add to `apps/demo/manifest.toml`:
 
@@ -66,6 +67,10 @@ one), a Fire TV device on the same network as your computer, and the media from
 
    `vega device list` shows the device ID. Use `build/aarch64-release/demo_aarch64.vpkg` on a
    64-bit device.
+
+## Launch
+
+The system shows `assets/raw/SplashScreenImages.zip` (one frame in the app's background colour) from the first frame until the movie page has its poster; then the app reports fully drawn and hides the splash (`src/launch.ts`). On a Fire TV Stick 4K Select, 30 cold launches: first frame P90 1.08 s, fully drawn P90 2.49 s.
 
 ## Remote
 

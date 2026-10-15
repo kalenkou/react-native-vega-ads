@@ -15,6 +15,8 @@ export interface DetailsScreenProps {
   /** Plays the movie with ads as usual; no button without it or without a classic schedule. */
   onCompare?: () => void;
   onNext: () => void;
+  /** Called when the poster has loaded or failed: the page is fully drawn. */
+  onDrawn?: () => void;
 }
 
 /** The movie page: poster, story, Play (with the D-pad focus) and a button to the next title. */
@@ -25,6 +27,7 @@ export const DetailsScreen = ({
   onPlay,
   onCompare,
   onNext,
+  onDrawn,
 }: DetailsScreenProps) => {
   const [focused, setFocused] = useState<'play' | 'compare' | 'next' | null>(
     null,
@@ -45,6 +48,8 @@ export const DetailsScreen = ({
         source={{uri: movie.poster}}
         style={styles.poster}
         resizeMode="cover"
+        onLoad={onDrawn}
+        onError={onDrawn}
       />
       <View style={styles.scrim} />
       <View style={styles.content}>

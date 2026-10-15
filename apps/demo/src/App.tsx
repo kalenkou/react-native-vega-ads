@@ -2,6 +2,7 @@ import React, {useCallback, useRef, useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {watchReport, watchReportLabel} from 'react-native-vega-ads';
 import {MOVIES} from './catalog';
+import {useLaunchReady} from './launch';
 import {colors} from './theme';
 import {DetailsScreen} from './screens/DetailsScreen';
 import {PlayerScreen} from './screens/PlayerScreen';
@@ -14,6 +15,8 @@ interface LastWatch {
 
 /** Two screens: the movie page and the player. */
 export const App = () => {
+  // First: the system splash stays until the movie page has its poster.
+  const onFirstScreenDrawn = useLaunchReady();
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [classic, setClassic] = useState(false);
@@ -67,6 +70,7 @@ export const App = () => {
           onPlay={play}
           onCompare={compare}
           onNext={showNext}
+          onDrawn={onFirstScreenDrawn}
         />
       )}
     </View>
