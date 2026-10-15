@@ -19,7 +19,7 @@ The rules the library was built against. Code comments and test names refer to t
 | R16 | vast-client always gets our own URL handler (fetch + pure-JS XML), because its built-in one needs the browser's `DOMParser`. | `urlHandler.ts`, `core/src/xml` |
 | R17 | Pods: both a VAST with `sequence` 1..n and several ad sources at one VMAP time; ads without `sequence` are a buffet for failed pod ads. | `core/src/pod/PodController.ts`, `VmapRequester.ts` |
 | R18 | VMAP `timeOffset`: `start`, `end`, `hh:mm:ss(.mmm)` and `n%`; position offsets (`#n`) are skipped; VMAP errors use their own codes. | `core/src/vast/request/VmapRequester.ts` |
-| R20 | VAST error codes sent: 100 (XML), 200 (no linear ad), 205 (blocked category), 301, 302, 303 (timeout, wrappers, no ad; with vast-client), 400 (not ready in time), 403 (no playable file), 405 (playback). Planned but not sent: 102, 401, 402, 900. | across `core` |
+| R20 | VAST error codes sent: 100 (XML), 200 (no linear ad), 205 (blocked category), 301, 302, 303 (timeout, wrappers, no ad; with vast-client), 400 (media error before the ad can play, or no ad player), 402 (not ready in time), 403 (no playable file), 405 (playback). Planned but not sent: 102, 401, 900. | across `core` |
 
 ## Players and the screen
 

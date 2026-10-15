@@ -105,6 +105,8 @@ export interface SessionDeps {
 /** VAST 4.1: "Inline Category violates Wrapper BlockedAdCategories"; here the break blocks it. */
 const CATEGORY_BLOCKED = 205;
 const MEDIA_LOAD_ERROR = 400;
+/** VAST: "Timeout of MediaFile URI"; the file did not become playable in time. */
+const MEDIA_TIMEOUT = 402;
 const MEDIA_NOT_SUPPORTED = 403;
 const PLAYBACK_ERROR = 405;
 
@@ -219,18 +221,18 @@ export class AdBreakSession {
     for (let item = this.pod.next(0); item; item = this.pod.next(0)) {
       const tracker = this.trackerFor(item.ad);
       const url = this.pickFile(item.ad, tracker);
-      const buffered = url !== null && (await this.prebuffer(item.ad, url));
+      const error = url === null ? null : await this.prebuffer(item.ad, url);
       if (this.state !== 'loading') {
         await this.releasePlayer();
         return 'empty';
       }
-      if (buffered) {
+      if (url !== null && error === null) {
         this.current = { item, tracker };
         this.setState('ready');
         return 'ready';
       }
-      if (url) {
-        this.fail(tracker, MEDIA_LOAD_ERROR);
+      if (error !== null) {
+        this.fail(tracker, error);
         await this.releasePlayer();
       }
     }
@@ -488,29 +490,30 @@ export class AdBreakSession {
     player.setSrc(url);
   }
 
-  private async prebuffer(ad: LinearAd, url: string): Promise<boolean> {
+  /** Resolves null when the ad can play, otherwise the VAST error code to send. */
+  private async prebuffer(ad: LinearAd, url: string): Promise<number | null> {
     let player: PlayerPort;
     try {
       player = await this.ensurePlayer();
     } catch {
-      return false;
+      return MEDIA_LOAD_ERROR;
     }
     player.setAutoplay(false);
-    const ready = new Promise<boolean>((resolve) => {
+    const ready = new Promise<number | null>((resolve) => {
       const timer = this.deps.clock.setTimeout(() => {
         off();
         offError();
-        resolve(false);
+        resolve(MEDIA_TIMEOUT);
       }, this.deps.canPlayTimeoutMs ?? 8000);
-      const done = (ok: boolean) => () => {
+      const done = (error: number | null) => () => {
         this.deps.clock.clearTimeout(timer);
         off();
         offError();
-        resolve(ok);
+        resolve(error);
       };
-      const off = player.on('canplay', done(true));
+      const off = player.on('canplay', done(null));
       // A media error before canplay (missing file, bad codec) fails the ad at once.
-      const offError = player.on('error', done(false));
+      const offError = player.on('error', done(MEDIA_LOAD_ERROR));
     });
     this.loadAd(player, ad, url);
     return ready;

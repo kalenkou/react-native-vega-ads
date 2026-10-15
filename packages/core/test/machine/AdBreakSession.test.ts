@@ -123,13 +123,14 @@ describe('AdBreakSession – loading (R10)', () => {
     expect(sent()).toContain('https://t.test/error?code=403');
   });
 
-  it('sends 400 and gives up on an ad that never becomes playable', async () => {
+  it('sends 402 (media file timeout) and gives up on an ad that never becomes playable', async () => {
     const ctx = setup(fixture('inline.xml'));
     const loading = ctx.session.load([{ kind: 'url', url: TAG }]);
     await settle();
     ctx.clock.advance(8000);
     await expect(loading).resolves.toBe('empty');
-    expect(sent()).toContain('https://t.test/error?code=400');
+    expect(sent()).toContain('https://t.test/error?code=402');
+    expect(sent()).not.toContain('https://t.test/error?code=400');
     expect(ctx.adPlayers[0]?.deinitialized).toBe(true);
   });
 });
