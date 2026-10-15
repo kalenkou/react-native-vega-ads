@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { awsRekognition, awsStorage } from './awsPorts';
 import { runCli } from './cli';
+import { TempDirs } from './tempDirs';
+
+const temp = new TempDirs(tmpdir());
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    temp.removeAllSync();
+    process.exit(signal === 'SIGINT' ? 130 : 143);
+  });
+}
 
 void runCli(process.argv.slice(2), {
   createPorts: (region) => ({ rekognition: awsRekognition(region), storage: awsStorage(region) }),
@@ -27,8 +35,8 @@ void runCli(process.argv.slice(2), {
         );
       }),
     readFile: (path) => readFile(path, 'utf8'),
-    makeTempDir: () => mkdtemp(join(tmpdir(), 'make-vmap-')),
-    removeDir: (path) => rm(path, { recursive: true, force: true }),
+    makeTempDir: () => temp.make('make-vmap-'),
+    removeDir: (path) => temp.remove(path),
   },
   vision: {
     // llama.cpp prints its log to stderr and the answer to stdout.
@@ -38,8 +46,8 @@ void runCli(process.argv.slice(2), {
           error ? reject(new Error(`llama-mtmd-cli failed: ${error.message}`)) : resolve(stdout),
         );
       }),
-    makeTempDir: () => mkdtemp(join(tmpdir(), 'make-vmap-context-')),
-    removeDir: (path) => rm(path, { recursive: true, force: true }),
+    makeTempDir: () => temp.make('make-vmap-context-'),
+    removeDir: (path) => temp.remove(path),
   },
 }).then((code) => {
   process.exitCode = code;
