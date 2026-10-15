@@ -86,8 +86,11 @@ export const IDLE_SNAPSHOT: SessionSnapshot = Object.freeze({
   adSurface: null,
 });
 
-/** VMAP error: the ad source of the break gave no playable ad. */
-const VMAP_EMPTY_RESPONSE = 1009;
+/**
+ * VMAP error when the ad source of the break gave no playable ad: 1004, "General ad response
+ * document error". VMAP 1.0.1 defines 1000-1008 only (1009 is the Google IMA SDK's own code).
+ */
+const VMAP_NO_PLAYABLE_AD = 1004;
 
 /** A preload older than this is not used: ad servers do not promise their answers stay valid longer. */
 const PRELOAD_MAX_AGE_MS = 5 * 60 * 1000;
@@ -487,7 +490,7 @@ export class AdManager {
     }
     if (result !== 'ready') {
       this.prepared.delete(id);
-      this.trackBreak(id, 'error', VMAP_EMPTY_RESPONSE);
+      this.trackBreak(id, 'error', VMAP_NO_PLAYABLE_AD);
       if (this.isPostRoll(id)) {
         this.deps.onEvent?.('content:ended');
       } else if (!this.contentStarted) {

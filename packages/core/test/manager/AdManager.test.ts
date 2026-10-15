@@ -908,14 +908,15 @@ describe('AdManager', () => {
     });
   });
 
-  it('sends the VMAP error pixel with 1009 when a break has no ads (C2-2)', async () => {
+  // VMAP 1.0.1 defines 1000-1008 only; 1009 is the Google IMA SDK's own code for an empty VAST.
+  it('sends the VMAP error pixel with 1004 when a break has no ads (C2-2)', async () => {
     const pixels = new FakeHttp();
     delete g.Image;
     installImagePolyfill(pixels, g);
     const ctx = setup({ [VMAP]: fixture('vmap/pre-mid-post.xml'), 'https://ads.test/pre.xml': fixture('vast/empty.xml') });
     await ctx.manager.start({ vmapUrl: VMAP });
     await settle();
-    expect(pixels.requests).toContain('https://t.test/vmap/pre/error?code=1009');
+    expect(pixels.requests).toContain('https://t.test/vmap/pre/error?code=1004');
     expect(pixels.requests).not.toContain('https://t.test/vmap/pre/start');
   });
 
