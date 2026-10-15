@@ -70,6 +70,23 @@ describe('useVideoPlayer', () => {
     expect(ctx.players[1]?.src).toBe('https://cdn.test/next.mp4');
   });
 
+  it('keeps one player while the screen re-renders with the same source, even with a new create function', async () => {
+    const ctx = setup();
+    await settle();
+    for (let i = 0; i < 5; i++) {
+      const create = (): W3cVideoPlayer => {
+        const player = new FakeW3cPlayer(600);
+        ctx.players.push(player);
+        return player;
+      };
+      act(() => ctx.renderer.update(<Harness uri="https://cdn.test/movie.mp4" create={create} out={ctx.out} />));
+      await settle();
+    }
+    expect(ctx.players).toHaveLength(1);
+    expect(ctx.players[0]?.deinitialized).toBe(false);
+    expect(ctx.out.current).toBe(ctx.players[0]);
+  });
+
   it('creates nothing while the source is null', async () => {
     const ctx = setup(null);
     await settle();
