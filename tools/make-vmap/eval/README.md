@@ -93,3 +93,31 @@ The choice holds without the unsure labels.
 - The chosen setting finds most sensitive breaks (10 of 13 on the selection set, 4 of 5 on the held-out film); the older model found 3 of 13.
 - It still names the wrong signal often, and on the selection set it blocked 3 of the 4 calm breaks. A blocked break only drops some ad categories (rules in `SENSITIVITY_RULES`), it does not drop the break.
 - One person labelled the breaks, half of them unsure, on three animated or effects-heavy open films. A second labeller and more films would be the next step.
+
+## Timer breaks against make-vmap
+
+Many apps put a mid-roll every few minutes, wherever the film is. `timer.mjs` compares that with make-vmap's default rules on the same three films.
+
+```sh
+cd tools/make-vmap && npm run build
+node eval/timer.mjs --speech-model ggml-base.en.bin DIR/tears_of_steel_720p.mp4 DIR/sintel_720p.mp4 DIR/big_buck_bunny_720p.mp4
+```
+
+- **Timer:** a break every 5 minutes. One start time would be luck, so every start from 2:00 to 6:59, one per second, is counted (300 timers per film).
+- **make-vmap:** default rules, `--speech-model ggml-base.en.bin`, no vision model.
+- A break **cuts a line** when it is inside speech that whisper.cpp found, or within a second of it.
+- A break **cuts a shot** when no hard cut or black frames are within half a second of it.
+
+| Film | Speech in the film | Timer breaks | Timer: cut a line | Timer: cut a shot | make-vmap: cut a line | make-vmap: cut a shot |
+|---|---|---|---|---|---|---|
+| Tears of Steel (12:14) | 23 % | 555 | 176 (32 %) | 463 (83 %) | 0 of 2 | 0 of 2 |
+| Sintel (14:48) | 21 % | 709 | 173 (24 %) | 611 (86 %) | 0 of 2 | 0 of 2 |
+| Big Buck Bunny (10:34) | no dialogue | 455 | 0 | 358 (79 %) | 0 of 2 | 0 of 2 |
+
+Example: the timer that starts at 5:00 stops Tears of Steel in the middle of "You're a jerk dog."
+
+Read it with care:
+
+- Speech and cuts come from the same detectors that make-vmap uses (whisper.cpp `ggml-base.en`, ffmpeg scene and black-frame detection). The table shows what make-vmap avoids by design, measured on these films. It is not a viewer study.
+- whisper.cpp can miss quiet speech or mark music as speech. A missed line would count as clear for both sides.
+- Three short open films, 6 make-vmap breaks. Read the numbers as a direction.
