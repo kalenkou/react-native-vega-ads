@@ -4,7 +4,9 @@
 import VMAP, { VMAPAdBreak } from '@dailymotion/vmap';
 import { XMLSerializer } from '@xmldom/xmldom';
 import type { AdSourceRef } from './types';
+import type { Macros } from '../tracking/AdTracker';
 import { createUrlHandler, describeFailure, UrlHandlerDeps } from './urlHandler';
+import { fillMacros } from './VastRequester';
 
 export type { AdSourceRef };
 
@@ -148,8 +150,9 @@ function track(adBreak: VMAPAdBreak, event: VmapTrackingEvent, errorCode?: numbe
   }
 }
 
-export async function requestVmap(url: string, deps: UrlHandlerDeps): Promise<VmapResult> {
-  const result = await createUrlHandler(deps).get(url, {});
+/** The VMAP request gets its macros filled like an ad tag: the app's own, [TIMESTAMP], [CACHEBUSTING] (R15). */
+export async function requestVmap(url: string, deps: UrlHandlerDeps & { macros?: Macros; random?: () => number }): Promise<VmapResult> {
+  const result = await createUrlHandler(deps).get(fillMacros(url, deps), {});
   if (!('xml' in result)) {
     const failure = describeFailure(result.error);
     if (failure.kind === 'timeout') return { status: 'failed', errorCode: VMAP_AD_RESPONSE_TIMEOUT };

@@ -44,7 +44,7 @@ export const TRAFFICKING_ERROR = 200;
  * Fills the macros of an ad request URL: the app's own, [TIMESTAMP] and [CACHEBUSTING].
  * Values are URL-encoded; unknown macros stay as they are.
  */
-function fillMacros(url: string, deps: VastRequestDeps): string {
+export function fillMacros(url: string, deps: Pick<VastRequestDeps, 'clock' | 'macros' | 'random'>): string {
   const values: Macros = {
     TIMESTAMP: new Date(deps.clock.now()).toISOString(),
     ...deps.macros,

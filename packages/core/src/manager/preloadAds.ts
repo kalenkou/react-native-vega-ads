@@ -42,7 +42,7 @@ export const scheduleKey = (schedule: AdSchedule): string => JSON.stringify(sche
 /** The breaks of a schedule; `errorCode` when its VMAP request failed. */
 export async function resolveSchedule(
   schedule: AdSchedule,
-  deps: { http: HttpPort; clock: ClockPort },
+  deps: { http: HttpPort; clock: ClockPort; macros?: Macros },
 ): Promise<{ breaks: ScheduledBreak[]; errorCode?: number }> {
   if ('breaks' in schedule) {
     return {
@@ -73,12 +73,12 @@ export async function preloadAds(schedule: AdSchedule, deps: PreloadDeps): Promi
   const key = scheduleKey(schedule);
   const at = deps.clock.now();
   try {
-    const { breaks, errorCode } = await resolveSchedule(schedule, deps);
+    const macros = withBreakLimits(deps.macros, deps.maxBreakAds, deps.maxBreakSeconds);
+    const { breaks, errorCode } = await resolveSchedule(schedule, { http: deps.http, clock: deps.clock, macros });
     if (errorCode !== undefined) {
       return { key, at, breaks: null, preroll: null };
     }
     const pre = breaks.find((b) => b.offset.kind === 'start');
-    const macros = withBreakLimits(deps.macros, deps.maxBreakAds, deps.maxBreakSeconds);
     const results = pre
       ? await Promise.all(pre.sources.map((s) => requestVast(s.source, { http: deps.http, clock: deps.clock, macros })))
       : null;

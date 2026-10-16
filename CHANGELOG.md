@@ -8,7 +8,7 @@ First release.
 
 ### react-native-ads-core
 
-- VAST 4 and VMAP 1 without `DOMParser`: `requestVast`, `requestVmap` with `@xmldom/xmldom`, up to 5 wrappers, timeouts, `[CACHEBUSTING]`, `[ASSETURI]`, break limit and app macros, VAST and VMAP error codes.
+- VAST 4 and VMAP 1 without `DOMParser`: `requestVast`, `requestVmap` with `@xmldom/xmldom`, up to 5 wrappers, timeouts, `[CACHEBUSTING]`, `[ASSETURI]`, break limit and app macros in the VMAP and VAST URLs, VAST and VMAP error codes.
 - `selectMediaFile`: H.264 MP4 or HLS that fits the screen and bitrate.
 - `AdTracker`: impression only for a visible ad, start, quartiles, complete, pause, resume, skip, error; `installImagePolyfill` sends pixels without `Image`.
 - `AdManager`: pre-, mid- and post-rolls through a `PlayerPort`; pods in `sequence` order on two players, the next ad starts about 500 ms before the current one ends; a seek over breaks plays only the last one; every error and timeout ends in content.

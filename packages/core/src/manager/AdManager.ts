@@ -286,7 +286,11 @@ export class AdManager {
     this.cutOff = null;
     if (cutOff && !this.disposed) {
       this.deps.onEvent?.(`break:${cutOff}:interrupted`);
-      await this.playContent();
+      if (this.isPostRoll(cutOff)) {
+        this.deps.onEvent?.('content:ended'); // playing it again would restart the title
+      } else {
+        await this.playContent();
+      }
       return;
     }
     const suspended = this.suspended;
@@ -299,6 +303,9 @@ export class AdManager {
     this.contentStarted = true;
     await suspended.session.resumeContent();
     this.deps.onChange?.(IDLE_SNAPSHOT);
+    if (this.isPostRoll(suspended.id)) {
+      this.deps.onEvent?.('content:ended');
+    }
   }
 
   private startPauseAds(): void {
@@ -323,7 +330,7 @@ export class AdManager {
   }
 
   private async resolve(schedule: AdSchedule): Promise<ScheduledBreak[]> {
-    const { breaks, errorCode } = await resolveSchedule(schedule, { http: this.deps.http, clock: this.deps.clock });
+    const { breaks, errorCode } = await resolveSchedule(schedule, { http: this.deps.http, clock: this.deps.clock, macros: this.macros });
     if (errorCode !== undefined) {
       this.deps.onEvent?.(`vmap:error:${errorCode}`);
     }
@@ -486,6 +493,13 @@ export class AdManager {
         this.deps.onEvent?.(`break:${id}:interrupted`);
         await this.playContent();
       }
+      return;
+    }
+    if (this.active) {
+      // A later seek started another break while this one loaded: one break at a time.
+      this.prepared.delete(id);
+      this.deps.onEvent?.(`break:${id}:interrupted`);
+      await entry.session.interrupt();
       return;
     }
     if (result !== 'ready') {

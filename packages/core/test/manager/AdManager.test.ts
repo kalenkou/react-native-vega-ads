@@ -27,7 +27,7 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 30; i++) await Promise.resolve();
 }
 
-function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats' | 'maxBreakAds' | 'maxBreakSeconds' | 'pauseAdUrl' | 'onPauseAd' | 'contentLoudness'> = {}) {
+function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats' | 'maxBreakAds' | 'maxBreakSeconds' | 'pauseAdUrl' | 'onPauseAd' | 'contentLoudness' | 'macros'> = {}) {
   const http = new FakeHttp();
   Object.entries(routes).forEach(([url, body]) => http.on(url, { body }));
   const clock = new FakeClock(1_000_000);
@@ -605,6 +605,34 @@ describe('AdManager', () => {
     expect(ctx.content.calls).toContain('play');
   });
 
+  it('a second seek while the break of the first seek still loads plays one break, never two at once', async () => {
+    const ctx = setup({
+      'https://ads.test/mid.xml': fixture('vast/inline.xml'),
+      'https://ads.test/mid2.xml': fixture('vast/inline.xml'),
+    });
+    await ctx.manager.start(
+      manual([
+        { offset: 300, vastUrl: 'https://ads.test/mid.xml' },
+        { offset: 500, vastUrl: 'https://ads.test/mid2.xml' },
+      ]),
+    );
+    ctx.content.emitTime(10);
+    await settle();
+    ctx.content.emitTime(400); // over the break at 5:00; its ads load
+    await settle();
+    const first = ctx.lastAdPlayer();
+    ctx.content.emitTime(550); // and on, over the break at 8:20, before the first one is ready
+    await settle();
+    const second = ctx.lastAdPlayer();
+    expect(second).not.toBe(first);
+    second.emitCanPlay();
+    await settle();
+    first.emitCanPlay();
+    await settle();
+    expect(ctx.adPlayers.filter((p) => p.calls.includes('play'))).toHaveLength(1);
+    expect(first.deinitialized).toBe(true);
+  });
+
   it('plays the post-roll when the content ends', async () => {
     const ctx = setup({ 'https://ads.test/post.xml': fixture('vast/inline.xml') });
     await ctx.manager.start(manual([{ offset: 'end', vastUrl: 'https://ads.test/post.xml' }]));
@@ -724,6 +752,56 @@ describe('AdManager', () => {
     expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
     expect(ctx.events).toContain('break:break-1:interrupted');
     expect(ctx.http.requests.filter((u) => u === 'https://ads.test/pre.xml')).toHaveLength(1);
+  });
+
+  it('Home during the post-roll: after wake() the content has ended, it is not played again', async () => {
+    const ctx = setup({ 'https://ads.test/post.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 'end', vastUrl: 'https://ads.test/post.xml' }]));
+    ctx.content.emitTime(590);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    ctx.content.emitTime(600);
+    ctx.content.emitEnded();
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    expect(ctx.last()?.state).toBe('playing');
+    const playsBefore = ctx.content.calls.filter((c) => c === 'play').length;
+
+    await ctx.manager.suspend();
+    await ctx.manager.wake();
+    expect(ctx.events).toContain('content:ended');
+    expect(ctx.content.calls.filter((c) => c === 'play')).toHaveLength(playsBefore);
+    expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
+  });
+
+  it('Home while the post-roll loads: after wake() the content has ended, it is not played again', async () => {
+    const ctx = setup({ 'https://ads.test/post.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 'end', vastUrl: 'https://ads.test/post.xml' }]));
+    ctx.content.emitTime(10);
+    await settle();
+    ctx.content.emitEnded(); // a seek to the end: the post-roll is requested and waited for
+    await settle();
+    void ctx.manager.suspend();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    const playsBefore = ctx.content.calls.filter((c) => c === 'play').length;
+
+    await ctx.manager.wake();
+    expect(ctx.events).toContain('content:ended');
+    expect(ctx.content.calls.filter((c) => c === 'play')).toHaveLength(playsBefore);
+  });
+
+  it('fills the app macros, [TIMESTAMP] and [CACHEBUSTING] in the VMAP URL (R15)', async () => {
+    const ctx = setup({}, { macros: { IFA: 'id 1', LIMITADTRACKING: '0' } });
+    await ctx.manager.start({ vmapUrl: 'https://ads.test/vmap.xml?ifa=[IFA]&lat=[LIMITADTRACKING]&cb=[CACHEBUSTING]' });
+    expect(ctx.http.requests[0]).toMatch(/^https:\/\/ads\.test\/vmap\.xml\?ifa=id%201&lat=0&cb=\d{8}$/);
+  });
+
+  it('preloadAds fills the macros in the VMAP URL too', async () => {
+    const http = new FakeHttp();
+    await preloadAds({ vmapUrl: 'https://ads.test/vmap.xml?ifa=[IFA]' }, { http, clock: new FakeClock(0), macros: { IFA: 'abc' } });
+    expect(http.requests[0]).toBe('https://ads.test/vmap.xml?ifa=abc');
   });
 
   it('suspend() releases a prefetched break, and it is prefetched again after wake()', async () => {
