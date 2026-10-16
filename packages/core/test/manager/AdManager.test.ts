@@ -852,6 +852,26 @@ describe('AdManager', () => {
     expect(ctx.events.filter((e) => e.startsWith('error'))).toEqual([]);
   });
 
+  it('Home just as an ad of a pod ends: the next ad is not loaded into the released player', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/pod-optimized.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    const first = ctx.lastAdPlayer();
+    first.emitCanPlay();
+    await starting;
+    await settle();
+    await first.flush();
+    await settle();
+    expect(ctx.adPlayers.length).toBeGreaterThan(1); // the next ad prebuffers on a second player, not ready yet
+    first.emitTime(10);
+    first.emitEnded(); // the pod moves on to the next ad...
+    void ctx.manager.suspend(); // ...and Home comes in the same moment
+    await settle();
+    const after = first.calls.slice(first.calls.indexOf('deinitialize') + 1);
+    expect(first.deinitialized).toBe(true);
+    expect(after.filter((c) => c.startsWith('src:') || c === 'play')).toEqual([]);
+  });
+
   it('suspend() releases a prefetched break, and it is prefetched again after wake()', async () => {
     const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
     await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]));

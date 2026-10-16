@@ -318,8 +318,10 @@ export class AdBreakSession {
 
   /** App went to the background: free the ad player and wait (R13). */
   async interrupt(): Promise<{ impressed: boolean }> {
-    await this.releasePlayer();
+    // First: a pod that is moving to its next ad checks the state after each await, and must
+    // not load that ad into a player that is being released.
     this.setState('interrupted');
+    await this.releasePlayer();
     return { impressed: this.impressed };
   }
 
