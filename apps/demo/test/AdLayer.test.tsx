@@ -1,13 +1,22 @@
 import React from 'react';
 import TestRenderer, {act} from 'react-test-renderer';
 import type {VegaAds} from 'react-native-vega-ads';
-import {AdLayer, splitAdLabel} from '../src/components/AdLayer';
+import {AdLayer, adBadge} from '../src/components/AdLayer';
+
+// The library's player modules load the w3cmedia Turbo Module, which Jest does not have.
+jest.mock('@amazon-devices/react-native-w3cmedia', () => ({
+  KeplerVideoSurfaceView: 'KeplerVideoSurfaceView',
+  VideoPlayer: class {},
+  KeplerMediaControlHandler: class {},
+}));
 
 function adsWith(ui: Partial<VegaAds['ui']>, skip = jest.fn()): VegaAds {
   return {
     ui: {
       visible: true,
       label: 'Ad 1 of 2 · 0:12',
+      name: 'Ad 1 of 2',
+      timeLeft: '0:12',
       skip: {visible: false, enabled: false, label: ''},
       announcement: '',
       skipAnnouncement: '',
@@ -15,6 +24,7 @@ function adsWith(ui: Partial<VegaAds['ui']>, skip = jest.fn()): VegaAds {
       ...ui,
     },
     skip,
+    snapshot: {position: 1, total: 2},
     timeline: {marks: [], nextBreakIn: null},
   } as unknown as VegaAds;
 }
@@ -37,10 +47,12 @@ function texts(ads: VegaAds, showWhy: boolean): string[] {
     .map((n) => [n.props.children].flat().join(''));
 }
 
-describe('splitAdLabel', () => {
-  it('splits the library label into the ad and its clock', () => {
-    expect(splitAdLabel('Ad 1 of 2 · 0:12')).toEqual(['AD 1/2', '0:12']);
-    expect(splitAdLabel('Werbung')).toEqual(['Werbung', '']);
+describe('adBadge', () => {
+  it('numbers the ad in a pod and leaves a single ad unnumbered', () => {
+    expect(adBadge(adsWith({}))).toBe('AD 1/2');
+    expect(
+      adBadge({snapshot: {position: 1, total: 1}} as unknown as VegaAds),
+    ).toBe('AD');
   });
 });
 

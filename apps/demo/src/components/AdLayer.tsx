@@ -1,6 +1,6 @@
 import React from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import type {VegaAds} from 'react-native-vega-ads';
+import {StyleSheet, Text, View} from 'react-native';
+import {AdSkipButton, type AdStyles, type VegaAds} from 'react-native-vega-ads';
 import {colors, fonts} from '../theme';
 import {timecode} from '../time';
 import {Timeline} from './Timeline';
@@ -15,10 +15,10 @@ export interface AdLayerProps {
   showWhy: boolean;
 }
 
-/** "Ad 1 of 2 · 0:12" → ["AD 1/2", "0:12"]; any other label stays whole. */
-export function splitAdLabel(label: string): [string, string] {
-  const match = /^Ad (\d+) of (\d+) · (.+)$/.exec(label);
-  return match ? [`AD ${match[1]}/${match[2]}`, match[3]] : [label, ''];
+/** The demo's short ad badge: "AD 1/2" in a pod, "AD" for a single ad. */
+export function adBadge(ads: VegaAds): string {
+  const {position, total} = ads.snapshot;
+  return total > 1 ? `AD ${position}/${total}` : 'AD';
 }
 
 /**
@@ -37,7 +37,8 @@ export const AdLayer = ({
   if (!ui.visible) {
     return null;
   }
-  const [name, clock] = splitAdLabel(ui.label);
+  const name = adBadge(ads);
+  const clock = ui.timeLeft;
   const resumeAt = timecode(Math.floor(position));
   return (
     <View style={styles.root} pointerEvents="box-none" testID="ad-layer">
@@ -68,35 +69,7 @@ export const AdLayer = ({
           <Text style={styles.time}>{timecode(Math.floor(duration))}</Text>
         </View>
       </View>
-      {ui.skip.visible ? (
-        <TouchableOpacity
-          testID="vega-ads-skip"
-          hasTVPreferredFocus
-          activeOpacity={1}
-          accessibilityRole="button"
-          accessibilityLabel={ui.skip.label}
-          accessibilityState={{disabled: !ui.skip.enabled}}
-          onPress={() => {
-            if (ui.skip.enabled) {
-              ads.skip();
-            }
-          }}
-          style={[styles.skip, ui.skip.enabled && styles.skipReady]}>
-          <Text
-            style={[styles.skipText, ui.skip.enabled && styles.skipTextReady]}>
-            {ui.skip.label}
-          </Text>
-        </TouchableOpacity>
-      ) : (
-        // Nothing to press, but the D-pad focus must stay on the ad, not on the page behind it.
-        <TouchableOpacity
-          testID="vega-ads-focus"
-          hasTVPreferredFocus
-          style={styles.focusAnchor}
-          accessibilityLabel={ui.label}
-          onPress={() => undefined}
-        />
-      )}
+      <AdSkipButton ui={ui} onSkip={ads.skip} styles={skipStyles} />
     </View>
   );
 };
@@ -141,21 +114,30 @@ const styles = StyleSheet.create({
     fontSize: 32,
     lineHeight: 42,
   },
+  times: {flexDirection: 'row', justifyContent: 'space-between'},
+  time: {color: colors.muted, fontFamily: fonts.mono, fontSize: 22},
+});
+
+/** The library's Skip button (focus, VoiceView, the focus anchor) in the demo's look. */
+const skipStyles: AdStyles = StyleSheet.create({
   skip: {
-    position: 'absolute',
     right: 96,
     bottom: 54,
     paddingHorizontal: 36,
     paddingVertical: 16,
     borderRadius: 4,
-    borderWidth: 2,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
+    backgroundColor: colors.focus,
+    borderColor: colors.text,
   },
-  skipReady: {backgroundColor: colors.focus, borderColor: colors.text},
-  skipText: {color: colors.muted, fontFamily: fonts.mono, fontSize: 28},
-  skipTextReady: {color: colors.background, fontFamily: fonts.monoStrong},
-  focusAnchor: {position: 'absolute', width: 1, height: 1, opacity: 0},
-  times: {flexDirection: 'row', justifyContent: 'space-between'},
-  time: {color: colors.muted, fontFamily: fonts.mono, fontSize: 22},
+  skipWaiting: {
+    opacity: 1,
+    backgroundColor: colors.panel,
+    borderColor: colors.border,
+  },
+  skipText: {
+    color: colors.background,
+    fontFamily: fonts.monoStrong,
+    fontSize: 28,
+  },
+  skipWaitingText: {color: colors.muted, fontFamily: fonts.mono},
 });
