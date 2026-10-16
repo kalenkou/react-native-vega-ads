@@ -257,13 +257,16 @@ With a post-roll, wait for `ads.ended` before you leave the screen at the end of
 To fill the Fire TV advertising ID macros (`IFA`, `IFATYPE`, `LIMITADTRACKING`):
 
 ```ts
+import { useMemo } from 'react';
 import { AdIdRetriever } from '@amazon-devices/kepler-adid-retriever';
 import { adIdMacros, vegaAdIdSource } from 'react-native-vega-ads';
 
-const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player, macros: adIdMacros(vegaAdIdSource(AdIdRetriever)) });
+// Read the ID once, not on every render.
+const macros = useMemo(() => adIdMacros(vegaAdIdSource(AdIdRetriever)), []);
+const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player, macros });
 ```
 
-When the user opts out of interest-based ads, or the ID service fails, the ID is not sent and `LIMITADTRACKING` is `1`.
+When the user opts out of interest-based ads, or the ID service fails, the ID is not sent and `LIMITADTRACKING` is `1`. `<VegaAdsPlayer adId={AdIdRetriever}>` does this for you.
 
 A full integration into Amazon's sample app (Shaka, MP4 and DASH) is in [`examples/vega-video-sample`](examples/vega-video-sample).
 
