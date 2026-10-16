@@ -389,3 +389,18 @@ Build with the review fixes up to `457140b`, after a reboot of the stick (before
 | Pause ad | PASS: impression, `creativeView`, `close`; the movie resumes |
 | Sintel "why" line | PASS: "No Kettlo ad after a scene with injury · Volume matched to the movie"; Kettlo left out with VAST error 205 |
 | Amazon's multi-TV sample with the 0.1.0 packages, Google IMA sample VMAP, 3 runs | pre-roll and mid-roll, all quartiles; the movie plays without the ad label; Back goes to the home screen |
+
+## Release 0.1.0 candidate, final build (16.10.2026, night)
+
+Build with all review fixes up to `0931fb1`. The demo is muted.
+
+| Check | Result |
+|---|---|
+| Full demo run | 3/3 PASS on a second try. The first try had 2 PASS and 1 FAIL: for about 75 s the stick could not connect to the Mac media server (`CURL Error code 28`, a player "network error"), and the server got no request in that time. The library did the right thing: both ads ended with VAST error 402 and the movie started; the movie then failed for the same network reason |
+| Seek over the mid-roll | 3/3 PASS |
+| Home while the pre-roll still loads; Home and Back during the pre-roll; Back, relaunch, another app | PASS: no ad pixel after leaving; no demo entry in `vlcm crash-history` |
+| Household memory, two cold launches | PASS: launch 2 leaves Kettlo out (`notUsed`) and plays Ferntop |
+| Pause ad; Sintel "why" line | PASS |
+| Whole Tears of Steel, no key after Play | PASS on this build (1 run, 822 s): 5 ads, 5 `complete`, no ad error, `content:ended`, the player closes by itself; app memory 104–115 MB (`rm_pss`). Two earlier runs on the build before `0931fb1`: the same result, 93–116 MB |
+| Whole Sintel, no key after Play | PASS (970 s): 5 ads, 5 `complete`; Kettlo left out after the injury scene with VAST error 205, as the context map says; `content:ended`, the player closes by itself; app memory up to 95 MB (`rm_pss`) |
+| Cold start, `kpi-visualizer --kpi cool-start-latency --certification` | first frame P90 680 ms (29 of 30 launches counted), fully drawn P90 2.80 s; Amazon's targets: 1.5 s and 8 s. Faster than the earlier 1.09 s and 3.46 s; the stick had just been rebooted, so we keep the earlier, slower numbers in the README |
