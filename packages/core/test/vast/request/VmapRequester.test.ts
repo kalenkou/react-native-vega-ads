@@ -86,6 +86,28 @@ describe('requestVmap (R18)', () => {
     expect(pixels.requests).toEqual(['https://t.test/e?c=1000&d=1000&e=1000']);
   });
 
+  it('fills the app macros, [TIMESTAMP] and [CACHEBUSTING] in the break pixels too (R15)', async () => {
+    const doc = `<?xml version="1.0"?>
+<vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
+  <vmap:AdBreak timeOffset="start" breakType="linear" breakId="pre">
+    <vmap:AdSource><vmap:AdTagURI templateType="vast3"><![CDATA[https://ads.test/x.xml]]></vmap:AdTagURI></vmap:AdSource>
+    <vmap:TrackingEvents>
+      <vmap:Tracking event="breakStart"><![CDATA[https://t.test/s?ifa=[IFA]&cb=[CACHEBUSTING]&t=[TIMESTAMP]]]></vmap:Tracking>
+      <vmap:Tracking event="error"><![CDATA[https://t.test/e?c=[ERRORCODE]&lat=[LIMITADTRACKING]]]></vmap:Tracking>
+    </vmap:TrackingEvents>
+  </vmap:AdBreak>
+</vmap:VMAP>`;
+    const http = new FakeHttp().on(URL, { body: doc });
+    const result = await requestVmap(URL, { http, clock: new FakeClock(0), macros: { IFA: 'id 1', LIMITADTRACKING: '1' }, random: () => 0.5 });
+    const pre = result.status === 'ok' ? result.breaks[0] : undefined;
+    pre?.sources[0]?.track('breakStart');
+    pre?.sources[0]?.track('error', 1004);
+    expect(pixels.requests).toEqual([
+      'https://t.test/s?ifa=id%201&cb=50000000&t=1970-01-01T00%3A00%3A00.000Z',
+      'https://t.test/e?c=1004&lat=1',
+    ]);
+  });
+
   it('gives breaks without breakId their own ids (C2-3)', async () => {
     const doc = `<?xml version="1.0"?>
 <vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">

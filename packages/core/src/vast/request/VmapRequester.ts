@@ -135,23 +135,26 @@ function sourceOf(adBreak: VMAPAdBreak): AdSourceRef | null {
   return null;
 }
 
+type VmapRequestDeps = UrlHandlerDeps & { macros?: Macros; random?: () => number };
+
 /**
  * Sends the break's tracking pixels. Done here, not by @dailymotion/vmap: it replaces only
- * the first `[ERRORCODE]` and not the `[ERROR_CODE]` spelling of VMAP 1.0.1.
+ * the first `[ERRORCODE]` and not the `[ERROR_CODE]` spelling of VMAP 1.0.1. The other macros
+ * are filled as in the VMAP request (R15).
  */
-function track(adBreak: VMAPAdBreak, event: VmapTrackingEvent, errorCode?: number): void {
+function track(adBreak: VMAPAdBreak, deps: VmapRequestDeps, event: VmapTrackingEvent, errorCode?: number): void {
   for (const tracker of adBreak.trackingEvents) {
     if (tracker.event !== event) {
       continue;
     }
     const code = String(errorCode ?? '');
     const uri = event === 'error' ? tracker.uri.split('[ERRORCODE]').join(code).split('[ERROR_CODE]').join(code) : tracker.uri;
-    adBreak.tracker(uri);
+    adBreak.tracker(fillMacros(uri, deps));
   }
 }
 
 /** The VMAP request gets its macros filled like an ad tag: the app's own, [TIMESTAMP], [CACHEBUSTING] (R15). */
-export async function requestVmap(url: string, deps: UrlHandlerDeps & { macros?: Macros; random?: () => number }): Promise<VmapResult> {
+export async function requestVmap(url: string, deps: VmapRequestDeps): Promise<VmapResult> {
   const result = await createUrlHandler(deps).get(fillMacros(url, deps), {});
   if (!('xml' in result)) {
     const failure = describeFailure(result.error);
@@ -178,14 +181,14 @@ export async function requestVmap(url: string, deps: UrlHandlerDeps & { macros?:
   };
   for (const adBreak of vmap.adBreaks) {
     if (!isLinearBreak(adBreak)) {
-      track(adBreak, 'error', VMAP_BREAK_TYPE_NOT_SUPPORTED);
+      track(adBreak, deps, 'error', VMAP_BREAK_TYPE_NOT_SUPPORTED);
       continue;
     }
     const offset = parseTimeOffset(adBreak.timeOffset);
     if (!offset) {
       // Positional offsets (#n) are skipped quietly: they are valid VMAP, just not supported yet.
       if (!(adBreak.timeOffset ?? '').startsWith('#')) {
-        track(adBreak, 'error', VMAP_SCHEMA_ERROR);
+        track(adBreak, deps, 'error', VMAP_SCHEMA_ERROR);
       }
       continue;
     }
@@ -195,7 +198,7 @@ export async function requestVmap(url: string, deps: UrlHandlerDeps & { macros?:
     }
     const source = sourceOf(adBreak);
     if (!source) {
-      track(adBreak, 'error', VMAP_TEMPLATE_TYPE_NOT_SUPPORTED);
+      track(adBreak, deps, 'error', VMAP_TEMPLATE_TYPE_NOT_SUPPORTED);
       continue;
     }
 
@@ -214,7 +217,7 @@ export async function requestVmap(url: string, deps: UrlHandlerDeps & { macros?:
       source,
       // VMAP default is "allowed"; only an explicit "false" turns it off.
       allowMultipleAds: adBreak.adSource?.allowMultipleAds !== 'false',
-      track: (event, errorCode) => track(adBreak, event, errorCode),
+      track: (event, errorCode) => track(adBreak, deps, event, errorCode),
     });
     breaks.set(key, scheduled);
   }
