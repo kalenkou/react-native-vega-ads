@@ -21,6 +21,17 @@ export { PauseAd } from './PauseAd';
 export type { PauseAdProps } from './PauseAd';
 export type { PauseAdView } from 'react-native-ads-core';
 export type { AdTimeline, BreakMark, RepeatMemory, RepeatOptions } from 'react-native-ads-core';
+// Types the API takes or returns, so an app needs no direct dependency on the core package.
+export type {
+  AdSchedule,
+  AdUiState,
+  AdUiStrings,
+  Macros,
+  MediaFileOptions,
+  PlayerEventName,
+  PlayerPort,
+  SessionSnapshot,
+} from 'react-native-ads-core';
 export { fetchHttp, systemClock } from './platform';
 export { vegaAdIdSource } from './vegaAdIdSource';
 export { adIdMacros } from 'react-native-ads-core';

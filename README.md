@@ -429,6 +429,7 @@ interface PlayerPort {
   setAutoplay(autoplay: boolean): void;
   setSrc(url: string): void;
   setMuted(muted: boolean): void;
+  setVolume?(volume: number): void; // 0..1; optional, needed for contentLoudness
   play(): Promise<void>;
   pause(): void;
   getCurrentTime(): number; // seconds
@@ -436,7 +437,7 @@ interface PlayerPort {
   getDuration(): number;
   getErrorMessage(): string | undefined;
   takeMediaControlFocus(): Promise<void>;
-  on(event: 'canplay' | 'playing' | 'pause' | 'timeupdate' | 'ended' | 'error', listener: () => void): () => void;
+  on(event: 'canplay' | 'playing' | 'pause' | 'waiting' | 'timeupdate' | 'ended' | 'error', listener: () => void): () => void; // 'waiting': a buffering ad gets 10 s, a silent stall 30 s
   deinitialize(): Promise<void>;
 }
 ```
