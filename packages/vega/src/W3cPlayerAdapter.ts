@@ -98,9 +98,10 @@ export class W3cPlayerAdapter implements PlayerPort {
     return error.message ? `MediaError ${error.code}: ${error.message}` : `MediaError ${error.code}`;
   }
 
-  takeMediaControlFocus(): Promise<void> {
+  /** async: a native call that throws at once (a player being released) becomes a rejection. */
+  async takeMediaControlFocus(): Promise<void> {
     if (!this.mediaControls) {
-      return Promise.resolve();
+      return;
     }
     const handler = this.mediaControlHandler();
     return handler === undefined

@@ -117,6 +117,22 @@ describe('W3cPlayerAdapter', () => {
     expect(native.calls).toEqual(['focus:main-component']);
   });
 
+  it('turns a focus call that throws at once (a player being released) into a rejected promise', async () => {
+    const { native, port } = make();
+    (native as unknown as { setMediaControlFocus: () => never }).setMediaControlFocus = () => {
+      throw new Error('player released');
+    };
+    let thrown = false;
+    let result: Promise<void> | undefined;
+    try {
+      result = port.takeMediaControlFocus();
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(false); // callers use .catch(): a synchronous throw would escape it
+    await expect(result).rejects.toThrow('player released');
+  });
+
   it('subscribes and unsubscribes player events', () => {
     const { native, port } = make();
     const listener = jest.fn();
