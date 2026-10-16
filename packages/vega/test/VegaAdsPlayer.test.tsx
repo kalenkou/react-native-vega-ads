@@ -51,7 +51,7 @@ function setup(props: Partial<VegaAdsPlayerProps> = {}) {
     const views = renderer.root.findAll((node) => (node.type as unknown) === 'KeplerVideoSurfaceView');
     act(() => views.forEach((view, index) => (view.props.onSurfaceViewCreated as (h: string) => void)(`s${index}`)));
   };
-  return { http, players, renderer, surfacesReady };
+  return { http, players, renderer, surfacesReady, base };
 }
 
 describe('VegaAdsPlayer', () => {
@@ -73,6 +73,17 @@ describe('VegaAdsPlayer', () => {
     await settle();
     expect(ctx.http.requests).toContain('https://ads.test/pre.xml?lat=1');
     expect(ctx.http.requests.join(' ')).not.toContain('secret-id');
+  });
+
+  it('reads the advertising ID once, also when the app passes its macros inline on every render', async () => {
+    const enabled = jest.fn(() => true);
+    const adId = { isAdvertisingTrackingEnabled: enabled, fetchAdvertisingId: () => 'id-1' };
+    const ctx = setup({ adId, macros: { TITLEID: 'tos' } });
+    await settle();
+    for (let i = 0; i < 3; i++) {
+      act(() => ctx.renderer.update(<VegaAdsPlayer {...ctx.base} adId={adId} macros={{ TITLEID: 'tos' }} />));
+    }
+    expect(enabled).toHaveBeenCalledTimes(1);
   });
 
   it('calls onEnd when the content has ended and there is no post-roll', async () => {
