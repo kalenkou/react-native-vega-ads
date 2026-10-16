@@ -329,6 +329,8 @@ useTVEventHandler((event) => {
 | `contentSurface` | `false` when your screen draws the content surface itself. Default `true`. |
 | `renderOverlay` | `(ads) => ...` your own ad label and Skip button instead of `AdOverlay`. |
 | `countdown` | "Ad in N" before each mid-roll (`AdCountdown`). Default `true`. |
+| `showWhy` | Show `ui.why` in the built-in overlay: why the break looks as it does ("No Kettlo ad after a scene with injury · Volume matched to the movie"). Default `false`. |
+| `pauseAdStyle` | Style of the pause ad, to keep it clear of your own controls. |
 | `style`, `scalingMode` | Layout and w3cmedia scaling mode (default `'fit'`). |
 | other | Any `useVegaAds` option below (`onEvent`, `strings`, `adPause`, ...). |
 
@@ -405,7 +407,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 |---|---|
 | `DualSurfaceView` | `surfaces`, `contentPlayer?`, `onContentSurfaceCreated?`, `onContentSurfaceDestroyed?`, `scalingMode?` (default `'fit'`), `style?` |
 | `AdSurfaceLayers` | `surfaces`, `scalingMode?` (default `'fit'`), `style?` |
-| `AdOverlay` | `ui`, `onSkip`, `style?` |
+| `AdOverlay` | `ui`, `onSkip`, `showWhy?`, `style?` |
 | `AdCountdown` | `nextBreakIn`, `strings?`, `style?`. Takes no D-pad focus; announces the break once for VoiceView. |
 | `PauseAd` | `view` (`ads.pauseAd`), `strings?`, `style?`. The image beside the paused picture (up to 600 px high), "Ad", the QR code if any, "Back closes the ad". Takes no D-pad focus; announced once for VoiceView. `VegaAdsPlayer` draws it for you. |
 

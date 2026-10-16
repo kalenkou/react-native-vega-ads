@@ -43,6 +43,7 @@ Required in `manifest.toml`: the media category, the `IMediaPlaybackServer` inte
 | `AdCountdown`, `PauseAd` | "Ad in N" before a mid-roll; the pause ad from `ads.pauseAd` |
 | `W3cPlayerAdapter` | `PlayerPort` on a w3cmedia `VideoPlayer` |
 | `createAdMediaControlHandler` | media controls during ads: play/pause allowed, seek and skip blocked |
+| `preloadVegaAds(schedule)` | asks for the VMAP and the pre-roll on the title page, so the pre-roll starts sooner after Play |
 | `useAdPlan(schedule)`, `adPlanLabel` | before Play: "4 ad breaks · first: 2 ads, 25 s, skippable after 5 s", and `marks`: where each break is, with the scene signals from the VMAP |
 | `vegaAdIdSource`, `adIdMacros` | the Fire TV advertising ID as `IFA`, `IFATYPE`, `LIMITADTRACKING` macros |
 | `rnvPlayerPort(player)` | a react-native-video v7 `VideoPlayer` as the content player |
