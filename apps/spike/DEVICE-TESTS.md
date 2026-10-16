@@ -406,3 +406,16 @@ Build with all review fixes up to `0931fb1`. The demo is muted.
 | Whole Tears of Steel, no key after Play | PASS on this build (1 run, 822 s): 5 ads, 5 `complete`, no ad error, `content:ended`, the player closes by itself; app memory 104–115 MB (`rm_pss`). Two earlier runs on the build before `0931fb1`: the same result, 93–116 MB |
 | Whole Sintel, no key after Play | PASS (970 s): 5 ads, 5 `complete`; Kettlo left out after the injury scene with VAST error 205, as the context map says; `content:ended`, the player closes by itself; app memory up to 95 MB (`rm_pss`) |
 | Cold start, `kpi-visualizer --kpi cool-start-latency --certification` | first frame P90 680 ms (29 of 30 launches counted), fully drawn P90 2.80 s; Amazon's targets: 1.5 s and 8 s. Faster than the earlier 1.09 s and 3.46 s; the stick had just been rebooted, so we keep the earlier, slower numbers in the README |
+
+## Seek fix and the ad UI parts (17.10.2026, night)
+
+Build with `cd341b7` (a seek over a break whose ads still load waits for them), `62a586d` (`adStyles`, `AdSkipButton`, `ads.ui.name`/`timeLeft`) and `e8b6535` (the demo overlay on `AdSkipButton`). Muted.
+
+| Check | Result |
+|---|---|
+| Seek over the mid-roll | 3/3 PASS: the pod plays, the movie resumes at 142.7–142.9 s |
+| Full demo run | 3/3 PASS |
+| Demo Skip button on `AdSkipButton` with the demo's styles | while waiting: grey "Skip in 3"; then blue "Skip Ad" with the D-pad focus; the badge "AD" and the clock "0:05" come from `ads.snapshot` and `ads.ui.timeLeft`; same look as before |
+
+The first try at 01:05 did not start: `Unable to launch component … Display not available` (the TV was in standby and the stick had just rebooted). Not counted.
+
