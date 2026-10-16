@@ -187,6 +187,8 @@ useEffect(() => preloadVegaAds({ vmapUrl }, { adId: AdIdRetriever }), [vmapUrl])
 
 The player with the same `ads` uses the answers once, within five minutes; otherwise it asks the ad server itself. Later breaks are requested during playback, as before.
 
+`useAdPlan(ads, options)` preloads the same way and returns what the viewer can know before Play: the number of breaks, the pre-roll (ads, seconds, skip after) and `marks`, where each break is (`start`, `end`, a time or a percent) with the scene signals from the VMAP context. The demo draws its break map from it; `adPlanLabel(plan)` gives one line: "4 ad breaks · first: 1 ad, 10 s".
+
 ### Customise any part
 
 Every part of `<VegaAdsPlayer>` can be replaced; the ads keep working.
@@ -213,7 +215,7 @@ Your own content surface (the screen already draws one): the component adds only
 </VegaAdsPlayer>
 ```
 
-Your own ad label and Skip button: `renderOverlay={(ads) => <MyAdOverlay ui={ads.ui} onSkip={ads.skip} />}`. Keep the D-pad focus on it during ads.
+Your own ad label and Skip button: `renderOverlay={(ads) => <MyAdOverlay ui={ads.ui} onSkip={ads.skip} />}`. Keep the D-pad focus on it during ads, and call `useAdAnnouncements(ads.ui)` in it: VoiceView then announces each ad and the moment Skip opens, as with the built-in overlay.
 
 ### Your own player UI, with the hook
 
@@ -509,7 +511,7 @@ While building `react-native-vega-ads`, I logged platform issues with steps, exp
 
 Device tests and the demo use *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Soundtrack (C) Joram Letwory – www.tearsofsteel.org, CC BY-ND 3.0. The demo's second title is *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0. The eval also uses *Big Buck Bunny*, (CC) Blender Foundation | [www.bigbuckbunny.org](https://www.bigbuckbunny.org), CC BY 3.0. The demo ads use the Inter font (SIL Open Font License).
 
-`make-vmap` runs [ffmpeg](https://ffmpeg.org) (LGPL/GPL, called as a program), [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (MIT) with its `ggml-base.en` model (MIT) and [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) with [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (Apache-2.0). None of them is in this repository or in the npm packages; you install them yourself. The packages depend on [@dailymotion/vast-client](https://github.com/dailymotion/vast-client-js), [@dailymotion/vmap](https://github.com/dailymotion/vmap-js) and [@xmldom/xmldom](https://github.com/xmldom/xmldom), all MIT.
+`make-vmap` runs [ffmpeg](https://ffmpeg.org) (LGPL/GPL, called as a program), [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (MIT) with its `ggml-base.en` model (MIT) and [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) with [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (Apache-2.0). None of them is in this repository or in the npm packages; you install them yourself. The packages depend on [@dailymotion/vast-client](https://github.com/dailymotion/vast-client-js), [@dailymotion/vmap](https://github.com/dailymotion/vmap-js) and [@xmldom/xmldom](https://github.com/xmldom/xmldom), all MIT. The demo app ships the [IBM Plex](https://github.com/IBM/plex) fonts (SIL Open Font License 1.1, unchanged TTF files from IBM's releases, licence in `apps/demo/assets/fonts`).
 
 ## Security
 
