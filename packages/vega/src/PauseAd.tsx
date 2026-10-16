@@ -57,11 +57,11 @@ export function PauseAd({ view, strings, style }: PauseAdProps): ReactElement | 
 
 const styles = StyleSheet.create({
   root: { position: 'absolute', right: 64, top: 0, bottom: 0, justifyContent: 'center', alignItems: 'flex-end', zIndex: 10 },
-  label: { color: '#fff', fontSize: 22, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 4, marginBottom: 8 },
+  label: { color: '#fff', fontSize: 26, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 4, marginBottom: 8 },
   // The QR code stands left of the image, at its bottom: the card is no taller than the image.
   row: { flexDirection: 'row-reverse', alignItems: 'flex-end' },
   qr: { alignItems: 'center', marginRight: 16 },
   qrImage: { width: QR_SIZE, height: QR_SIZE },
   qrHint: { width: QR_SIZE, textAlign: 'center' },
-  hint: { color: '#fff', fontSize: 22, marginTop: 8, textShadowColor: '#000', textShadowRadius: 4 },
+  hint: { color: '#fff', fontSize: 26, marginTop: 8, textShadowColor: '#000', textShadowRadius: 4 },
 });
