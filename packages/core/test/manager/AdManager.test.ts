@@ -605,7 +605,7 @@ describe('AdManager', () => {
     expect(ctx.content.calls).toContain('play');
   });
 
-  it('a second seek while the break of the first seek still loads plays one break, never two at once', async () => {
+  it('a second seek while the break of the first seek still loads plays only the last break, and frees the first at once', async () => {
     const ctx = setup({
       'https://ads.test/mid.xml': fixture('vast/inline.xml'),
       'https://ads.test/mid2.xml': fixture('vast/inline.xml'),
@@ -625,12 +625,45 @@ describe('AdManager', () => {
     await settle();
     const second = ctx.lastAdPlayer();
     expect(second).not.toBe(first);
+    expect(first.deinitialized).toBe(true); // at once: one ad decoder at a time
+    expect(ctx.events).toContain('break:break-1:superseded');
+    expect(ctx.events).not.toContain('break:break-1:interrupted'); // that one means Home
+    first.emitCanPlay(); // the first one would have been ready first
+    await settle();
     second.emitCanPlay();
     await settle();
-    first.emitCanPlay();
+    expect(ctx.adPlayers.filter((p) => p.calls.includes('play'))).toEqual([second]);
+  });
+
+  it('a prefetched break that a seek jumped over frees its ad player at once', async () => {
+    const ctx = setup({
+      'https://ads.test/mid.xml': fixture('vast/inline.xml'),
+      'https://ads.test/mid2.xml': fixture('vast/inline.xml'),
+    });
+    await ctx.manager.start(
+      manual([
+        { offset: 300, vastUrl: 'https://ads.test/mid.xml' },
+        { offset: 500, vastUrl: 'https://ads.test/mid2.xml' },
+      ]),
+    );
+    ctx.content.emitTime(290); // the break at 5:00 is prefetched, its ad not ready yet
     await settle();
-    expect(ctx.adPlayers.filter((p) => p.calls.includes('play'))).toHaveLength(1);
-    expect(first.deinitialized).toBe(true);
+    const passed = ctx.lastAdPlayer();
+    ctx.content.emitTime(550); // a seek over both breaks: only the last one plays
+    await settle();
+    expect(passed.deinitialized).toBe(true);
+  });
+
+  it('a break that comes before its ads are ready frees its ad player at once', async () => {
+    const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]));
+    ctx.content.emitTime(20);
+    await settle();
+    const late = ctx.lastAdPlayer();
+    ctx.content.emitTime(30.5);
+    await settle();
+    expect(ctx.events).toContain('break:break-1:late');
+    expect(late.deinitialized).toBe(true);
   });
 
   it('plays the post-roll when the content ends', async () => {

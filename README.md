@@ -395,6 +395,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 | `vmap:error:<code>` | the VMAP request failed (VMAP error code) | – |
 | `break:<id>:late` | a break was not ready in time and was skipped | – |
 | `break:<id>:interrupted` | the app went to the background (Home) during a break or while it loaded; it is not shown again | – |
+| `break:<id>:superseded` | a later seek started another break while this one still loaded; only the last break plays, and this one's ad player is released | – |
 | `standby:unavailable`, `standby:error` | the second ad player could not start; one player is used | – |
 | `error:start` | the ad schedule could not be started; the content plays without ads | – |
 

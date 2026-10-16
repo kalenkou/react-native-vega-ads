@@ -402,7 +402,7 @@ export class AdManager {
     for (const [id, entry] of this.prepared) {
       if (scheduler.isDone(id) && !starting.has(id) && !this.starting.has(id) && entry.session !== this.active) {
         this.prepared.delete(id);
-        void entry.loading.then(() => entry.session.interrupt());
+        void entry.session.interrupt(); // at once: a loading break may already hold its ad player
       }
     }
   }
@@ -475,11 +475,21 @@ export class AdManager {
       // Pausing the content to wait for a slow ad server is worse than losing the break.
       this.prepared.delete(id);
       this.deps.onEvent?.(`break:${id}:late`);
-      void entry.loading.then(() => entry.session.interrupt());
+      void entry.session.interrupt();
       if (this.isPostRoll(id)) {
         this.deps.onEvent?.('content:ended');
       }
       return;
+    }
+    // A seek over breaks plays only the last one: a break still loading from an earlier seek
+    // is dropped now, so it neither plays first nor holds a second ad decoder.
+    for (const other of this.starting) {
+      const earlier = this.prepared.get(other);
+      if (earlier) {
+        this.prepared.delete(other);
+        this.deps.onEvent?.(`break:${other}:superseded`);
+        void earlier.session.interrupt();
+      }
     }
     this.starting.add(id);
     const result = await entry.loading.finally(() => this.starting.delete(id));
@@ -497,9 +507,9 @@ export class AdManager {
       return;
     }
     if (this.active) {
-      // A later seek started another break while this one loaded: one break at a time.
+      // Another break started while this one loaded: one break at a time.
       this.prepared.delete(id);
-      this.deps.onEvent?.(`break:${id}:interrupted`);
+      this.deps.onEvent?.(`break:${id}:superseded`);
       await entry.session.interrupt();
       return;
     }
