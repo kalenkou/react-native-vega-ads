@@ -2,6 +2,8 @@ import type {
   AdIdSource,
   AdMediaControlOptions,
   AdSchedule,
+  AdSkipButtonProps,
+  AdStyles,
   BreakWhy,
   ClockPort,
   HttpPort,
@@ -30,6 +32,8 @@ describe('public types', () => {
       | AdIdSource
       | AdMediaControlOptions
       | BreakWhy
+      | AdStyles
+      | AdSkipButtonProps
       | undefined
     > = [];
     expect([schedule, macros, media, port, used]).toHaveLength(5);

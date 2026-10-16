@@ -31,6 +31,18 @@ function render(view: PauseAdView | null) {
 describe('PauseAd', () => {
   beforeEach(() => announce.mockClear());
 
+  it('takes the app styles for the "Ad" label and the hints', () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<PauseAd view={VIEW} styles={{ pauseAdLabel: { fontFamily: 'Brand' }, pauseAdHint: { color: 'gold' } }} />);
+    });
+    const texts = renderer.root.findAll((n) => (n.type as unknown) === 'Text');
+    const byText = (content: string) => texts.find((n) => n.props.children === content);
+    expect(StyleSheet.flatten(byText('Ad')?.props.style)).toMatchObject({ fontFamily: 'Brand', fontSize: 26 });
+    expect(StyleSheet.flatten(byText('Scan to learn more')?.props.style)).toMatchObject({ color: 'gold' });
+    expect(StyleSheet.flatten(byText('Back closes the ad')?.props.style)).toMatchObject({ color: 'gold', fontSize: 26 });
+  });
+
   it('draws nothing without a pause ad', () => {
     expect(render(null).renderer.toJSON()).toBeNull();
   });

@@ -1,12 +1,15 @@
 import { type ReactElement, useEffect, useRef } from 'react';
 import { AccessibilityInfo, Image, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { defaultAdUiStrings, type AdUiStrings, type PauseAdView } from 'react-native-ads-core';
+import type { AdStyles } from './AdStyles';
 
 export interface PauseAdProps {
   /** `ads.pauseAd`: the pause ad to show, or null. */
   view: PauseAdView | null;
   strings?: Partial<AdUiStrings>;
   style?: StyleProp<ViewStyle>;
+  /** `pauseAdLabel` and `pauseAdHint`: your fonts and colours. */
+  styles?: AdStyles;
 }
 
 /** The largest side card, as in the IAB CTV Ad Portfolio partial pause ad (600×600 at 1080p). */
@@ -18,7 +21,7 @@ const QR_SIZE = 180;
  * Centred on the right side by default; `style` moves it, for example clear of the app's controls.
  * Takes no D-pad focus; Back closes it (`useVegaAds` handles the key). Announced once for VoiceView.
  */
-export function PauseAd({ view, strings, style }: PauseAdProps): ReactElement | null {
+export function PauseAd({ view, strings, style, styles: app = {} }: PauseAdProps): ReactElement | null {
   const s = { ...defaultAdUiStrings, ...strings };
   const announced = useRef(false);
 
@@ -40,17 +43,17 @@ export function PauseAd({ view, strings, style }: PauseAdProps): ReactElement | 
   const size = { width: Math.round(view.width * scale), height: Math.round(view.height * scale) };
   return (
     <View style={[styles.root, style]} pointerEvents="none">
-      <Text style={styles.label}>{s.ad}</Text>
+      <Text style={[styles.label, app.pauseAdLabel]}>{s.ad}</Text>
       <View style={styles.row}>
         <Image source={{ uri: view.imageUrl }} style={size} resizeMode="contain" />
         {view.qr?.imageUrl ? (
           <View style={styles.qr}>
             <Image source={{ uri: view.qr.imageUrl }} style={styles.qrImage} />
-            <Text style={[styles.hint, styles.qrHint]}>{s.scanQr}</Text>
+            <Text style={[styles.hint, styles.qrHint, app.pauseAdHint]}>{s.scanQr}</Text>
           </View>
         ) : null}
       </View>
-      <Text style={styles.hint}>{s.pauseAdHint}</Text>
+      <Text style={[styles.hint, app.pauseAdHint]}>{s.pauseAdHint}</Text>
     </View>
   );
 }

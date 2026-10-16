@@ -1,13 +1,18 @@
 import { type ReactElement, useEffect, useRef } from 'react';
-import { AccessibilityInfo, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { AccessibilityInfo, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import type { AdUiState } from 'react-native-ads-core';
+import { AdSkipButton } from './AdSkipButton';
+import type { AdStyles } from './AdStyles';
 
 export interface AdOverlayProps {
   ui: AdUiState;
   onSkip: () => void;
   /** Show `ui.why` under the label: why an ad is missing or quieter. Off by default. */
   showWhy?: boolean;
+  /** The overlay's box over the video. */
   style?: StyleProp<ViewStyle>;
+  /** Your fonts and colours for the label, the why line and Skip. */
+  styles?: AdStyles;
 }
 
 /** The part of the label that names the ad ("Ad 1 of 3"), without the countdown. */
@@ -49,7 +54,7 @@ export function useAdAnnouncements(ui: AdUiState): void {
 }
 
 /** Ad label ("Ad 1 of 3 · 0:12") and a Skip button that takes D-pad focus, with VoiceView announcements. */
-export function AdOverlay({ ui, onSkip, showWhy = false, style }: AdOverlayProps): ReactElement | null {
+export function AdOverlay({ ui, onSkip, showWhy = false, style, styles: app = {} }: AdOverlayProps): ReactElement | null {
   useAdAnnouncements(ui);
 
   if (!ui.visible) {
@@ -57,38 +62,13 @@ export function AdOverlay({ ui, onSkip, showWhy = false, style }: AdOverlayProps
   }
   return (
     <View style={[styles.root, style]} pointerEvents="box-none">
-      <Text style={styles.label}>{ui.label}</Text>
+      <Text style={[styles.label, app.label]}>{ui.label}</Text>
       {showWhy && ui.why !== '' && (
-        <Text testID="vega-ads-why" style={styles.why}>
+        <Text testID="vega-ads-why" style={[styles.why, app.why]}>
           {ui.why}
         </Text>
       )}
-      {!ui.skip.visible && (
-        // Nothing to press, but the D-pad focus must stay on the ad, not on the app behind it.
-        <TouchableOpacity
-          testID="vega-ads-focus"
-          style={styles.focusAnchor}
-          hasTVPreferredFocus
-          accessibilityLabel={ui.label}
-          onPress={() => undefined}
-        />
-      )}
-      {ui.skip.visible && (
-        <TouchableOpacity
-          testID="vega-ads-skip"
-          style={[styles.skip, !ui.skip.enabled && styles.skipWaiting]}
-          hasTVPreferredFocus
-          accessibilityRole="button"
-          accessibilityLabel={ui.skip.label}
-          accessibilityState={{ disabled: !ui.skip.enabled }}
-          onPress={() => {
-            if (ui.skip.enabled) {
-              onSkip();
-            }
-          }}>
-          <Text style={styles.skipText}>{ui.skip.label}</Text>
-        </TouchableOpacity>
-      )}
+      <AdSkipButton ui={ui} onSkip={onSkip} styles={app} />
     </View>
   );
 }
@@ -116,17 +96,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
-  skip: {
-    position: 'absolute',
-    right: 48,
-    bottom: 64,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderColor: '#fff',
-    borderWidth: 2,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  skipWaiting: { opacity: 0.6 },
-  focusAnchor: { position: 'absolute', width: 1, height: 1, opacity: 0 },
-  skipText: { color: '#fff', fontSize: 28 },
 });

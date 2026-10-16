@@ -4,7 +4,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { FakeClock } from '../../core/test/fakes/FakeClock';
 import { FakeHttp } from '../../core/test/fakes/FakeHttp';
 import { FakePlayer } from '../../core/test/fakes/FakePlayer';
+import { AdCountdown } from '../src/AdCountdown';
 import { AdOverlay } from '../src/AdOverlay';
+import { PauseAd } from '../src/PauseAd';
 import { VegaAdsPlayer, VegaAdsPlayerProps } from '../src/VegaAdsPlayer';
 import { FakeW3cPlayer } from './fakes/FakeW3cPlayer';
 
@@ -184,6 +186,17 @@ describe('VegaAdsPlayer – customising', () => {
     };
     expect(await overlay({})).toBe(false);
     expect(await overlay({ showWhy: true })).toBe(true);
+  });
+
+  it('passes adStyles on to the built-in ad overlay, countdown and pause ad', async () => {
+    const adStyles = { label: { fontFamily: 'Brand' }, countdown: { color: 'gold' } };
+    const ctx = setup({ adStyles });
+    await settle();
+    const passed = (type: unknown) => ctx.renderer.root.findAll((node) => node.type === type)[0]?.props.styles;
+    expect(passed(AdOverlay)).toBe(adStyles);
+    expect(passed(PauseAd)).toBe(adStyles);
+    act(() => ctx.renderer.update(<VegaAdsPlayer {...ctx.base} adStyles={adStyles} ads={null} />)); // no ad playing: the countdown is drawn
+    expect(passed(AdCountdown)).toBe(adStyles);
   });
 
   it('shows "Ad in N" before a mid-roll; countdown={false} leaves it to the app', async () => {

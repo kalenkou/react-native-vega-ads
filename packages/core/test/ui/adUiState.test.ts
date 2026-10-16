@@ -46,6 +46,13 @@ describe('adUiState (R26)', () => {
     expect(adUiState(snapshot({ total: 1, adTime: 0, adDuration: 75 })).label).toBe('Ad · 1:15');
   });
 
+  it('gives the parts of the label for an own overlay: the ad name and the time left', () => {
+    expect(adUiState(snapshot({}))).toMatchObject({ name: 'Ad 1 of 2', timeLeft: '0:12' });
+    expect(adUiState(snapshot({ total: 1, adDuration: 0 }))).toMatchObject({ name: 'Ad', timeLeft: '' });
+    const german = adUiState(snapshot({}), { adOf: (n, total) => `Werbung ${n}/${total}` });
+    expect(german).toMatchObject({ name: 'Werbung 1/2', timeLeft: '0:12', label: 'Werbung 1/2 · 0:12' });
+  });
+
   it('shows only "Ad" while the duration is unknown', () => {
     expect(adUiState(snapshot({ total: 1, adDuration: 0 })).label).toBe('Ad');
   });

@@ -1,5 +1,5 @@
 import TestRenderer, { act } from 'react-test-renderer';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 import { AdCountdown } from '../src/AdCountdown';
 
 const announce = AccessibilityInfo.announceForAccessibility as jest.Mock;
@@ -20,6 +20,15 @@ function render(nextBreakIn: number | null) {
 
 describe('AdCountdown', () => {
   beforeEach(() => announce.mockClear());
+
+  it('takes the app style for its text', () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<AdCountdown nextBreakIn={5} styles={{ countdown: { fontFamily: 'Brand', color: 'gold' } }} />);
+    });
+    const text = renderer.root.findAll((n) => (n.type as unknown) === 'Text')[0];
+    expect(StyleSheet.flatten(text?.props.style)).toMatchObject({ fontFamily: 'Brand', color: 'gold', fontSize: 24 });
+  });
 
   it('shows "Ad in N" and counts down', () => {
     const view = render(5);

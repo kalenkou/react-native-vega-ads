@@ -95,6 +95,10 @@ export interface AdUiState {
   visible: boolean;
   /** "Ad 1 of 2 · 0:12" */
   label: string;
+  /** The ad part of the label, "Ad 1 of 2", for an own overlay that lays the parts out itself. */
+  name: string;
+  /** The time part of the label, "0:12"; empty while the ad's duration is unknown. */
+  timeLeft: string;
   skip: { visible: boolean; enabled: boolean; label: string };
   /** Text for the screen reader (VoiceView) when the ad starts. */
   announcement: string;
@@ -126,7 +130,8 @@ export function adUiState(snapshot: SessionSnapshot, strings: Partial<AdUiString
   const visible = snapshot.state === 'playing';
   const name = snapshot.total > 1 ? s.adOf(snapshot.position, snapshot.total) : s.ad;
   const known = snapshot.adDuration > 0;
-  const label = known ? `${name} · ${clock(snapshot.adDuration - snapshot.adTime)}` : name;
+  const timeLeft = known ? clock(snapshot.adDuration - snapshot.adTime) : '';
+  const label = known ? `${name} · ${timeLeft}` : name;
 
   const skippable = snapshot.skipIn !== null;
   const waitSeconds = Math.ceil(snapshot.skipIn ?? 0);
@@ -141,7 +146,16 @@ export function adUiState(snapshot: SessionSnapshot, strings: Partial<AdUiString
   if (skippable && !snapshot.canSkip) parts.push(s.announceSkipIn(waitSeconds));
 
   const skipAnnouncement = skippable && snapshot.canSkip ? s.announceCanSkip : '';
-  return { visible, label, skip, announcement: parts.join(', '), skipAnnouncement, why: whyLine(snapshot.why, s) };
+  return {
+    visible,
+    label,
+    name,
+    timeLeft,
+    skip,
+    announcement: parts.join(', '),
+    skipAnnouncement,
+    why: whyLine(snapshot.why, s),
+  };
 }
 
 export interface AdCountdownState {

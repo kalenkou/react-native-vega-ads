@@ -40,6 +40,8 @@ Required in `manifest.toml`: the media category, the `IMediaPlaybackServer` inte
 | `AdSurfaceLayers` | only the two ad surfaces, for screens that render their own content surface; mount it after that surface is created |
 | `AdOverlay` | "Ad 1 of 3 · 0:12", Skip button with D-pad focus, VoiceView announcement |
 | `useAdAnnouncements(ui)` | the VoiceView announcements of `AdOverlay`, for your own overlay |
+| `AdSkipButton` | the Skip button of `AdOverlay` (D-pad focus, disabled until allowed, focus anchor), for your own overlay |
+| `AdStyles` | your fonts and colours for the built-in ad UI (`adStyles` on `VegaAdsPlayer`, `styles` on each part) |
 | `AdCountdown`, `PauseAd` | "Ad in N" before a mid-roll; the pause ad from `ads.pauseAd` |
 | `W3cPlayerAdapter` | `PlayerPort` on a w3cmedia `VideoPlayer` |
 | `createAdMediaControlHandler` | media controls during ads: play/pause allowed, seek and skip blocked |

@@ -223,7 +223,37 @@ Your own content surface (the screen already draws one): the component adds only
 </VegaAdsPlayer>
 ```
 
-Your own ad label and Skip button: `renderOverlay={(ads) => <MyAdOverlay ui={ads.ui} onSkip={ads.skip} />}`. Keep the D-pad focus on it during ads, and call `useAdAnnouncements(ads.ui)` in it: VoiceView then announces each ad and the moment Skip opens, as with the built-in overlay.
+Your fonts and colours on the built-in ad UI, with no own overlay: `adStyles` adds to the defaults of each part (`label`, `why`, `skip`, `skipWaiting`, `skipText`, `skipWaitingText`, `countdown`, `pauseAdLabel`, `pauseAdHint`).
+
+```tsx
+<VegaAdsPlayer
+  source={{ uri }}
+  ads={{ vmapUrl }}
+  adStyles={{
+    label: { fontFamily: 'MyBrand-Bold', color: '#ffd166' },
+    skip: { backgroundColor: '#ffd166', borderColor: '#ffd166', right: 96 },
+    skipText: { color: '#111', fontFamily: 'MyBrand-Bold' },
+    skipWaiting: { backgroundColor: 'rgba(0,0,0,0.7)' },
+    skipWaitingText: { color: '#bbb' },
+  }}
+/>
+```
+
+Your own ad overlay, laid out as you like: `renderOverlay={(ads) => <MyAdOverlay ads={ads} />}`. `ads.ui` gives the text parts (`name` "Ad 1 of 3", `timeLeft` "0:12", `why`) and `ads.snapshot` the numbers (`position`, `total`, `adTime`, `adDuration`, `skipIn`). Put `<AdSkipButton ui={ads.ui} onSkip={ads.skip} styles={…} />` in it: the button takes the D-pad focus, ignores presses until Skip is allowed, and during a non-skippable ad holds the focus so the remote does not reach the screen behind the ad. Call `useAdAnnouncements(ads.ui)` in it: VoiceView then announces each ad and the moment Skip opens, as with the built-in overlay.
+
+```tsx
+function MyAdOverlay({ ads }: { ads: VegaAds }) {
+  useAdAnnouncements(ads.ui);
+  if (!ads.ui.visible) return null;
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Text style={styles.badge}>{ads.ui.name}</Text>
+      <Text style={styles.clock}>{ads.ui.timeLeft}</Text>
+      <AdSkipButton ui={ads.ui} onSkip={ads.skip} styles={{ skip: styles.skip, skipText: styles.skipText }} />
+    </View>
+  );
+}
+```
 
 ### Your own player UI, with the hook
 
@@ -336,6 +366,7 @@ useTVEventHandler((event) => {
 | `countdown` | "Ad in N" before each mid-roll (`AdCountdown`). Default `true`. |
 | `showWhy` | Show `ui.why` in the built-in overlay: why the break looks as it does ("No Kettlo ad after a scene with injury · Volume matched to the movie"). Default `false`. |
 | `pauseAdStyle` | Style of the pause ad, to keep it clear of your own controls. |
+| `adStyles` | Your fonts, colours and positions for the parts of the built-in ad UI (`AdStyles`: `label`, `why`, `skip`, `skipWaiting`, `skipText`, `skipWaitingText`, `countdown`, `pauseAdLabel`, `pauseAdHint`), on top of the defaults. |
 | `style`, `scalingMode` | Layout and w3cmedia scaling mode (default `'fit'`). |
 | other | Any `useVegaAds` option below (`onEvent`, `strings`, `adPause`, ...). |
 
@@ -371,7 +402,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `playing` | `true` while an ad is on screen. |
 | `ended` | `true` after the content ended and the post-roll, if any, is over. |
 | `snapshot` | Current break state: ad position, total, time, skip state. |
-| `ui` | Data for `AdOverlay`: label, skip button, announcement. |
+| `ui` | Data for an ad overlay: `label` ("Ad 1 of 3 · 0:12") and its parts `name` and `timeLeft`, `skip`, `why`, the VoiceView texts. |
 | `timeline` | `marks`: the mid-rolls (`id`, `time` in seconds, `done`) for your timeline. `nextBreakIn`: whole seconds to the next mid-roll in its last `countdownSeconds`, only once its ads are loaded; otherwise `null`. |
 | `surfaces` | Pass to `DualSurfaceView` or `AdSurfaceLayers`. |
 | `pauseAd` | The pause ad to draw with `<PauseAd view={ads.pauseAd} />`, or `null`. Back closes it. |
@@ -412,9 +443,10 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 |---|---|
 | `DualSurfaceView` | `surfaces`, `contentPlayer?`, `onContentSurfaceCreated?`, `onContentSurfaceDestroyed?`, `scalingMode?` (default `'fit'`), `style?` |
 | `AdSurfaceLayers` | `surfaces`, `scalingMode?` (default `'fit'`), `style?` |
-| `AdOverlay` | `ui`, `onSkip`, `showWhy?`, `style?` |
-| `AdCountdown` | `nextBreakIn`, `strings?`, `style?`. Takes no D-pad focus; announces the break once for VoiceView. |
-| `PauseAd` | `view` (`ads.pauseAd`), `strings?`, `style?`. The image beside the paused picture (up to 600 px high), "Ad", the QR code if any, "Back closes the ad". Takes no D-pad focus; announced once for VoiceView. `VegaAdsPlayer` draws it for you. |
+| `AdOverlay` | `ui`, `onSkip`, `showWhy?`, `style?`, `styles?` (`AdStyles`) |
+| `AdSkipButton` | `ui`, `onSkip`, `styles?`. Skip for your own overlay: takes the D-pad focus, ignores presses until Skip is allowed; during a non-skippable ad holds the focus. |
+| `AdCountdown` | `nextBreakIn`, `strings?`, `style?`, `styles?`. Takes no D-pad focus; announces the break once for VoiceView. |
+| `PauseAd` | `view` (`ads.pauseAd`), `strings?`, `style?`, `styles?`. The image beside the paused picture (up to 600 px high), "Ad", the QR code if any, "Back closes the ad". Takes no D-pad focus; announced once for VoiceView. `VegaAdsPlayer` draws it for you. |
 
 ## Architecture
 

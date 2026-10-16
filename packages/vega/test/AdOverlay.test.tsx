@@ -1,5 +1,5 @@
 import TestRenderer, { act, ReactTestInstance } from 'react-test-renderer';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 import type { AdUiState } from 'react-native-ads-core';
 import { AdOverlay, useAdAnnouncements } from '../src/AdOverlay';
 
@@ -9,6 +9,8 @@ function ui(overrides: Partial<AdUiState> = {}): AdUiState {
   return {
     visible: true,
     label: 'Ad 1 of 3 · 0:12',
+    name: 'Ad 1 of 3',
+    timeLeft: '0:12',
     skip: { visible: false, enabled: false, label: '' },
     announcement: 'Ad 1 of 3, 12 seconds',
     skipAnnouncement: '',
@@ -55,6 +57,22 @@ describe('AdOverlay', () => {
     });
     const line = renderer.root.findAll((n) => n.props.testID === 'vega-ads-why' && (n.type as unknown) === 'Text')[0];
     expect(line?.props.children).toBe(why);
+  });
+
+  it('takes the app styles for the label, the why line and Skip, without an own overlay', () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    const styles = { label: { fontFamily: 'Brand', color: 'gold' }, why: { fontSize: 30 }, skip: { borderColor: 'gold' }, skipText: { fontFamily: 'Brand' } };
+    act(() => {
+      renderer = TestRenderer.create(
+        <AdOverlay ui={ui({ why: 'Volume matched to the movie', skip: { visible: true, enabled: true, label: 'Skip Ad' } })} onSkip={jest.fn()} showWhy styles={styles} />,
+      );
+    });
+    const text = (content: string) => renderer.root.findAll((n) => (n.type as unknown) === 'Text' && n.props.children === content)[0];
+    expect(StyleSheet.flatten(text('Ad 1 of 3 · 0:12')?.props.style)).toMatchObject({ fontFamily: 'Brand', color: 'gold', fontSize: 28 });
+    expect(StyleSheet.flatten(text('Volume matched to the movie')?.props.style)).toMatchObject({ fontSize: 30 });
+    expect(StyleSheet.flatten(text('Skip Ad')?.props.style)).toMatchObject({ fontFamily: 'Brand' });
+    const skip = renderer.root.findAll((n) => n.props.testID === 'vega-ads-skip' && typeof (n.type as unknown) === 'string')[0];
+    expect(StyleSheet.flatten(skip?.props.style)).toMatchObject({ borderColor: 'gold' });
   });
 
   it('shows no empty why line', () => {

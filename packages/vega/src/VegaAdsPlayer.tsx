@@ -3,6 +3,7 @@ import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import type { AdSchedule, Macros, PlayerPort } from 'react-native-ads-core';
 import { AdCountdown } from './AdCountdown';
 import { AdOverlay } from './AdOverlay';
+import type { AdStyles } from './AdStyles';
 import { PauseAd } from './PauseAd';
 import { AdSurfaceLayers } from './AdSurfaceLayers';
 import { DualSurfaceView } from './DualSurfaceView';
@@ -65,6 +66,11 @@ export interface VegaAdsPlayerProps extends Omit<UseVegaAdsOptions, 'source' | '
   countdown?: boolean;
   /** Where the pause ad goes, for example `{ bottom: 200 }` to keep it clear of your controls. */
   pauseAdStyle?: StyleProp<ViewStyle>;
+  /**
+   * Your fonts, colours and positions for the built-in ad label, why line, Skip button, "Ad in 5"
+   * and pause ad, on top of their defaults. Not used by `renderOverlay`.
+   */
+  adStyles?: AdStyles;
   /** w3cmedia scaling mode. Default 'fit'. */
   scalingMode?: string;
   style?: StyleProp<ViewStyle>;
@@ -93,6 +99,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
     showWhy = false,
     countdown = true,
     pauseAdStyle,
+    adStyles,
     scalingMode,
     style,
     macros,
@@ -137,9 +144,9 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
           <AdSurfaceLayers surfaces={ads.surfaces} scalingMode={scalingMode} />
         </>
       )}
-      {countdown && !ads.playing && <AdCountdown nextBreakIn={ads.timeline.nextBreakIn} strings={options.strings} />}
-      <PauseAd view={ads.pauseAd} strings={options.strings} style={pauseAdStyle} />
-      {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} showWhy={showWhy} />}
+      {countdown && !ads.playing && <AdCountdown nextBreakIn={ads.timeline.nextBreakIn} strings={options.strings} styles={adStyles} />}
+      <PauseAd view={ads.pauseAd} strings={options.strings} style={pauseAdStyle} styles={adStyles} />
+      {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} showWhy={showWhy} styles={adStyles} />}
     </View>
   );
 }

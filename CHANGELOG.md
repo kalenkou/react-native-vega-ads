@@ -23,7 +23,7 @@ First release.
 
 - `<VegaAdsPlayer>`: content, ads, overlay, countdown and pause ad in one component on Amazon Vega OS (Fire TV); every part can be replaced.
 - `useVegaAds`, `useVideoPlayer`, `DualSurfaceView`, `AdSurfaceLayers` on `@amazon-devices/react-native-w3cmedia`.
-- `AdOverlay` with D-pad focus on Skip and VoiceView announcements; `useAdAnnouncements` for your own overlay.
+- `AdOverlay` with D-pad focus on Skip and VoiceView announcements; `useAdAnnouncements` and `AdSkipButton` for your own overlay; `adStyles` for your fonts and colours on the built-in ad UI; `ads.ui.name` and `ads.ui.timeLeft` for an own layout of the label.
 - `createAdMediaControlHandler`: "Alexa, pause" and the remote during ads; seek and skip are blocked.
 - `vegaAdIdSource` for the Fire TV advertising ID; `preloadVegaAds` and `useAdPlan` for the title page; `rnvPlayerPort` for react-native-video v7.
 
