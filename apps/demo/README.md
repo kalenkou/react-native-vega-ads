@@ -70,7 +70,7 @@ one), a Fire TV device on the same network as your computer, and the media from
 
 ## Launch
 
-The system shows `assets/raw/SplashScreenImages.zip` (one frame: the app's background and a small break map) from the first frame until the movie page has its poster; then the app reports fully drawn and hides the splash (`src/launch.ts`). On a Fire TV Stick 4K Select, 30 cold launches: first frame P90 1.08 s, fully drawn P90 2.49 s.
+The system shows `assets/raw/SplashScreenImages.zip` (one frame: the app's background and a small break map) from the first frame until the movie page has its poster; then the app reports fully drawn and hides the splash (`src/launch.ts`). On a Fire TV Stick 4K Select, 30 cold launches with this look: first frame P90 1.09 s, fully drawn P90 3.46 s.
 
 ## Look
 
