@@ -360,3 +360,16 @@ Demo release build with the fixes up to `75bdd4c`, scripted runs (remote keys wi
 | Same, remote keys during an ad | play/pause pauses the ad (12 s) and resumes it; right (seek) does nothing; Back closes the player and no ad pixel follows |
 | Same, Google's skippable sample | Skip with the remote's select key after 5 s: `skip`, then the movie |
 | Ad surfaces created before the content surface | ad plays (all quartiles) but the picture is black, 2 of 2 runs; created after it: visible, 5 of 5 (FL-19) |
+
+## Splash screen and the final demo look (16.10.2026)
+
+| Check | Result |
+|---|---|
+| Cold launch, 30 launches (`kpi-visualizer --certification`), native splash screen and fully drawn marker | first frame mean 0.92 s, P90 1.08 s (before: mean 2.39 s, P90 3.35 s); fully drawn P90 2.49 s |
+| Same, final look with IBM Plex fonts | first frame mean 0.88 s, P90 1.09 s; fully drawn P90 3.46 s (target 8 s) |
+| Full demo run, final look | 3/3 PASS |
+| Seek over the mid-roll at 2:19.9, final look | 3/3: the pod plays after the seek, then the movie resumes at the target (143 s). The script now reads the seek target: `seeked` can report the keyframe before it (asked 139.7 s, reported 129.7 s) |
+| Back, Home, relaunch with the splash screen | PASS: the movie page after each |
+| Sintel "why" line in the demo's own overlay | PASS: Kettlo left out with VAST error 205; the line is on screen |
+| Pause ad | PASS: shown, closed, the movie resumes |
+| All runs with the demo's `MUTED` flag | the device log shows `set muted true` for every player, no unmute |
