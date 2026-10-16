@@ -233,6 +233,8 @@ The movie is brought to -23.7 LUFS and the ads to -16 LUFS by `tools/demo-ads/ge
 
 Not checked yet: by ear, that the ad sounds as loud as the movie and the movie is not turned down after the break.
 
+Cross-check of the files with ffmpeg `ebur128` (17.10.2026): Tears of Steel -23.7 LUFS, Kettlo -16.0 LUFS as is and -23.7 LUFS at volume 0.412, the value on the device; Sintel -23.0 LUFS, Brewnord -23.0 LUFS at 0.4416 (-7.1 dB). This checks the gain the library sets, not what the TV plays.
+
 ## Break context: a blocked category is left out (12.10.2026)
 
 `serve.mjs --context` with a hand-written context for the first mid-roll (2:19.9): signal `vehicle crash`, `BlockedAdCategories` 1551 1571. The pod is Brewnord (1133), Voltaro (1571) and Kettlo (1524). `category-run.sh` (kept outside the repo): install, Play, wait for the first mid-roll.
