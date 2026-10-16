@@ -398,7 +398,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 | `breakEnd` | the break is over and the content resumes | `AD_BREAK_ENDED`, `CONTENT_RESUME_REQUESTED` |
 | `content:ended` | the content and the post-roll, if any, are over | `ALL_ADS_COMPLETED` (after the post-roll) |
 | `vmap:error:<code>` | the VMAP request failed (VMAP error code) | – |
-| `break:<id>:late` | a break was not ready in time and was skipped | – |
+| `break:<id>:late` | in playback, a break was not ready in time and was skipped (after a seek over it the content waits for its ads instead) | – |
 | `break:<id>:interrupted` | the app went to the background (Home) during a break or while it loaded; it is not shown again | – |
 | `break:<id>:superseded` | a later seek started another break while this one still loaded; only the last break plays, and this one's ad player is released | – |
 | `standby:unavailable`, `standby:error` | the second ad player could not start; one player is used | – |

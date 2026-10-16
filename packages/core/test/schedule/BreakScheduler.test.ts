@@ -143,7 +143,7 @@ describe('BreakScheduler (R10, R24)', () => {
     play(scheduler, 0, 10);
     expect(scheduler.onTime(90)).toEqual([
       { type: 'prefetch', breakId: 'm60' },
-      { type: 'start', breakId: 'm60' },
+      { type: 'start', breakId: 'm60', seek: true },
     ]);
     expect(play(scheduler, 90.5, 104.5)).toEqual([]);
     expect(play(scheduler, 105, 125).map((d) => d.breakId)).toEqual(['m120', 'm120']);
@@ -154,6 +154,12 @@ describe('BreakScheduler (R10, R24)', () => {
     play(scheduler, 0, 31);
     expect(scheduler.onTime(5)).toEqual([]);
     expect(play(scheduler, 5.5, 40)).toEqual([]);
+  });
+
+  it('marks the start after a seek over a break that was already prefetched', () => {
+    const scheduler = new BreakScheduler([{ id: 'm60', offset: at(60) }]);
+    play(scheduler, 0, 55); // prefetched on the way
+    expect(scheduler.onTime(90)).toEqual([{ type: 'start', breakId: 'm60', seek: true }]);
   });
 
   it('treats a small jump as normal playback, not a seek', () => {
@@ -167,7 +173,7 @@ describe('BreakScheduler (R10, R24)', () => {
     scheduler.onTime(0);
     expect(scheduler.onTime(60)).toEqual([
       { type: 'prefetch', breakId: 'm60' },
-      { type: 'start', breakId: 'm60' },
+      { type: 'start', breakId: 'm60', seek: true },
     ]);
   });
 
@@ -179,7 +185,7 @@ describe('BreakScheduler (R10, R24)', () => {
     play(scheduler, 0, 10);
     expect(scheduler.onTime(60)).toEqual([
       { type: 'prefetch', breakId: 'm60' },
-      { type: 'start', breakId: 'm60' },
+      { type: 'start', breakId: 'm60', seek: true },
     ]);
     expect(play(scheduler, 60.5, 70)).toEqual([]);
   });

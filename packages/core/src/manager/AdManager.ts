@@ -408,15 +408,16 @@ export class AdManager {
   }
 
   private async apply(decisions: Decision[]): Promise<void> {
-    // A break requested and started in one step (after a seek over it) is waited for:
-    // the content is buffering at its new position anyway, and the break is what the seek owes.
+    // A break requested and started in one step, or one a seek jumped over (even when its ads were
+    // requested before the seek), is waited for: after a seek the content is buffering at its new
+    // position anyway, and the break is what the seek owes.
     const requestedNow = new Set<string>();
     for (const decision of decisions) {
       if (decision.type === 'prefetch') {
         this.prefetch(decision.breakId);
         requestedNow.add(decision.breakId);
       } else {
-        await this.startBreak(decision.breakId, requestedNow.has(decision.breakId));
+        await this.startBreak(decision.breakId, requestedNow.has(decision.breakId) || decision.seek === true);
       }
     }
   }

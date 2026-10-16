@@ -1,6 +1,7 @@
 import type { BreakOffset } from '../vast';
 
-export type Decision = { type: 'prefetch' | 'start'; breakId: string };
+/** `seek` marks a start owed to a seek over the break: the content waits for its ads. */
+export type Decision = { type: 'prefetch' | 'start'; breakId: string; seek?: true };
 
 /** A mid-roll on the content timeline; `done` once it has played or was passed. */
 export interface BreakMark {
@@ -101,7 +102,7 @@ export class BreakScheduler {
       const target = jumped[jumped.length - 1];
       jumped.forEach((e) => (e.done = true));
       if (target) {
-        return this.startNow(target);
+        return this.startNow(target, true);
       }
     }
 
@@ -168,14 +169,14 @@ export class BreakScheduler {
       .sort((a, b) => (a.time as number) - (b.time as number));
   }
 
-  private startNow(entry: Entry): Decision[] {
+  private startNow(entry: Entry, seek = false): Decision[] {
     const decisions: Decision[] = [];
     if (!entry.prefetched) {
       entry.prefetched = true;
       decisions.push({ type: 'prefetch', breakId: entry.id });
     }
     entry.done = true;
-    decisions.push({ type: 'start', breakId: entry.id });
+    decisions.push(seek ? { type: 'start', breakId: entry.id, seek: true } : { type: 'start', breakId: entry.id });
     return decisions;
   }
 }

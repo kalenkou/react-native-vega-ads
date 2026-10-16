@@ -517,10 +517,10 @@ describe('AdManager', () => {
     const ctx = setup({});
     ctx.http.hang('https://ads.test/slow.xml');
     await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/slow.xml' }]));
-    ctx.content.emitTime(20);
-    await settle();
-    ctx.content.emitTime(30);
-    await settle();
+    for (const time of [20, 22, 24, 26, 28, 30]) {
+      ctx.content.emitTime(time); // playback, not a seek: a seek would wait for the break
+      await settle();
+    }
     expect(ctx.content.paused).toBe(false);
     expect(ctx.events).toContain('break:break-1:late');
   });
@@ -561,6 +561,21 @@ describe('AdManager', () => {
     expect(ctx.http.requests).toEqual([]);
 
     ctx.content.emitTime(400); // seek from 0:10 to 6:40, over the break at 5:00
+    await settle();
+    const ad = ctx.lastAdPlayer();
+    ad.emitCanPlay();
+    await settle();
+    expect(ctx.events.some((e) => e.endsWith(':late'))).toBe(false);
+    expect(ad.calls).toContain('play');
+    expect(ctx.content.calls).toContain('pause');
+  });
+
+  it('plays the break a seek jumped over while its prefetched ads still load', async () => {
+    const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 300, vastUrl: 'https://ads.test/mid.xml' }]));
+    ctx.content.emitTime(290); // the break at 5:00 is prefetched, its ad not ready yet
+    await settle();
+    ctx.content.emitTime(400); // a seek over it before the ad is ready
     await settle();
     const ad = ctx.lastAdPlayer();
     ad.emitCanPlay();
@@ -660,8 +675,10 @@ describe('AdManager', () => {
     ctx.content.emitTime(20);
     await settle();
     const late = ctx.lastAdPlayer();
-    ctx.content.emitTime(30.5);
-    await settle();
+    for (const time of [22, 24, 26, 28, 30.5]) {
+      ctx.content.emitTime(time); // playback, not a seek
+      await settle();
+    }
     expect(ctx.events).toContain('break:break-1:late');
     expect(late.deinitialized).toBe(true);
   });
