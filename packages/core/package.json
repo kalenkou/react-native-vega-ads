@@ -1,6 +1,6 @@
 {
   "name": "react-native-ads-core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "VAST 4 / VMAP 1 and player-independent ad break logic for React Native: requests, media file choice, IAB tracking, break schedule, ad pods, two-player hand-over, overlay state",
   "keywords": [
     "ad-pods",
