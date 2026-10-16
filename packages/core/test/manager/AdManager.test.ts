@@ -872,6 +872,32 @@ describe('AdManager', () => {
     expect(after.filter((c) => c.startsWith('src:') || c === 'play')).toEqual([]);
   });
 
+  it('clears the surface handle of every ad player before it releases it (Amazon cleanup order)', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    expect(ctx.lastAdPlayer().surface).toBe(AD_A);
+    await playAdToEnd(ctx);
+    expect(ctx.adPlayers.every((p) => p.deinitialized && p.surface === null)).toBe(true);
+  });
+
+  it('Home during a pod clears the surfaces of the ad player and of the prebuffering one', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/pod-optimized.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.adPlayers[0]?.flush();
+    await settle();
+    expect(ctx.adPlayers.length).toBeGreaterThan(1);
+    await ctx.manager.suspend();
+    expect(ctx.adPlayers.map((p) => [p.deinitialized, p.surface])).toEqual(ctx.adPlayers.map(() => [true, null]));
+  });
+
   it('suspend() releases a prefetched break, and it is prefetched again after wake()', async () => {
     const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
     await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]));

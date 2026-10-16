@@ -148,7 +148,7 @@ export class AdBreakSession {
   /** The surface on screen. It changes only when the new ad shows its first frame. */
   private shownSurface: string | null = null;
   /** After an early hand-over, the ad that is still finishing its last fraction of a second. */
-  private previous: { player: PlayerPort; tracker: AdTracker } | null = null;
+  private previous: { player: PlayerPort; tracker: AdTracker; surface: string | null } | null = null;
   private previousReleased: () => void = () => undefined;
   /** Set when the device could not start a second ad player; then the break uses one. */
   private standbyUnavailable = false;
@@ -468,7 +468,7 @@ export class AdBreakSession {
       const player = await this.createPlayer(this.deps.adSurface);
       if (this.state !== 'loading') {
         // Back or Home came while the player started: it must not take the surface or a decoder.
-        await player.deinitialize().catch(() => undefined);
+        await this.free(player, this.deps.adSurface).catch(() => undefined);
         throw new Error('ad break left while the ad player started');
       }
       this.player = player;
@@ -630,7 +630,7 @@ export class AdBreakSession {
       return;
     }
     if (this.current !== current || this.standby || this.state !== 'playing') {
-      await player.deinitialize();
+      await this.free(player, surface);
       return;
     }
     const standby: Standby = { player, surface, item, url, ready: false };
@@ -645,7 +645,7 @@ export class AdBreakSession {
       if (this.standby === standby) {
         this.standby = null;
         this.deps.onEvent?.('standby:error');
-        void standby.player.deinitialize();
+        void this.free(standby.player, standby.surface);
       }
     });
     this.loadAd(standby.player, item.ad, url);
@@ -691,7 +691,7 @@ export class AdBreakSession {
     }
     pod.next(elapsed);
     this.standby = null;
-    this.previous = { player, tracker: current.tracker };
+    this.previous = { player, tracker: current.tracker, surface: this.playerSurface };
     // One sound at a time: the finishing ad keeps playing for its pixels, silently.
     player.setMuted(true);
     this.releasing = new Promise((resolve) => (this.previousReleased = resolve));
@@ -730,7 +730,7 @@ export class AdBreakSession {
       this.current.tracker.progress(this.player?.getCurrentTime() ?? 0);
     }
     this.emitChange();
-    await previous.player.deinitialize();
+    await this.free(previous.player, previous.surface);
     this.previousReleased();
   }
 
@@ -757,12 +757,12 @@ export class AdBreakSession {
       this.standby = null;
       if (standby && standby.ready && standby.item.ad === item.ad) {
         // The current ad already ended, so its surface is empty: release it at once.
-        this.releasing = player.deinitialize();
+        this.releasing = this.free(player, this.playerSurface);
         await this.switchTo(standby);
         return;
       }
       if (standby) {
-        await standby.player.deinitialize();
+        await this.free(standby.player, standby.surface);
       }
       if (this.state !== 'playing') {
         return;
@@ -835,19 +835,35 @@ export class AdBreakSession {
     this.cancelPrebuffer?.();
     this.disarmWatchdog();
     this.clearPreviousTimer();
-    const players = [this.player, this.standby?.player, this.previous?.player];
+    const players: Array<[PlayerPort | undefined | null, string | null | undefined]> = [
+      [this.player, this.playerSurface],
+      [this.standby?.player, this.standby?.surface],
+      [this.previous?.player, this.previous?.surface],
+    ];
     this.player = null;
     this.playerSurface = null;
     this.shownSurface = null;
     this.standby = null;
     this.previous = null;
-    for (const player of players) {
+    for (const [player, surface] of players) {
       if (player) {
-        await player.deinitialize().catch(() => undefined); // a release that fails still ends the break
+        await this.free(player, surface ?? null).catch(() => undefined); // a release that fails still ends the break
       }
     }
     // The finishing player is gone too: whoever waits for it must not wait forever.
     this.previousReleased();
+  }
+
+  /** Amazon's cleanup order for a w3cmedia player: clear its surface handle, then deinitialize. */
+  private free(player: PlayerPort, surface: string | null): Promise<void> {
+    if (surface !== null) {
+      try {
+        player.detachSurface(surface);
+      } catch {
+        // The player is released below anyway.
+      }
+    }
+    return player.deinitialize();
   }
 
   private setState(state: SessionState): void {
