@@ -696,6 +696,22 @@ describe('AdManager', () => {
     expect(ctx.last()?.state).toBe('playing');
   });
 
+  it('tells the app when a break starts, before its first ad event, and when it ends', async () => {
+    const ctx = setup({ 'https://ads.test/post.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 'end', vastUrl: 'https://ads.test/post.xml' }]));
+    ctx.content.emitTime(590);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    ctx.content.emitEnded();
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    const at = (name: string) => ctx.events.indexOf(name);
+    expect(at('breakStart')).toBeGreaterThanOrEqual(0);
+    expect(at('breakStart')).toBeLessThan(at('impression'));
+    expect(ctx.events.filter((e) => e === 'breakStart')).toHaveLength(1);
+  });
+
   it('togglePause() pauses the ad on screen and is false between breaks', async () => {
     const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
     const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));

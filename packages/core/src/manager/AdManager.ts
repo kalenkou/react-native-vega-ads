@@ -26,7 +26,7 @@ export interface AdManagerDeps {
   prefetchSeconds?: number;
   /** The snapshot of the break on screen, or IDLE_SNAPSHOT between breaks. */
   onChange?: (snapshot: SessionSnapshot) => void;
-  /** Session events plus `vmap:error:<code>` and `break:<id>:late`. */
+  /** Session events plus `breakStart`, `vmap:error:<code>` and `break:<id>:late`. */
   onEvent?: (name: string) => void;
   /** The breaks on the content timeline and the countdown to the next one; called on changes only. */
   onTimeline?: (timeline: AdTimeline) => void;
@@ -527,6 +527,7 @@ export class AdManager {
     this.active = entry.session;
     this.activeId = id;
     this.trackBreak(id, 'breakStart');
+    this.deps.onEvent?.('breakStart');
     await entry.session.start({ resumeContent: !this.isPostRoll(id) });
   }
 

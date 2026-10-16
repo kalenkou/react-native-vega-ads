@@ -437,6 +437,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 | `notUsed` | the `notUsed` pixels of that ad were sent | – |
 | `pauseAd:impression`, `pauseAd:creativeView`, `pauseAd:overlayViewDuration`, `pauseAd:close` | the pause ad showed, left the screen, or the viewer closed it | – |
 | `error:<code>` | an ad failed; `<code>` is the VAST error code (for example 400, 403, 405) | `ERROR` |
+| `breakStart` | a break starts: the content pauses for it, before its first ad event | `CONTENT_PAUSE_REQUESTED`, `AD_BREAK_STARTED` |
 | `breakEnd` | the break is over and the content resumes | `AD_BREAK_ENDED`, `CONTENT_RESUME_REQUESTED` |
 | `content:ended` | the content and the post-roll, if any, are over | `ALL_ADS_COMPLETED` (after the post-roll) |
 | `vmap:error:<code>` | the VMAP request failed (VMAP error code) | – |
