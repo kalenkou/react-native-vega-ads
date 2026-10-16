@@ -2,10 +2,10 @@
 
 **Ads that watch the movie first.** Client-side ad insertion (CSAI) for React Native apps on Amazon Vega OS (Fire TV).
 
-- **Never mid-sentence.** `make-vmap` places each break on a shot change or a silent moment, never inside a line of dialogue.
+- **Never mid-sentence.** `make-vmap` places each break on a shot change or a silent moment and, with whisper.cpp, never inside a line of dialogue.
 - **Never louder than the movie.** An ad louder than the film is turned down to the film's loudness (EBU R128), never up.
 - **Never the same ad twice.** A creative is not shown again within 30 minutes, and a break has one ad per advertiser.
-- **No unfitting ad after a hard scene.** A local vision model looks at the scene before each break, so there are no car ads right after a car crash. The player leaves out the blocked categories.
+- **Fewer unfitting ads after a hard scene.** A local vision model looks at the scene before each break, so there are no car ads right after a car crash. The player leaves out the blocked categories.
 
 | Before Play: the break map, with what the model saw before each break | A break: why it looks like this | Paused: a pause ad |
 | --- | --- | --- |
@@ -53,7 +53,7 @@ Vega apps have no ready, open way to play VAST/VMAP ads:
 
 1. **Where:** ffmpeg finds shot changes and silent black frames; whisper.cpp finds speech. A break never lands inside a line of dialogue or within 1 s of it. On Tears of Steel and Sintel, a break every 5 minutes cuts a line 24–32 % of the time and lands mid-shot 83–86 % of the time; make-vmap's 4 breaks there do neither ([table](tools/make-vmap/eval/README.md#timer-breaks-against-make-vmap)).
 2. **What comes after:** a local vision model (Qwen3.6-35B-A3B through llama.cpp) looks at three frames and the last minute of dialogue before each break and reports what it clearly sees: weapons, violence, injury, death, grief, vehicle crash, drinking, child in danger, each with its evidence. Fixed rules turn them into IAB ad categories to leave out after that scene, for example no car ads right after a car crash. The player enforces them (VAST error 205).
-3. **How well:** the author labelled 24 breaks blind, before seeing any model answer. The model finds most sensitive breaks (10 of 13 on the set we chose it on, 4 of 5 on a film we kept aside) but still leaves out categories after some calm scenes. Method and every number: [`tools/make-vmap/eval`](tools/make-vmap/eval/README.md).
+3. **How well:** the author labelled 24 breaks blind, before seeing any model answer. The model finds most sensitive breaks (10 of 13 on the set we chose it on, 4 of 5 on a film we kept aside) but it also leaves out categories after calm scenes: after 3 of 4 calm breaks on the set we chose it on, 0 of 2 on the film kept aside. Method and every number: [`tools/make-vmap/eval`](tools/make-vmap/eval/README.md).
 
 ### Options on Vega today
 
@@ -103,6 +103,7 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11–16.10.2026. Details: [`apps/spike/DEV
 | Gap between ads in a pod | next ad's first frame 64–85 ms before the previous ad ends |
 | Tracking pixels | impression + 5 events per ad, all HTTP 200 |
 | Memory, 9 breaks × 3 ads in 11 min | PSS peak 91 MB, then flat at 65–68 MB (Amazon KPI: < 400 MiB) |
+| Demo app, a whole film with no key pressed (Tears of Steel and Sintel, 5 ads each), 16.10 | every ad to the end, the player closes by itself; PSS peak 95–116 MB |
 | Remote play/pause and "Alexa, pause/play" | pass during ads and content, with the manifest entries below |
 | Media controls focus switch | 197–217 ms |
 | VAST parse, 34.4 KB, Release build | ~49 ms text → DOM, ~11 ms DOM → model (median of 30) |
@@ -127,7 +128,7 @@ npm pack ./packages/core ./packages/vega   # builds both packages first
 
 Then, in your app, install the two `.tgz` files: `npm install path/to/react-native-ads-core-0.1.0.tgz path/to/react-native-vega-ads-0.1.0.tgz`. After the npm release this becomes `npm install react-native-vega-ads`.
 
-Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. Your Vega app already has them. The examples below also pass the Fire TV advertising ID: for that, add `@amazon-devices/kepler-adid-retriever` to your app. The Amazon packages are marked optional, so `react-native-ads-core` also installs in non-Vega projects.
+Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. Your Vega app already has them. The examples below also pass the Fire TV advertising ID: for that, add `@amazon-devices/kepler-adid-retriever` to your app. `react-native-ads-core` has no Vega dependency. `react-native-vega-ads` needs the two Amazon packages at run time; they are marked optional only for installing.
 
 ### 2. Add entries to `manifest.toml`
 
@@ -490,6 +491,7 @@ How the library meets the Appstore advertising policy, the Advertising ID policy
 - **DRM.** The first Vega devices support only one secure video decoder ([media player requirements](https://developer.amazon.com/docs/vega/0.24/media-player-requirements.html)). If both content and ads are DRM-protected, the second player cannot decode at the same time. Use clear (non-DRM) ad creatives.
 - **1 GB devices.** All current Vega sticks have 1 GB RAM. `react-native-vega-ads` uses two ad players. Amazon's guide recommends one ad player on devices with limited memory or decoders. If the second ad player cannot start or fails, `react-native-vega-ads` continues with one ad player; the gap between ads in a pod is then longer. Test on your target devices.
 - **Amazon Publisher Services (APS).** Amazon's [advertising policy](https://developer.amazon.com/docs/policy-center/amazon-appstore-advertising.html) can require large ad-supported Fire TV apps to give 30% of ad impressions to APS. `react-native-vega-ads` does not integrate APS. Check if the rule applies to your app.
+- **Seek back before a prefetched break.** The break's ads stay loaded in their ad player until the viewer reaches the break again; the ad player is released only when the break plays or is passed.
 - **HTTPS media only**, unless the host is in the manifest's cleartext list (see Quick start).
 - **No VPAID or SIMID.** Interactive ads are not supported.
 - **NonLinear: pause ads only** (a static image). No overlay or squeezeback during playback, no Companion ads.
