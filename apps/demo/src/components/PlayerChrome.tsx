@@ -1,9 +1,14 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import type {VegaAds, W3cVideoPlayer} from 'react-native-vega-ads';
+import {
+  useAdAnnouncements,
+  type VegaAds,
+  type W3cVideoPlayer,
+} from 'react-native-vega-ads';
 import {useRemoteKeys} from '../remote';
-import {colors} from '../theme';
-import {formatTime} from '../time';
+import {colors, fonts} from '../theme';
+import {timecode} from '../time';
+import {AdLayer} from './AdLayer';
 import {Timeline} from './Timeline';
 
 const SEEK_SECONDS = 10;
@@ -13,6 +18,8 @@ export interface PlayerChromeProps {
   title: string;
   player: W3cVideoPlayer | null;
   ads: VegaAds;
+  /** Show why a break looks as it does, in the ad overlay. */
+  showWhy?: boolean;
 }
 
 /** Position, duration and play state of the content player, from its events. */
@@ -58,11 +65,18 @@ function usePlayback(player: W3cVideoPlayer | null) {
 
 /**
  * The app's own controls over the movie: title, times and a timeline with the ad breaks.
- * Shown for a few seconds after a key press and while paused; never during ads.
+ * Shown for a few seconds after a key press and while paused. During ads it draws the ad
+ * overlay instead (AdLayer), with the library's VoiceView announcements.
  * Left/right seek 10 s (a seek over a break plays that break first: no free pass).
  */
-export const PlayerChrome = ({title, player, ads}: PlayerChromeProps) => {
+export const PlayerChrome = ({
+  title,
+  player,
+  ads,
+  showWhy = false,
+}: PlayerChromeProps) => {
   const {position, duration, paused} = usePlayback(player);
+  useAdAnnouncements(ads.ui);
   const [visible, setVisible] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -114,7 +128,20 @@ export const PlayerChrome = ({title, player, ads}: PlayerChromeProps) => {
     }
   });
 
-  if (ads.playing || !(visible || paused)) {
+  if (ads.playing) {
+    return (
+      <View style={styles.root} pointerEvents="box-none">
+        <AdLayer
+          title={title}
+          ads={ads}
+          position={position}
+          duration={duration}
+          showWhy={showWhy}
+        />
+      </View>
+    );
+  }
+  if (!(visible || paused)) {
     return null;
   }
   return (
@@ -128,11 +155,11 @@ export const PlayerChrome = ({title, player, ads}: PlayerChromeProps) => {
           marks={ads.timeline.marks}
         />
         <View style={styles.times}>
-          <Text style={styles.time}>{formatTime(position)}</Text>
+          <Text style={styles.time}>{timecode(Math.floor(position))}</Text>
           <Text style={styles.hint}>
-            ◀ ▶ 10 s · OK play/pause · yellow marks: ad breaks
+            ◀ ▶ 10 s · OK play/pause · orange marks: ad breaks
           </Text>
-          <Text style={styles.time}>{formatTime(duration)}</Text>
+          <Text style={styles.time}>{timecode(Math.floor(duration))}</Text>
         </View>
       </View>
     </View>
@@ -143,23 +170,30 @@ const styles = StyleSheet.create({
   root: {position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 5},
   title: {
     position: 'absolute',
-    top: 40,
-    left: 64,
+    top: 54,
+    left: 96,
     color: colors.text,
-    fontSize: 32,
-    fontWeight: '600',
+    fontFamily: fonts.display,
+    fontSize: 48,
   },
   bottom: {
     position: 'absolute',
-    left: 64,
-    right: 64,
-    bottom: 48,
-    padding: 24,
-    borderRadius: 12,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 96,
+    paddingTop: 28,
+    paddingBottom: 40,
     backgroundColor: colors.scrim,
   },
-  state: {color: colors.muted, fontSize: 22, marginBottom: 16},
-  times: {flexDirection: 'row', justifyContent: 'space-between', marginTop: 16},
-  time: {color: colors.text, fontSize: 24},
-  hint: {color: colors.muted, fontSize: 20},
+  state: {
+    color: colors.muted,
+    fontFamily: fonts.mono,
+    fontSize: 24,
+    marginBottom: 18,
+    textTransform: 'uppercase',
+  },
+  times: {flexDirection: 'row', justifyContent: 'space-between', marginTop: 18},
+  time: {color: colors.text, fontFamily: fonts.mono, fontSize: 24},
+  hint: {color: colors.muted, fontFamily: fonts.body, fontSize: 22},
 });

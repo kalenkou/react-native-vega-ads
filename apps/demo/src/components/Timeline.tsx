@@ -34,23 +34,23 @@ export const Timeline = ({position, duration, marks}: TimelineProps) => (
 );
 
 const styles = StyleSheet.create({
-  track: {height: 8, backgroundColor: colors.track, borderRadius: 4},
+  track: {height: 6, backgroundColor: colors.track, borderRadius: 3},
   played: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: colors.text,
-    borderRadius: 4,
+    backgroundColor: colors.accent,
+    borderRadius: 3,
   },
   mark: {
     position: 'absolute',
-    top: -4,
-    width: 6,
-    height: 16,
-    marginLeft: -3,
-    borderRadius: 3,
-    backgroundColor: colors.accent,
+    top: -9,
+    width: 8,
+    height: 24,
+    marginLeft: -4,
+    borderRadius: 2,
+    backgroundColor: colors.adBreak,
   },
   markDone: {opacity: 0.35},
 });

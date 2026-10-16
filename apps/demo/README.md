@@ -70,7 +70,11 @@ one), a Fire TV device on the same network as your computer, and the media from
 
 ## Launch
 
-The system shows `assets/raw/SplashScreenImages.zip` (one frame in the app's background colour) from the first frame until the movie page has its poster; then the app reports fully drawn and hides the splash (`src/launch.ts`). On a Fire TV Stick 4K Select, 30 cold launches: first frame P90 1.08 s, fully drawn P90 2.49 s.
+The system shows `assets/raw/SplashScreenImages.zip` (one frame: the app's background and a small break map) from the first frame until the movie page has its poster; then the app reports fully drawn and hides the splash (`src/launch.ts`). On a Fire TV Stick 4K Select, 30 cold launches: first frame P90 1.08 s, fully drawn P90 2.49 s.
+
+## Look
+
+The movie page shows the title's **break map** before Play: where each ad break is (VMAP time) and what plays first, from `useAdPlan`. During a break the demo draws its own overlay through `renderOverlay` (`src/components/AdLayer.tsx`): the ad label, why the break looks as it does, Skip, and the movie's timeline; `useAdAnnouncements` keeps the library's VoiceView announcements. The ad creative's own bottom line stays visible. Fonts: IBM Plex Sans, Sans Condensed and Mono (`assets/fonts`, SIL Open Font License 1.1); on Vega a font file's name is its family name.
 
 ## Remote
 

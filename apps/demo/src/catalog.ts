@@ -5,6 +5,8 @@ export interface Movie {
   /** "2012 · 12 min · Sci-fi" */
   meta: string;
   description: string;
+  /** Length in seconds (ffprobe), for the break map before the player knows it. */
+  duration: number;
   credit: string;
   uri: string;
   poster: string;
@@ -23,6 +25,7 @@ export const TEARS_OF_STEEL: Movie = {
   meta: '2012 · 12 min · Sci-fi',
   description:
     'A group of warriors and scientists gathers at the Oude Kerk in Amsterdam to stage a crucial event from the past, in a desperate attempt to rescue the world from destructive robots.',
+  duration: 734.17,
   credit: '(CC) Blender Foundation | mango.blender.org · CC BY 3.0',
   uri: `${MEDIA_BASE}tears_of_steel_720p.mp4`,
   poster: `${MEDIA_BASE}poster.jpg`,
@@ -38,6 +41,7 @@ export const SINTEL: Movie = {
   meta: '2010 · 15 min · Fantasy',
   description:
     'A lonely girl searches the world for the baby dragon she once saved. The journey takes her through snow, a crowded city and a dark cave, where she finds more than she looked for.',
+  duration: 888.1,
   credit: '© copyright Blender Foundation | durian.blender.org · CC BY 3.0',
   uri: `${MEDIA_BASE}sintel_720p.mp4`,
   poster: `${MEDIA_BASE}poster_sintel.jpg`,

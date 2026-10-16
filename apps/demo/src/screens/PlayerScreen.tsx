@@ -84,10 +84,17 @@ export const PlayerScreen = ({
       countdown={mode.countdown}
       onEnd={onClose}
       onEvent={onEvent}
-      createVideoPlayer={MUTED ? createMutedPlayer : undefined}>
+      createVideoPlayer={MUTED ? createMutedPlayer : undefined}
+      // The ad overlay is the demo's own (PlayerChrome → AdLayer).
+      renderOverlay={() => null}>
       {({player, ads}) => (
         <>
-          <PlayerChrome title={movie.title} player={player} ads={ads} />
+          <PlayerChrome
+            title={movie.title}
+            player={player}
+            ads={ads}
+            showWhy={mode.showWhy}
+          />
           {classic && (
             <Text testID="classic-badge" style={styles.badge}>
               Ads as usual · for comparison

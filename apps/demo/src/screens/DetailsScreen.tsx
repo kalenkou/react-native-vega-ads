@@ -1,9 +1,10 @@
 import React, {useEffect, useState} from 'react';
 import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
-import {adPlanLabel, useAdPlan} from 'react-native-vega-ads';
+import {adPlanLabel, useAdPlan, type AdPlan} from 'react-native-vega-ads';
 import type {Movie} from '../catalog';
-import {colors} from '../theme';
+import {BreakMap} from '../components/BreakMap';
+import {colors, fonts} from '../theme';
 
 export interface DetailsScreenProps {
   movie: Movie;
@@ -19,7 +20,18 @@ export interface DetailsScreenProps {
   onDrawn?: () => void;
 }
 
-/** The movie page: poster, story, Play (with the D-pad focus) and a button to the next title. */
+/** "1 ad · 10 s · skip after 5 s": the pre-roll right after Play. */
+function prerollLabel(plan: AdPlan): string {
+  const pre = plan.preroll;
+  if (!pre) {
+    return '';
+  }
+  const ads = pre.ads === 1 ? '1 ad' : `${pre.ads} ads`;
+  const skip = pre.skipAfter === null ? '' : ` · skip after ${pre.skipAfter} s`;
+  return `${ads} · ${pre.seconds} s${skip}`;
+}
+
+/** The movie page: poster, story, Play (with the D-pad focus), the next title and the break map. */
 export const DetailsScreen = ({
   movie,
   next,
@@ -82,7 +94,7 @@ export const DetailsScreen = ({
                 styles.buttonText,
                 focused === 'play' && styles.buttonTextFocused,
               ]}>
-              ▶ Play
+              Play
             </Text>
           </TouchableOpacity>
           {onCompare && movie.classicVmapUrl && (
@@ -125,11 +137,16 @@ export const DetailsScreen = ({
             </Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.note}>
-          Ad breaks wait for shot changes and silent black frames. You can skip
-          after 5 s.
-        </Text>
       </View>
+      {plan && plan.marks.length > 0 && (
+        <View style={styles.map}>
+          <BreakMap
+            plan={plan}
+            duration={movie.duration}
+            prerollLabel={prerollLabel(plan)}
+          />
+        </View>
+      )}
       <Text style={styles.credit}>{movie.credit}</Text>
     </View>
   );
@@ -137,42 +154,65 @@ export const DetailsScreen = ({
 
 const styles = StyleSheet.create({
   root: {flex: 1, backgroundColor: colors.background},
-  poster: {position: 'absolute', top: 0, bottom: 0, left: 0, right: 0},
+  poster: {position: 'absolute', top: 0, left: 0, right: 0, height: 640},
   scrim: {
     position: 'absolute',
     top: 0,
-    bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(11,13,18,0.72)',
+    height: 640,
+    backgroundColor: 'rgba(11,14,20,0.66)',
   },
-  content: {position: 'absolute', left: 96, top: 160, width: 900},
-  title: {color: colors.text, fontSize: 72, fontWeight: '700'},
-  meta: {color: colors.muted, fontSize: 28, marginTop: 12},
-  adPlan: {color: colors.muted, fontSize: 24, marginTop: 8},
+  content: {position: 'absolute', left: 96, top: 72, width: 960},
+  title: {
+    color: colors.text,
+    fontFamily: fonts.display,
+    fontSize: 104,
+    lineHeight: 112,
+  },
+  meta: {
+    color: colors.muted,
+    fontFamily: fonts.mono,
+    fontSize: 26,
+    marginTop: 8,
+  },
+  adPlan: {
+    color: colors.muted,
+    fontFamily: fonts.body,
+    fontSize: 24,
+    marginTop: 8,
+  },
   description: {
     color: colors.text,
+    fontFamily: fonts.body,
     fontSize: 28,
     lineHeight: 40,
-    marginTop: 32,
+    marginTop: 20,
+    maxWidth: 860,
   },
-  buttons: {flexDirection: 'row', gap: 24, marginTop: 48},
+  buttons: {flexDirection: 'row', gap: 20, marginTop: 28},
   button: {
-    paddingHorizontal: 40,
+    paddingHorizontal: 36,
     paddingVertical: 16,
-    borderRadius: 8,
-    borderWidth: 3,
-    borderColor: colors.track,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.panel,
   },
-  buttonFocused: {backgroundColor: colors.focus, borderColor: colors.focus},
-  buttonText: {color: colors.text, fontSize: 30, fontWeight: '600'},
-  buttonTextFocused: {color: colors.background},
-  note: {color: colors.muted, fontSize: 22, marginTop: 32},
+  buttonFocused: {
+    backgroundColor: colors.focus,
+    borderColor: colors.text,
+    transform: [{scale: 1.05}],
+  },
+  buttonText: {color: colors.text, fontFamily: fonts.body, fontSize: 30},
+  buttonTextFocused: {color: colors.background, fontFamily: fonts.bodyStrong},
+  map: {position: 'absolute', left: 96, top: 690},
   credit: {
     position: 'absolute',
     left: 96,
     bottom: 40,
     color: colors.muted,
-    fontSize: 18,
+    fontFamily: fonts.body,
+    fontSize: 20,
   },
 });
