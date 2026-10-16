@@ -7,9 +7,9 @@
 - **Never the same ad twice.** A creative is not shown again within 30 minutes, and a break has one ad per advertiser.
 - **No unfitting ad after a hard scene.** A local vision model looks at the scene before each break, so there are no car ads right after a car crash. The player leaves out the blocked categories.
 
-| Before Play: the break map | A break: why it looks like this | Paused: a pause ad |
+| Before Play: the break map, with what the model saw before each break | A break: why it looks like this | Paused: a pause ad |
 | --- | --- | --- |
-| ![The movie page with the break map: pre-roll, 00:02:19.917, 00:07:21.208, post-roll](docs/images/movie-page.jpg) | ![An ad in a mid-roll of Sintel: "No Kettlo ad after a scene with injury · Volume matched to the movie"](docs/images/ad-break.jpg) | ![The paused movie with a pause ad and a QR code](docs/images/pause-ad.jpg) |
+| ![Sintel's movie page with the break map: pre-roll, 00:02:42.083 after injury, 00:09:03.125 after death and weapons, post-roll](docs/images/movie-page.jpg) | ![An ad in a mid-roll of Sintel: "No Kettlo ad after a scene with injury · Volume matched to the movie"](docs/images/ad-break.jpg) | ![The paused movie with a pause ad and a QR code](docs/images/pause-ad.jpg) |
 
 Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Foundation, CC BY 3.0. Ads: invented brands.
 
