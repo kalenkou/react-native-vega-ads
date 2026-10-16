@@ -12,6 +12,7 @@ export { DualSurfaceView } from './DualSurfaceView';
 export { AdSurfaceLayers } from './AdSurfaceLayers';
 export type { AdSurfaceLayersProps } from './AdSurfaceLayers';
 export { createAdMediaControlHandler } from './adMediaControlHandler';
+export type { AdMediaControlOptions } from './adMediaControlHandler';
 export type { DualSurfaceViewProps } from './DualSurfaceView';
 export { AdOverlay, useAdAnnouncements } from './AdOverlay';
 export type { AdOverlayProps } from './AdOverlay';
@@ -23,6 +24,7 @@ export type { PauseAdView } from 'react-native-ads-core';
 export type { AdTimeline, BreakMark, RepeatMemory, RepeatOptions } from 'react-native-ads-core';
 // Types the API takes or returns, so an app needs no direct dependency on the core package.
 export type {
+  AdIdSource,
   AdSchedule,
   AdUiState,
   AdUiStrings,
@@ -31,6 +33,9 @@ export type {
   PlayerEventName,
   PlayerPort,
   SessionSnapshot,
+  BreakWhy,
+  ClockPort,
+  HttpPort,
 } from 'react-native-ads-core';
 export { fetchHttp, systemClock } from './platform';
 export { vegaAdIdSource } from './vegaAdIdSource';
