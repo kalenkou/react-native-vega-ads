@@ -167,6 +167,8 @@ export class AdBreakSession {
   private adPaused = false;
   /** The current ad has shown its first frame. */
   private framed = false;
+  /** Ends the wait for the ad being prebuffered when its player is released. */
+  private cancelPrebuffer: (() => void) | null = null;
   /** The ad player reported `waiting` and has not moved since. */
   private buffering = false;
   private watchdog: unknown = null;
@@ -224,7 +226,7 @@ export class AdBreakSession {
       const tracker = this.trackerFor(item.ad);
       const url = this.pickFile(item.ad, tracker);
       const error = url === null ? null : await this.prebuffer(item.ad, url);
-      if (this.state !== 'loading') {
+      if (this.state !== 'loading' || error === 'released') {
         await this.releasePlayer();
         return 'empty';
       }
@@ -494,7 +496,7 @@ export class AdBreakSession {
   }
 
   /** Resolves null when the ad can play, otherwise the VAST error code to send. */
-  private async prebuffer(ad: LinearAd, url: string): Promise<number | null> {
+  private async prebuffer(ad: LinearAd, url: string): Promise<number | null | 'released'> {
     let player: PlayerPort;
     try {
       player = await this.ensurePlayer();
@@ -502,21 +504,20 @@ export class AdBreakSession {
       return MEDIA_LOAD_ERROR;
     }
     player.setAutoplay(false);
-    const ready = new Promise<number | null>((resolve) => {
-      const timer = this.deps.clock.setTimeout(() => {
-        off();
-        offError();
-        resolve(MEDIA_TIMEOUT);
-      }, this.deps.canPlayTimeoutMs ?? 8000);
-      const done = (error: number | null) => () => {
+    const ready = new Promise<number | null | 'released'>((resolve) => {
+      const done = (result: number | null | 'released') => () => {
         this.deps.clock.clearTimeout(timer);
+        this.cancelPrebuffer = null;
         off();
         offError();
-        resolve(error);
+        resolve(result);
       };
+      const timer = this.deps.clock.setTimeout(done(MEDIA_TIMEOUT), this.deps.canPlayTimeoutMs ?? 8000);
       const off = player.on('canplay', done(null));
       // A media error before canplay (missing file, bad codec) fails the ad at once.
       const offError = player.on('error', done(MEDIA_LOAD_ERROR));
+      // Released while it loads (Home): stop waiting, it is not an ad error.
+      this.cancelPrebuffer = done('released');
     });
     this.loadAd(player, ad, url);
     return ready;
@@ -829,6 +830,7 @@ export class AdBreakSession {
   }
 
   private async releasePlayer(): Promise<void> {
+    this.cancelPrebuffer?.();
     this.disarmWatchdog();
     this.clearPreviousTimer();
     const players = [this.player, this.standby?.player, this.previous?.player];

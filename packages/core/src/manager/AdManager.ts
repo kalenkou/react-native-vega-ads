@@ -270,7 +270,8 @@ export class AdManager {
       if (entry.session !== active) {
         this.prepared.delete(id);
         this.scheduler?.forget(id);
-        void entry.loading.then(() => entry.session.interrupt());
+        // At once: a loading break may already hold an ad player (a decoder).
+        void entry.session.interrupt();
       }
     }
     if (active && activeId) {

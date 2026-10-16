@@ -804,6 +804,21 @@ describe('AdManager', () => {
     expect(http.requests[0]).toBe('https://ads.test/vmap.xml?ifa=abc');
   });
 
+  it('suspend() releases at once the ad player of a break that is still loading, with no error sent (R13)', async () => {
+    const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]));
+    ctx.content.emitTime(20);
+    await settle();
+    const ad = ctx.lastAdPlayer(); // prebuffering, no canplay yet
+    const requestsBefore = ctx.http.requests.length;
+
+    await ctx.manager.suspend();
+    await settle();
+    expect(ad.deinitialized).toBe(true);
+    expect(ctx.http.requests).toHaveLength(requestsBefore); // no error pixel: the ad did not fail
+    expect(ctx.events.filter((e) => e.startsWith('error'))).toEqual([]);
+  });
+
   it('suspend() releases a prefetched break, and it is prefetched again after wake()', async () => {
     const ctx = setup({ 'https://ads.test/mid.xml': fixture('vast/inline.xml') });
     await ctx.manager.start(manual([{ offset: 30, vastUrl: 'https://ads.test/mid.xml' }]));
