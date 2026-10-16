@@ -1,7 +1,7 @@
 import TestRenderer, { act, ReactTestInstance } from 'react-test-renderer';
 import { AccessibilityInfo } from 'react-native';
 import type { AdUiState } from 'react-native-ads-core';
-import { AdOverlay } from '../src/AdOverlay';
+import { AdOverlay, useAdAnnouncements } from '../src/AdOverlay';
 
 const announce = AccessibilityInfo.announceForAccessibility as jest.Mock;
 
@@ -138,5 +138,30 @@ describe('AdOverlay', () => {
     const { update } = render(ui({ label: 'Ad 1 of 2 · 0:15', skip: { visible: true, enabled: false, label: 'Skip in 5' } }));
     update(ui({ label: 'Ad 2 of 2 · 0:10', announcement: 'Ad 2 of 2, 10 seconds', skip: { visible: true, enabled: true, label: 'Skip Ad' }, skipAnnouncement: 'You can skip the ad now' }));
     expect(announce.mock.calls.map((c) => c[0])).toEqual(['Ad 1 of 3, 12 seconds', 'Ad 2 of 2, 10 seconds']);
+  });
+});
+
+describe('useAdAnnouncements', () => {
+  function Custom({ state }: { state: AdUiState }) {
+    useAdAnnouncements(state);
+    return null;
+  }
+
+  it('gives an app overlay the same announcements: each ad once, then when Skip opens', () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    const waiting = ui({ skip: { visible: true, enabled: false, label: 'Skip in 3' }, skipAnnouncement: 'You can skip the ad now' });
+    act(() => {
+      renderer = TestRenderer.create(<Custom state={waiting} />);
+    });
+    act(() => {
+      renderer.update(<Custom state={{ ...waiting, label: 'Ad 1 of 3 · 0:11' }} />);
+    });
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith('Ad 1 of 3, 12 seconds');
+
+    act(() => {
+      renderer.update(<Custom state={{ ...waiting, skip: { visible: true, enabled: true, label: 'Skip ad' } }} />);
+    });
+    expect(announce).toHaveBeenLastCalledWith('You can skip the ad now');
   });
 });

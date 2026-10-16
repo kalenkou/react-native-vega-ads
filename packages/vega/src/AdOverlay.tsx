@@ -16,11 +16,11 @@ function adName(label: string): string {
 }
 
 /**
- * Ad label ("Ad 1 of 3 · 0:12") and a Skip button that takes D-pad focus.
- * Announces each ad once for VoiceView (R26), and the moment Skip becomes possible: a viewer
- * who cannot see the button would not know it.
+ * VoiceView announcements for an ad overlay: each ad once (R26), and the moment Skip becomes
+ * possible, since a viewer who cannot see the button would not know it. `AdOverlay` calls it; call
+ * it yourself when you draw your own overlay with `renderOverlay`.
  */
-export function AdOverlay({ ui, onSkip, showWhy = false, style }: AdOverlayProps): ReactElement | null {
+export function useAdAnnouncements(ui: AdUiState): void {
   const announced = useRef<string | null>(null);
   /** This ad has shown a Skip countdown, so "you can skip now" is news. */
   const skipWaited = useRef(false);
@@ -46,6 +46,11 @@ export function AdOverlay({ ui, onSkip, showWhy = false, style }: AdOverlayProps
       AccessibilityInfo.announceForAccessibility(ui.skipAnnouncement);
     }
   }, [waiting, ui.skipAnnouncement]);
+}
+
+/** Ad label ("Ad 1 of 3 · 0:12") and a Skip button that takes D-pad focus, with VoiceView announcements. */
+export function AdOverlay({ ui, onSkip, showWhy = false, style }: AdOverlayProps): ReactElement | null {
+  useAdAnnouncements(ui);
 
   if (!ui.visible) {
     return null;

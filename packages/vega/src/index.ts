@@ -13,7 +13,7 @@ export { AdSurfaceLayers } from './AdSurfaceLayers';
 export type { AdSurfaceLayersProps } from './AdSurfaceLayers';
 export { createAdMediaControlHandler } from './adMediaControlHandler';
 export type { DualSurfaceViewProps } from './DualSurfaceView';
-export { AdOverlay } from './AdOverlay';
+export { AdOverlay, useAdAnnouncements } from './AdOverlay';
 export type { AdOverlayProps } from './AdOverlay';
 export { AdCountdown } from './AdCountdown';
 export type { AdCountdownProps } from './AdCountdown';
