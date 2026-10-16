@@ -176,7 +176,11 @@ describe('useAdPlan', () => {
     });
     expect(out.current).toBeNull();
     await settle();
-    expect(out.current).toEqual({ breaks: 1, preroll: { ads: 1, seconds: 10, skipAfter: null } });
+    expect(out.current).toEqual({
+      breaks: 1,
+      preroll: { ads: 1, seconds: 10, skipAfter: null },
+      marks: [{ at: { kind: 'start' }, sceneSignals: [] }],
+    });
     expect(http.requests).toEqual([url]);
     // The player still gets the same answers: no second request after Play.
     expect(takePreload(JSON.stringify(schedule))).toBeDefined();

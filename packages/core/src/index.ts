@@ -18,7 +18,7 @@ export type { AdManagerDeps, AdSchedule, AdTimeline } from './manager/AdManager'
 export { preloadAds } from './manager/preloadAds';
 export type { PreloadDeps, PreloadedAds } from './manager/preloadAds';
 export { adPlan, adPlanLabel } from './manager/adPlan';
-export type { AdPlan } from './manager/adPlan';
+export type { AdPlan, AdPlanMark } from './manager/adPlan';
 export { watchReport, watchReportLabel } from './manager/watchReport';
 export type { WatchReport } from './manager/watchReport';
 export type { BreakWhy, SessionDeps, SessionSnapshot, SessionState } from './machine/AdBreakSession';

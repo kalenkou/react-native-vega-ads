@@ -27,7 +27,7 @@ export { adIdMacros } from 'react-native-ads-core';
 export type { VegaAdIdRetriever } from './vegaAdIdSource';
 export { preloadVegaAds, useAdPlan } from './preloadVegaAds';
 export { adPlanLabel, watchReport, watchReportLabel } from 'react-native-ads-core';
-export type { AdPlan, WatchReport } from 'react-native-ads-core';
+export type { AdPlan, AdPlanMark, WatchReport } from 'react-native-ads-core';
 export type { PreloadVegaAdsOptions } from './preloadVegaAds';
 export { rnvPlayerPort } from './rnvPlayerPort';
 export type { RnvPlayerLike, RnvPlayerPortOptions } from './rnvPlayerPort';

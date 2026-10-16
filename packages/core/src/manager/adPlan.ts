@@ -1,5 +1,6 @@
 import { PodController } from '../pod/PodController';
 import { AdUiStrings, defaultAdUiStrings } from '../ui/adUiState';
+import type { BreakOffset } from '../vast/request/VmapRequester';
 import type { PreloadedAds } from './preloadAds';
 
 /** What a viewer can know about a title's ads before Play. */
@@ -11,6 +12,14 @@ export interface AdPlan {
    * one. Later breaks are asked for during playback, so their ads are not known yet.
    */
   preroll: { ads: number; seconds: number; skipAfter: number | null } | null;
+  /** Where each break is, in schedule order, and what the scene before it shows (for a break map). */
+  marks: AdPlanMark[];
+}
+
+export interface AdPlanMark {
+  at: BreakOffset;
+  /** Names of the scene's signals from the VMAP context, for example `injury`; empty without them. */
+  sceneSignals: string[];
 }
 
 /** The plan of a preload; null when the schedule could not be loaded. */
@@ -28,6 +37,7 @@ export function adPlan(preloaded: PreloadedAds): AdPlan | null {
   const first = ads[0];
   return {
     breaks: preloaded.breaks.length,
+    marks: preloaded.breaks.map((adBreak) => ({ at: adBreak.offset, sceneSignals: adBreak.sceneSignals ?? [] })),
     preroll: first
       ? {
           ads: ads.length,
