@@ -373,3 +373,19 @@ Demo release build with the fixes up to `75bdd4c`, scripted runs (remote keys wi
 | Sintel "why" line in the demo's own overlay | PASS: Kettlo left out with VAST error 205; the line is on screen |
 | Pause ad | PASS: shown, closed, the movie resumes |
 | All runs with the demo's `MUTED` flag | the device log shows `set muted true` for every player, no unmute |
+
+## Release 0.1.0 candidate (16.10.2026, evening)
+
+Build with the review fixes up to `457140b`, after a reboot of the stick (before it: 22 h up, 43 MB free memory; one run stalled 14 min in the pre-roll).
+
+| Check | Result |
+|---|---|
+| Full demo run | 3/3 PASS, before and after `457140b` |
+| Seek over the mid-roll | 3/3 PASS: the pod plays, the movie resumes at 142.7–144.2 s |
+| Home right after Play, while the pre-roll still loads (new) | PASS: no ad pixel. The system's Low Resource Killer ended the app in the background, as before (see above), so the relaunch is a cold start on the movie page |
+| Home and Back during the pre-roll | PASS: no pixel after `firstQuartile` |
+| Back during the ad, Back again, relaunch; another app during the ad, then the demo | PASS: no ad pixel after leaving; no demo entry in `vlcm crash-history` |
+| Household memory, two cold launches | PASS: launch 2 leaves Kettlo out (`notUsed`) and plays Ferntop |
+| Pause ad | PASS: impression, `creativeView`, `close`; the movie resumes |
+| Sintel "why" line | PASS: "No Kettlo ad after a scene with injury · Volume matched to the movie"; Kettlo left out with VAST error 205 |
+| Amazon's multi-TV sample with the 0.1.0 packages, Google IMA sample VMAP, 3 runs | pre-roll and mid-roll, all quartiles; the movie plays without the ad label; Back goes to the home screen |
