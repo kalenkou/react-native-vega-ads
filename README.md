@@ -36,6 +36,15 @@ flowchart LR
 
 `react-native-vega-ads` reads VAST 4 and VMAP 1, plays pre-, mid- and post-rolls on native w3cmedia players, switches between content and ads without a black frame, and sends IAB tracking events. It is for Vega app developers who have their own ad server and need video ads without a vendor SDK. It is open source under Apache-2.0.
 
+## For reviewers: five minutes
+
+| If you have | Look at |
+|---|---|
+| 1 minute | The three screenshots above, then [Measured on a real device](#measured-on-a-real-device): every number comes from a Fire TV Stick 4K Select, not the simulator. |
+| 2 minutes | [The break watches the movie first](#the-break-watches-the-movie-first): where breaks go, what the vision model reports, and the blind-labelled eval with its weak spots ([`tools/make-vmap/eval`](tools/make-vmap/eval/README.md)). |
+| 3 minutes | [Quick start](#quick-start): one component, `<VegaAdsPlayer source ads />`; then [Customise any part](#customise-any-part) for your own player, overlay and styles. |
+| 5 minutes, a terminal | `npm ci && npm run check` runs lint, types and every unit test. [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md) has each device run with its result, failures included; [`docs/friction-log.md`](docs/friction-log.md) has 20 platform issues with steps and suggestions. |
+
 > Status: early. The API can still change. The packages are not on npm yet. Tested on one device (see below).
 
 ## Why
