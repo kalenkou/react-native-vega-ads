@@ -568,15 +568,11 @@ export class AdBreakSession {
       if (this.shownSurface !== this.playerSurface) {
         // Fire TV rule: no impression for an ad that is not visible yet. See releasePrevious().
         this.firstFrameHidden = true;
-        this.emitChange();
-        if (this.deps.standbySurface && !this.standby) {
-          void this.prepareStandby(c);
-        }
-        return;
+      } else {
+        this.impressed = true;
+        c.tracker.firstFrame();
+        c.tracker.resumed();
       }
-      this.impressed = true;
-      c.tracker.firstFrame();
-      c.tracker.resumed();
       this.emitChange();
       if (this.deps.standbySurface && !this.standby) {
         void this.prepareStandby(c);
@@ -659,21 +655,20 @@ export class AdBreakSession {
         return;
       }
       const time = this.player?.getCurrentTime() ?? 0;
+      // Trust <Duration>; without it, quartiles and the hand-over use the length the player reports.
+      const vastDuration = c.item.ad.creative.duration;
+      const duration = vastDuration > 0 ? vastDuration : (this.player?.getDuration() ?? 0);
       this.buffering = false;
-      if (this.framed && !this.adPaused) {
+      if (!this.adPaused) {
         this.armStallWatchdog();
       }
-      // Without a valid <Duration>, start and quartiles use the length the player reports.
-      if (c.item.ad.creative.duration <= 0) {
-        c.tracker.setDuration(this.player?.getDuration() ?? 0);
+      if (vastDuration <= 0) {
+        c.tracker.setDuration(duration);
       }
       if (!this.firstFrameHidden) {
         c.tracker.progress(time);
       }
       this.emitChange();
-      // Trust <Duration>; without it, the length the player reports.
-      const vastDuration = c.item.ad.creative.duration;
-      const duration = vastDuration > 0 ? vastDuration : (this.player?.getDuration() ?? 0);
       const remainingMs = (duration - time) * 1000;
       if (duration > 0 && this.standby?.ready && !this.previous && remainingMs <= (this.deps.handOverLeadMs ?? 500)) {
         void this.handOver(c, remainingMs);
