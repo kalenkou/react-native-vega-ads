@@ -230,3 +230,12 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Severity:** low (silent: the app runs, the keys just never arrive).
 - **Workaround:** `TVEventHandler` directly, or a Vega module for the package (we wrote one: `index.kepler.js` that maps Vega key names to Android key codes; on the stick 10 of 10 events).
 - **Suggestion:** in the Directory, mark packages as "installs" vs "works" on Vega, or note that key events need `TVEventHandler`.
+
+## FL-26 · The accessibility settings README imports a default export that the package does not have (18.10.2026)
+- **Task:** read the viewer's Closed Captions setting and caption text size in the demo app, to show captions on ads, with `@amazon-devices/kepler-a11y-settings-interface-turbo` 1.0.0 on a Fire TV Stick 4K Select (Vega OS 2.0).
+- **Steps:** followed the package README (also on developer.amazon.com, vega-api 0.24): `import KeplerA11ySettingsInterface from '@amazon-devices/kepler-a11y-settings-interface-turbo'`, then `isClosedCaptioningEnabled()` and `getCaptionPreferences()`.
+- **Expected:** the README import works.
+- **Actual:** `dist/src/index.js` and `index.d.ts` export `KeplerA11ySettingsInterface` only as a named export; there is no default export. TypeScript stops with "has no default export"; plain JavaScript gets `undefined` and fails at the first call. With the named import, `import { KeplerA11ySettingsInterface } from '…'`, it works: on the stick the module auto-links (`Successfully v2 auto-linked libKeplerA11ySettingsInterfaceTurbo.so`) and returns the setting.
+- **Severity:** low (found at the first build), but every example in the README has it.
+- **Workaround:** the named import. The module also looks itself up with `TurboModuleRegistry.getEnforcing` when it is loaded, so on a device without it the import throws; we load it with `require` inside `try`, and captions stay off there.
+- **Suggestion:** fix the README examples (or add a default export), and say which Vega OS versions have the module.
