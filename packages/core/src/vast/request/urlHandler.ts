@@ -40,11 +40,6 @@ export function describeFailure(error: unknown): LoadFailure {
 
 export { parseXml };
 
-/**
- * URL handler for @dailymotion/vast-client on React Native (R16):
- * the built-in one uses the browser DOMParser, which React Native lacks.
- * The request is aborted after the timeout (R4).
- */
 /** Turns XML text into a DOM document; returns null when the text is not well-formed XML. */
 export type XmlParser = (text: string) => Document | null;
 
@@ -56,6 +51,11 @@ export interface UrlHandlerDeps {
   parseXml?: XmlParser;
 }
 
+/**
+ * URL handler for @dailymotion/vast-client on React Native (R16):
+ * the built-in one uses the browser DOMParser, which React Native lacks.
+ * The request is aborted after the timeout (R4).
+ */
 export function createUrlHandler(deps: UrlHandlerDeps): UrlHandler {
   const { http, clock } = deps;
   const parse = deps.parseXml ?? parseXml;

@@ -80,7 +80,7 @@ export const VMAP_AD_RESPONSE_ERROR = 1008;
 
 const VAST_TEMPLATES = new Set(['vast', 'vast1', 'vast2', 'vast3', 'vast4']);
 
-/** `start`, `end`, `hh:mm:ss(.mmm)` and `n%`. Positional `#n` is not supported in v0.1. */
+/** `start`, `end`, `hh:mm:ss(.mmm)` and `n%`. Positional `#n` is not supported yet. */
 export function parseTimeOffset(value: string | null): BreakOffset | null {
   const text = (value ?? '').trim();
   if (text === 'start') return { kind: 'start' };

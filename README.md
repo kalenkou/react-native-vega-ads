@@ -315,7 +315,7 @@ A full integration into Amazon's sample app (Shaka, MP4 and DASH) is in [`exampl
 
 Some apps own their content surface, for example a Shaka player screen. Use `AdSurfaceLayers` instead of `DualSurfaceView`. Place it above your surface, over the same area. It adds only the two ad surfaces.
 
-Mount `AdSurfaceLayers` after your content surface is created, for example once its `onSurfaceViewCreated` has run. On Vega a video surface created later is drawn above the earlier ones, whatever the zIndex. Mounted first, the ads play behind the content surface and the screen stays black (FL-19).
+Mount `AdSurfaceLayers` after your content surface is created, for example once its `onSurfaceViewCreated` has run. On Vega a video surface created later is drawn above the earlier ones, whatever the zIndex. Mounted first, the ads play behind the content surface and the screen stays black.
 
 ```tsx
 <View style={{ flex: 1 }}>

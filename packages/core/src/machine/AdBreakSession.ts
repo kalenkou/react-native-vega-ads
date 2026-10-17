@@ -21,8 +21,9 @@ export type SessionState = 'idle' | 'loading' | 'ready' | 'empty' | 'playing' | 
 
 export interface SessionSnapshot {
   state: SessionState;
-  /** 1-based number of the ad in the break, and how many ads the break has. */
+  /** 1-based number of the ad in the break. */
   position: number;
+  /** How many ads the break has. */
   total: number;
   adTime: number;
   adDuration: number;
@@ -82,7 +83,7 @@ export interface SessionDeps {
    * between two ads; starting early lets the next ad's first frame cover the end.
    */
   handOverLeadMs?: number;
-  /** An ad that shows no frame this long after play() fails with 405 (goal 7). Default 5000. */
+  /** An ad that shows no frame this long after play() fails with 405. Default 5000. */
   playTimeoutMs?: number;
   /** A buffering ad (`waiting`) whose time does not move this long fails with 405. Default 10000. */
   stallTimeoutMs?: number;
@@ -99,7 +100,7 @@ export interface SessionDeps {
   blockedAdCategories?: readonly string[];
   /** What the scene before the break shows (`ScheduledBreak.sceneSignals`); only explains the blocked ads. */
   sceneSignals?: readonly string[];
-  /** IAB events sent, plus `error:<code>`, `skipped:repeat|advertiser|category|budget` and `breakEnd`. */
+  /** Ad and break events by name; the full list is in the README, "Events (`onEvent`)". */
   onEvent?: (name: string) => void;
 }
 
@@ -137,7 +138,7 @@ interface Standby {
  * One ad break, from loading to returning to content:
  * idle → loading → ready → playing (ad after ad) → resuming → finished.
  * Any failure moves on to the next ad or back to content; the viewer
- * always gets the content back (goal 7 of the spec).
+ * always gets the content back.
  */
 export class AdBreakSession {
   state: SessionState = 'idle';

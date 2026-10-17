@@ -42,9 +42,9 @@ export interface UseVegaAdsOptions {
   /**
    * true (default, recommended on Vega): media controls own remote play/pause and Alexa
    * (needs the manifest entries). Ignore `playpause` in your own key handler while `playing`.
-   * false: the library never takes media controls focus. Measured on a Fire TV Stick: without the
-   * manifest entries a legacy player session still pauses a playing player on the key, so an
-   * app that resumes the ad itself is undone; see DEVICE-TESTS.md.
+   * false: the library never takes media controls focus. Without the manifest entries the system's
+   * legacy player session still pauses the player on the play/pause key, so an app that resumes
+   * the ad itself is undone (measured on a Fire TV Stick).
    */
   mediaControls?: boolean;
   /** Ad tag macros, for example from `adIdMacros()` (IFA, LIMITADTRACKING). */

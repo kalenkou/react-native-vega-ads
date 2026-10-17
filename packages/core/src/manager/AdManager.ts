@@ -26,7 +26,7 @@ export interface AdManagerDeps {
   prefetchSeconds?: number;
   /** The snapshot of the break on screen, or IDLE_SNAPSHOT between breaks. */
   onChange?: (snapshot: SessionSnapshot) => void;
-  /** Session events plus `breakStart`, `vmap:error:<code>` and `break:<id>:late`. */
+  /** Ad and break events by name; the full list is in the README, "Events (`onEvent`)". */
   onEvent?: (name: string) => void;
   /** The breaks on the content timeline and the countdown to the next one; called on changes only. */
   onTimeline?: (timeline: AdTimeline) => void;
@@ -65,7 +65,7 @@ export interface AdManagerDeps {
 const positive = (value: number | undefined): number | undefined =>
   value !== undefined && Number.isFinite(value) && value > 0 ? value : undefined;
 
-/** What a player UI shows outside the breaks: marks on its timeline and «Ad in 5». */
+/** What a player UI shows outside the breaks: marks on its timeline and "Ad in 5". */
 export interface AdTimeline {
   marks: BreakMark[];
   /**

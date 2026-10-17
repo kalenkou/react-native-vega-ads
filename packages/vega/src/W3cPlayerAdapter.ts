@@ -17,6 +17,7 @@ export interface W3cVideoPlayer {
   clearSurfaceHandle(handle: string): void;
   play(): Promise<void>;
   pause(): void;
+  // `never`: accepts the SDK's own parameter types without importing the SDK.
   setMediaControlFocus(componentInstance: never, mediaControlHandler?: never): Promise<void>;
   addEventListener(type: string, listener: () => void): void;
   removeEventListener(type: string, listener: () => void): void;
