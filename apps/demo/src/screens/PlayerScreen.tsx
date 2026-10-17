@@ -18,9 +18,12 @@ import {colors} from '../theme';
 const createMutedPlayer = (): W3cVideoPlayer => {
   const player = new VideoPlayer() as unknown as W3cVideoPlayer;
   player.muted = true;
-  player.addEventListener('playing', () => {
-    player.muted = true;
-  });
+  // w3cmedia may drop `muted` set before `src`: mute again at every step before sound starts.
+  for (const event of ['loadedmetadata', 'canplay', 'play', 'playing']) {
+    player.addEventListener(event, () => {
+      player.muted = true;
+    });
+  }
   return player;
 };
 
