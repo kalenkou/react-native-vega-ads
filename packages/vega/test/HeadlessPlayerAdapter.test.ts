@@ -90,7 +90,7 @@ async function setup(options: { mediaControls?: boolean } = {}) {
 
 test('initialize listens to status, position and errors of its own session', async () => {
   const { client } = await setup();
-  expect(client.calls).toEqual(['status:7', 'position@250:7', 'error:7']);
+  expect(client.calls).toEqual(['status:7', 'position@0.25:7', 'error:7']);
 });
 
 test('setSrc loads the media with the autoplay set before it, from the start', async () => {

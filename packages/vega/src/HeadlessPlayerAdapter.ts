@@ -57,8 +57,12 @@ export interface HeadlessPlayerClient {
   registerErrorListener(listener: HeadlessErrorListener, sessionId?: HeadlessSessionId): Promise<Subscription>;
 }
 
-/** How often the service reports the position; the core's quartiles and countdown need ~4 per second. */
-const POSITION_INTERVAL_MS = 250;
+/**
+ * How often the service reports the position, in SECONDS (the SDK unit; its example uses 1).
+ * Fractions work on the device (0.25 gives 4 updates a second), which the break start and the
+ * quartiles need: a break starts on the update after its time.
+ */
+const POSITION_INTERVAL_SECONDS = 0.25;
 
 /** Session state → the event the core waits for. SEEKING has none: the core does not wait for it. */
 const EVENT_OF_STATE: Record<string, PlayerEventName | undefined> = {
@@ -80,6 +84,10 @@ export interface HeadlessPlayerOptions {
  * the w3cmedia player runs in the app's service process, this side talks to it through
  * `IPlayerClient`. Commands are asynchronous IPC calls; the time and duration come from the
  * service's position and status listeners.
+ *
+ * For the content, the app owns the adapter: it calls `initialize()` and `setSrc()` itself,
+ * as with any content PlayerPort. Ad sessions are created and released by the library
+ * (`createAdPlayer`).
  */
 export class HeadlessPlayerAdapter implements PlayerPort {
   private readonly listeners = new Map<PlayerEventName, Set<() => void>>();
@@ -124,7 +132,7 @@ export class HeadlessPlayerAdapter implements PlayerPort {
             }
           },
         },
-        POSITION_INTERVAL_MS,
+        POSITION_INTERVAL_SECONDS,
         this.session,
       ),
       this.client.registerErrorListener(
