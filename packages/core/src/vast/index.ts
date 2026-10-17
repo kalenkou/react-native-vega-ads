@@ -1,4 +1,3 @@
-
 export * from './ports';
 export { installImagePolyfill } from './polyfill/image';
 export { createUrlHandler, describeFailure, parseXml, DEFAULT_VAST_TIMEOUT_MS } from './request/urlHandler';
