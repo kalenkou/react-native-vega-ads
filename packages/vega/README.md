@@ -49,9 +49,62 @@ Required in `manifest.toml`: the media category, the `IMediaPlaybackServer` inte
 | `useAdPlan(schedule)`, `adPlanLabel` | before Play: "4 ad breaks · first: 2 ads, 25 s, skippable after 5 s", and `marks`: where each break is, with the scene signals from the VMAP |
 | `vegaAdIdSource`, `adIdMacros` | the Fire TV advertising ID as `IFA`, `IFATYPE`, `LIMITADTRACKING` macros |
 | `rnvPlayerPort(player)` | a react-native-video v7 `VideoPlayer` as the content player |
+| `HeadlessPlayerAdapter`, `HeadlessPlayerService` | Amazon's CSAI "Headless approach": the content and every ad play as sessions of your app's player service (see below) |
 | `watchReport(events)`, `watchReportLabel` | after a watch, from the `onEvent` names: "3 ads · 1 repeat left out · 2 ads turned down, up to 9 dB" |
 
 Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia`, `@amazon-devices/react-native-kepler`.
+
+### Headless approach (preview)
+
+Amazon's CSAI guide offers a second way: the w3cmedia players run in a service component of
+your app, and the UI controls them through `IPlayerClient` (`@amazon-devices/kepler-player-client`).
+The UI thread then never waits for the player. Here the content and each ad are sessions of
+that service.
+
+In the service (registered in `service.js`, as in Amazon's "Implement Headless JavaScript Playback"):
+
+```ts
+import { VideoPlayer } from '@amazon-devices/react-native-w3cmedia/dist/headless';
+import { PlayerServerFactory } from '@amazon-devices/kepler-player-server';
+import { HeadlessPlayerService } from 'react-native-vega-ads';
+
+export const onStartService = async () => {
+  const server = new PlayerServerFactory().getOrMakeServer();
+  server.setHandler(new HeadlessPlayerService(server, () => new VideoPlayer()), 'com.example.app.service');
+};
+```
+
+In the UI:
+
+```tsx
+const client = new PlayerClientFactory().getOrMakeClient('com.example.app.service');
+const content = new HeadlessPlayerAdapter(client, { id: 1 }, getComponentInstance);
+let session = 2;
+
+content.setSrc(movieUrl);
+await content.initialize(); // the content is your player: you start it
+
+<VegaAdsPlayer
+  player={content}
+  ads={{ vmapUrl }}
+  createAdPlayer={() => new HeadlessPlayerAdapter(client, { id: session++ }, getComponentInstance)}>
+  {() => (
+    <KeplerVideoSurfaceView
+      style={StyleSheet.absoluteFill}
+      onSurfaceViewCreated={(handle) => content.attachSurface(handle)}
+      onSurfaceViewDestroyed={(handle) => content.detachSurface(handle)}
+    />
+  )}
+</VegaAdsPlayer>;
+```
+
+Checked on a Fire TV Stick 4K Select (muted): pre-roll, seek, a two-ad mid-roll pod with the
+hand-over between ads, a repeated ad left out, the content back at the break time. The position
+comes from the service 4 times a second, so a break starts at most about 0.25 s after its time.
+The manifest needs the service component, the process group and `wants`/`offers` for the service,
+as in Amazon's guide. With React Native 0.83, `@amazon-devices/kepler-player-client@2.3.0-rn-83`
+asks for `kepler-player-server@^2.3.0`, which npm cannot match: add
+`"overrides": { "@amazon-devices/kepler-player-server": "2.3.0-rn-83" }` to your `package.json`.
 
 ## License
 
