@@ -41,6 +41,8 @@ export type {
   HeadlessSessionStatus,
 } from './HeadlessPlayerAdapter';
 export { rnvPlayerPort } from './rnvPlayerPort';
+export { useStitchedAds } from './useStitchedAds';
+export type { StitchedAds, UseStitchedAdsOptions } from './useStitchedAds';
 export type { RnvPlayerLike, RnvPlayerPortOptions } from './rnvPlayerPort';
 export { createAdMediaControlHandler } from './adMediaControlHandler';
 export type { AdMediaControlOptions } from './adMediaControlHandler';
