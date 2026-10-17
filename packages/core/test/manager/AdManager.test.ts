@@ -150,11 +150,13 @@ describe('AdManager', () => {
     expect(ctx.events).toContain('vmap:error:1008');
   });
 
-  it('starts the content when the pre-roll has no ads', async () => {
+  it('starts the content when the pre-roll has no ads, and tells the app', async () => {
     const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/empty.xml') });
     await ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
     await settle();
     expect(ctx.content.calls).toContain('play');
+    expect(ctx.events).toContain('break:break-1:empty');
+    expect(ctx.events).not.toContain('breakStart');
     expect(ctx.last()?.state ?? 'idle').toBe('idle');
   });
 

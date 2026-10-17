@@ -12,6 +12,7 @@ First release.
 - `selectMediaFile`: H.264 MP4 or HLS that fits the screen and bitrate.
 - `AdTracker`: impression only for a visible ad, start, quartiles, complete, pause, resume, skip, error; `installImagePolyfill` sends pixels without `Image`.
 - `AdManager`: pre-, mid- and post-rolls through a `PlayerPort`; pods in `sequence` order on two players, the next ad starts about 500 ms before the current one ends; a seek over breaks plays only the last one; every error and timeout ends in content.
+- Break events for the app: `breakStart` before a break's first ad, `breakEnd`, and `break:<id>:empty` when a break has no ad to play.
 - No repeated creatives or advertisers across breaks and, with an optional memory, across titles and launches; break limits `maxBreakAds` and `maxBreakSeconds`; ads of a category the break blocks are left out.
 - Never louder than the movie: with `contentLoudness`, a louder ad is turned down to it, never up.
 - Pause ads from VAST NonLinear (IAB CTV Ad Portfolio), with QR code and IAB tracking.

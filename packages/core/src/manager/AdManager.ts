@@ -517,6 +517,8 @@ export class AdManager {
     if (result !== 'ready') {
       this.prepared.delete(id);
       this.trackBreak(id, 'error', VMAP_NO_PLAYABLE_AD);
+      // No ad to play: an empty answer, a failed request, or every ad left out or failing.
+      this.deps.onEvent?.(`break:${id}:empty`);
       if (this.isPostRoll(id)) {
         this.deps.onEvent?.('content:ended');
       } else if (!this.contentStarted) {
