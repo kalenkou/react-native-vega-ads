@@ -40,6 +40,19 @@ describe('pixel endpoint /p', () => {
     expect(await counters.list('2026-10-11')).toEqual([{ key: 'tos-30s#impression', count: 2 }]);
   });
 
+  it('counts every event the demo VAST files send: notUsed and the pause ad events too', async () => {
+    const { counters, send } = setup();
+    for (const e of ['notUsed', 'creativeView', 'overlayViewDuration', 'close']) {
+      expect((await send('/p', { ad: 'brewnord-pause', e })).statusCode).toBe(200);
+    }
+    expect((await counters.list('2026-10-11')).map((row) => row.key)).toEqual([
+      'brewnord-pause#notUsed',
+      'brewnord-pause#creativeView',
+      'brewnord-pause#overlayViewDuration',
+      'brewnord-pause#close',
+    ]);
+  });
+
   it('counts errors by VAST or VMAP error code', async () => {
     const { counters, send } = setup();
     await send('/p', { ad: 'tos-30s', e: 'error', code: '405' });
@@ -89,6 +102,18 @@ describe('report /report', () => {
     expect(res.body).toContain('<td>tos-30s</td><td>2</td><td>1</td>');
     expect(res.body).toContain('50%');
     expect(res.body).toContain('402 × 1');
+  });
+
+  it('shows the ads left out of a break and the pause ad views and closes', async () => {
+    const { send } = setup();
+    await send('/p', { ad: 'kettlo', e: 'notUsed' });
+    for (const e of ['impression', 'creativeView', 'close']) {
+      await send('/p', { ad: 'brewnord-pause', e });
+    }
+    const { body } = await send('/report', { day: '2026-10-11' });
+    expect(body).toContain('<th>notUsed</th><th>creativeView</th><th>close</th>');
+    expect(body).toMatch(/<td>kettlo<\/td>(<td>\d+<\/td>){9}<td>1<\/td><td>0<\/td><td>0<\/td>/);
+    expect(body).toMatch(/<td>brewnord-pause<\/td><td>1<\/td>(<td>\d+<\/td>){8}<td>0<\/td><td>1<\/td><td>1<\/td>/);
   });
 
   it('shows today (UTC) by default and refuses a malformed day', async () => {

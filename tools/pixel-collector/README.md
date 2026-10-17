@@ -4,7 +4,7 @@ A small AWS backend for a vega-ads demo:
 
 - **Ad creatives and VMAP files** in a private S3 bucket, served through CloudFront.
 - **Tracking pixel collector.** A Lambda function URL counts VAST and VMAP pixels per ad, event and day in DynamoDB.
-- **Daily report.** An HTML table with impressions, quartiles, completion rate and error codes.
+- **Daily report.** An HTML table with impressions, quartiles, completion rate, ads left out of breaks, pause ad views and error codes.
 
 ## Endpoints
 
@@ -18,7 +18,8 @@ Rules for the parameters:
 
 - `ad` may use only letters, digits, `.`, `_` and `-`, up to 64 characters.
 - `e` must be one of these events:
-  - VAST: `impression`, `start`, `firstQuartile`, `midpoint`, `thirdQuartile`, `complete`, `pause`, `resume`, `skip`, `error`;
+  - VAST: `impression`, `start`, `firstQuartile`, `midpoint`, `thirdQuartile`, `complete`, `pause`, `resume`, `skip`, `notUsed` (an ad left out of a break), `error`;
+  - VAST pause ads: `creativeView`, `overlayViewDuration`, `close`;
   - VMAP: `breakStart`, `breakEnd`.
 - Any other request gets HTTP 400 and is not counted.
 

@@ -22,7 +22,10 @@ export interface CollectorDeps {
   now: () => number;
 }
 
-/** VAST 4 tracking events that vega-ads sends, plus the VMAP break events. */
+/**
+ * VAST 4 tracking events that vega-ads sends (`notUsed`: an ad left out of the break; the pause
+ * ad's `creativeView`, `overlayViewDuration` and `close`), plus the VMAP break events.
+ */
 export const EVENTS = [
   'impression',
   'start',
@@ -33,12 +36,31 @@ export const EVENTS = [
   'pause',
   'resume',
   'skip',
+  'notUsed',
+  'creativeView',
+  'overlayViewDuration',
+  'close',
   'error',
   'breakStart',
   'breakEnd',
 ] as const;
 
-const REPORT_COLUMNS = ['impression', 'start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete', 'skip', 'pause', 'resume'];
+const REPORT_COLUMNS = [
+  'impression',
+  'start',
+  'firstQuartile',
+  'midpoint',
+  'thirdQuartile',
+  'complete',
+  'skip',
+  'pause',
+  'resume',
+  // An ad left out of a break (a repeat, a blocked category, over the break's length).
+  'notUsed',
+  // Pause ads: shown and closed.
+  'creativeView',
+  'close',
+];
 const AD_ID = /^[A-Za-z0-9_.-]{1,64}$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const PIXEL = 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // 1x1 transparent GIF
@@ -108,9 +130,13 @@ async function report(day: string, deps: CollectorDeps): Promise<HttpResult> {
     return `<tr><td>${ad}</td>${cells}<td>${completion}</td><td>${errors}</td></tr>`;
   });
   const head = ['ad', ...REPORT_COLUMNS, 'completion', 'errors'].map((name) => `<th>${name}</th>`).join('');
-  const body = `<!doctype html><html><head><meta charset="utf-8"><title>vega-ads pixels ${day}</title></head><body>
+  const body = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>vega-ads pixels ${day}</title>
+<style>body{font:16px system-ui,sans-serif;margin:24px;background:#0b0e14;color:#eef1f6}
+table{border-collapse:collapse}th,td{border:1px solid #4a5468;padding:6px 10px;text-align:right}
+th{background:#121722;color:#ff9a4d}td:first-child,th:first-child{text-align:left}</style></head><body>
 <h1>Ad pixels, ${day} (UTC)</h1>
-<table border="1" cellpadding="4"><tr>${head}</tr>
+<table><tr>${head}</tr>
 ${rows.join('\n')}
 </table></body></html>`;
   return { statusCode: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' }, body };
