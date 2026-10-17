@@ -72,7 +72,7 @@ export interface StitchedAdState {
   count: number;
   /** Whole seconds left in this ad, for the label. */
   remaining: number;
-  /** null: the ad cannot be skipped. */
+  /** Whole seconds until skip is allowed, 0 when it is; null: the ad cannot be skipped. */
   secondsUntilSkip: number | null;
 }
 
@@ -158,11 +158,12 @@ export class StitchedAdTracker {
       return null;
     }
     const { placed, tracker } = active;
+    const wait = tracker.secondsUntilSkip();
     return {
       index: placed.index,
       count: placed.count,
       remaining: Math.ceil(placed.end - this.last),
-      secondsUntilSkip: tracker.secondsUntilSkip(),
+      secondsUntilSkip: wait === null ? null : Math.ceil(wait),
     };
   }
 }

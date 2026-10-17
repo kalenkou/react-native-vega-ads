@@ -119,12 +119,14 @@ it('pause and resume during an ad are tracked', async () => {
   expect(events.slice(-3)).toEqual(['pause', 'resume', 'pause']);
 });
 
-it('skip is allowed after the skip offset and returns where the content goes on', async () => {
+it('skip is allowed after the skip offset and returns where the content goes on; the label counts whole seconds', async () => {
   const { tracker, events, play } = await setup(SKIPPABLE);
   play(99, 103);
   expect(tracker.current()?.secondsUntilSkip).toBe(2);
   expect(tracker.skip()).toBeNull();
-  play(103.25, 106);
+  play(103.25, 103.5);
+  expect(tracker.current()).toEqual({ index: 1, count: 2, remaining: 7, secondsUntilSkip: 2 });
+  play(103.75, 106);
   expect(tracker.skip()).toBe(110);
   expect(tracker.current()).toBeNull();
   expect(events.slice(-1)).toEqual(['skip']);
