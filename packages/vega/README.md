@@ -50,6 +50,7 @@ Required in `manifest.toml`: the media category, the `IMediaPlaybackServer` inte
 | `vegaAdIdSource`, `adIdMacros` | the Fire TV advertising ID as `IFA`, `IFATYPE`, `LIMITADTRACKING` macros |
 | `rnvPlayerPort(player)` | a react-native-video v7 `VideoPlayer` as the content player |
 | `HeadlessPlayerAdapter`, `HeadlessPlayerService` | Amazon's CSAI "Headless approach": the content and every ad play as sessions of your app's player service (see below) |
+| `useStitchedAds(options)` | ads the server already put into the stream (SSAI): IAB pixels and the ad label from the content time, skip by seek (see below) |
 | `watchReport(events)`, `watchReportLabel` | after a watch, from the `onEvent` names: "3 ads · 1 repeat left out · 2 ads turned down, up to 9 dB" |
 
 Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia`, `@amazon-devices/react-native-kepler`.
@@ -105,6 +106,31 @@ The manifest needs the service component, the process group and `wants`/`offers`
 as in Amazon's guide. With React Native 0.83, `@amazon-devices/kepler-player-client@2.3.0-rn-83`
 asks for `kepler-player-server@^2.3.0`, which npm cannot match: add
 `"overrides": { "@amazon-devices/kepler-player-server": "2.3.0-rn-83" }` to your `package.json`.
+
+### Stitched ads (preview)
+
+When the server already put the ads into the stream (server-side ad insertion, SSAI), the player
+never switches. `useStitchedAds` only tracks: the content time says which ad plays, and the same
+IAB pixels go out as for client-side ads. The VMAP break times are positions in that stream, ads
+included.
+
+```tsx
+const player = useVideoPlayer(streamUrl);
+const ads = useStitchedAds({ vmapUrl, player, streamSeconds: 110, onEvent: console.log });
+
+{ads.ad && <Text>{`Ad ${ads.ad.index} of ${ads.ad.count} · ${ads.ad.remaining}s`}</Text>}
+{ads.ad?.secondsUntilSkip === 0 && <Button title="Skip" onPress={ads.skip} />}
+```
+
+Rules: an ad counts only when playback enters it at its start (within 2 s). A seek out of an ad
+ends its tracking without `complete`. Each ad is tracked once. `skip()` seeks to the end of the ad
+once skipping is allowed. `streamSeconds` is needed for `n%` and `end` breaks; with `NaN` they are
+left out.
+
+Checked on a Fire TV Stick 4K Select (muted), a 110 s stream with a 10 s pre-roll and a 10 s
+mid-roll at 1:10: impression, start, quartiles and skip of the pre-roll (skip at 5 s moved the
+player to 0:10), the full mid-roll to `complete`; all 11 pixels reached the ad server.
+
 
 ## License
 
