@@ -29,6 +29,8 @@ export type { PreloadVegaAdsOptions } from './preloadVegaAds';
 export { W3cPlayerAdapter } from './W3cPlayerAdapter';
 export type { W3cVideoPlayer } from './W3cPlayerAdapter';
 export { HeadlessPlayerAdapter } from './HeadlessPlayerAdapter';
+export { HeadlessPlayerService } from './HeadlessPlayerService';
+export type { HeadlessPlayerServer, HeadlessServicePlayer } from './HeadlessPlayerService';
 export type {
   HeadlessPlayerClient,
   HeadlessPlayerOptions,
