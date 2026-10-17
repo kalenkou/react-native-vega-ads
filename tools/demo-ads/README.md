@@ -66,6 +66,7 @@ The server prints its address and serves:
 - `vmap/sintel.xml` – the same for Sintel, mid-rolls at 2:42.1 and 9:03.1 (`--sintel-midrolls`). Both carry the break context in `contexts/sintel.json`, written by `make-vmap --context-model` with Qwen3.6-35B-A3B. Before 2:42 the model heard a line about blood (`injury`), so the break blocks Life Insurance and Sporting Goods, and the player leaves out Kettlo (Sporting Goods) with error 205. Before 9:03 it saw a dead creature and a sword (`death`, `weapons`), so the break blocks Life Insurance, Toys and Games and alcohol; no demo ad is in those. `--sintel-context FILE` replaces it;
 - `vmap/timer.xml` – the same with mid-rolls at fixed times, 2:00 and 6:00, to compare with;
 - `vmap/classic.xml` – ads as usual, for the demo's "Compare" button: Kettlo as the pre-roll, then a mid-roll on a timer at 0:32 of Tears of Steel that cuts a line, with Kettlo again and Brewnord (`vast/classic-pre.xml`, `vast/classic-mid.xml`). The app plays it without the loudness guard and the no-repeat rules;
+- `captions/<ad>.en.vtt` – the ads' WebVTT captions (VAST `<ClosedCaptionFiles>`): `[calm music]`, then the ad's on-screen line. The ads have music and no speech;
 - `p?ad=…&e=…` – tracking pixels, logged to the console; `stats` – counts;
 - any other file in `media/`, for example a `poster.jpg`.
 
@@ -92,3 +93,23 @@ allowed-domains = ["192.168.1.20"]
 ```
 
 Use HTTPS hosting for anything outside a development network.
+
+## Put them on AWS
+
+`deploy-aws.sh` deploys [`pixel-collector`](../pixel-collector) (S3 + CloudFront +
+Lambda function URL + DynamoDB), uploads the movies, the ads and the posters, and writes
+the same documents as `serve.mjs`, pointing to CloudFront and to the pixel collector:
+
+```sh
+npm run build --prefix ../make-vmap
+aws login --region eu-west-1
+./deploy-aws.sh media --midrolls 139.917,441.208
+```
+
+It prints the `MEDIA_BASE` for the demo app (`apps/demo/src/media.local.ts`) and the
+pixel report URL. Media over HTTPS needs no cleartext entry in the manifest. Run it again
+after a change: the stack is updated, and only new or changed media files are uploaded.
+`DRY_RUN=1` prints the AWS commands without running them; `STACK` and `AWS_REGION` choose
+the stack (default `vega-ads-demo` in `eu-west-1`). `export-static.mjs` writes the documents
+alone, for other hosting. `sam delete --stack-name vega-ads-demo` removes it all; empty the
+bucket first.
