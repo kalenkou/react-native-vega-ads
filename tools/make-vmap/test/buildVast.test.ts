@@ -2,6 +2,7 @@ import { requestVast } from '../../../packages/core/src/vast/request/VastRequest
 import { FakeClock } from '../../../packages/core/test/fakes/FakeClock';
 import { FakeHttp } from '../../../packages/core/test/fakes/FakeHttp';
 import { adLoudness } from '../../../packages/core/src/vast/loudness';
+import { captionFileUrl } from '../../../packages/core/src/vast/captions';
 import { buildPauseVast, buildVast, VastAdInput } from '../src/buildVast';
 
 const VAST_URL = 'https://cdn.test/ads/pod.xml';
@@ -69,6 +70,21 @@ describe('buildVast', () => {
     expect(adLoudness(loud!)).toBe(-16);
     expect(adLoudness(plain!)).toBeNull();
     expect(() => buildVast([ad('tos-a', { loudnessLufs: NaN })])).toThrow(RangeError);
+  });
+
+  it('writes WebVTT caption files that vega-ads picks by the viewer language', async () => {
+    const captions = [
+      { url: 'https://cdn.test/ads/tos-a.en.vtt', language: 'en' },
+      { url: 'https://cdn.test/ads/tos-a.pl.vtt?v=1&x=2', language: 'pl' },
+    ];
+    const [parsed, plain] = await load(buildVast([ad('tos-a', { captions }), ad('tos-b')], { buffet: true }));
+    expect(captionFileUrl(parsed!, 'pl-PL')).toBe('https://cdn.test/ads/tos-a.pl.vtt?v=1&x=2');
+    expect(captionFileUrl(parsed!, 'en')).toBe('https://cdn.test/ads/tos-a.en.vtt');
+    expect(captionFileUrl(plain!)).toBeNull();
+    expect(buildVast([ad('tos-a', { captions })])).toContain('<![CDATA[https://cdn.test/ads/tos-a.pl.vtt?v=1&x=2]]>');
+    expect(buildVast([ad('tos-b')])).not.toContain('ClosedCaptionFiles');
+    expect(buildVast([ad('tos-b', { captions: [] })])).not.toContain('ClosedCaptionFiles');
+    expect(() => buildVast([ad('tos-a', { captions: [{ url: 'x.vtt', language: 'en"' }] })])).toThrow(TypeError);
   });
 
   it('writes what the ad sells as IAB Ad Product Taxonomy categories', async () => {

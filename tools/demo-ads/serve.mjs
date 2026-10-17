@@ -56,13 +56,21 @@ const root = normalize(values.dir);
 const base = `http://${values.host ?? lanAddress()}:${values.port}/`;
 
 // category: what the ad sells, IAB Ad Product Taxonomy 2.0 (a break can block it).
+// line: the ad's on-screen line (make_ads.py), also its caption.
 const ads = {
-  kettlo: { title: 'Kettlo', seconds: 10, category: '1524' }, // Sporting Goods
-  brewnord: { title: 'Brewnord', seconds: 15, category: '1133' }, // Coffee and Tea
-  voltaro: { title: 'Voltaro', seconds: 12, category: '1571' }, // Electric Vehicles
-  ferntop: { title: 'Ferntop', seconds: 10, category: '1070' }, // Footwear
-  quillary: { title: 'Quillary', seconds: 12, category: '1203' }, // Office/School Supplies
+  kettlo: { title: 'Kettlo', seconds: 10, category: '1524', line: 'Kettlebells that last a lifetime' }, // Sporting Goods
+  brewnord: { title: 'Brewnord', seconds: 15, category: '1133', line: 'Slow coffee for long evenings' }, // Coffee and Tea
+  voltaro: { title: 'Voltaro', seconds: 12, category: '1571', line: 'Charge at home. Drive all week.' }, // Electric Vehicles
+  ferntop: { title: 'Ferntop', seconds: 10, category: '1070', line: 'Trail shoes for wet mornings' }, // Footwear
+  quillary: { title: 'Quillary', seconds: 12, category: '1203', line: 'Notebooks that open flat' }, // Office/School Supplies
 };
+
+/** WebVTT captions of a demo ad: its music (the ads have tones, no speech), then its line. */
+function captionFile(id) {
+  const { title, seconds, line } = ads[id];
+  const stamp = (s) => `00:${String(Math.floor(s)).padStart(2, '0')}.000`;
+  return ['WEBVTT', '', `${stamp(0)} --> ${stamp(2)}`, '[calm music]', '', `${stamp(2)} --> ${stamp(seconds)}`, `${title}: ${line}`, ''].join('\n');
+}
 
 // Measured by get_media.sh (EBU R128). Without the file the ads carry no loudness and play as they are.
 const loudnessFile = join(root, 'loudness.json');
@@ -83,6 +91,7 @@ function ad(id, skipAfterSeconds) {
     universalAdId: { idRegistry: 'vega-ads-demo', value: id },
     loudnessLufs: loudness['ads/' + id + '_720p.mp4'],
     categories: [ads[id].category],
+    captions: [{ url: base + 'captions/' + id + '.en.vtt', language: 'en' }],
     mediaFiles: sizes.map(([width, height, path]) => ({
       url: base + path,
       width,
@@ -190,6 +199,12 @@ createServer((request, response) => {
   if (path === 'stats') {
     response.writeHead(200, { 'Content-Type': 'application/json' });
     response.end(JSON.stringify(Object.fromEntries(counts), null, 2));
+    return;
+  }
+  const caption = /^captions\/([a-z]+)\.en\.vtt$/.exec(path);
+  if (caption && ads[caption[1]]) {
+    console.log(`${time} GET ${path}`);
+    response.writeHead(200, { 'Content-Type': 'text/vtt' }).end(captionFile(caption[1]));
     return;
   }
   if (documents[path]) {

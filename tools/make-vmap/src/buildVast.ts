@@ -28,6 +28,8 @@ export interface VastAdInput {
   loudnessLufs?: number;
   /** `<Category>`: what the ad sells, as IAB Ad Product Taxonomy 2.0 codes; players block by them. */
   categories?: readonly string[];
+  /** `<ClosedCaptionFiles>` (VAST 4.1): WebVTT files and their language (BCP 47, such as "en"). */
+  captions?: ReadonlyArray<{ url: string; language: string }>;
 }
 
 const AD_ID = /^[A-Za-z0-9_.-]{1,64}$/;
@@ -68,6 +70,10 @@ function check(input: VastAdInput): void {
   if (badCategory !== undefined) {
     throw new TypeError(`Not an ad category code: "${badCategory}"`);
   }
+  const badLanguage = input.captions?.find((caption) => !/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/.test(caption.language));
+  if (badLanguage !== undefined) {
+    throw new TypeError(`Not a caption language: "${badLanguage.language}"`);
+  }
   if (input.loudnessLufs !== undefined && !Number.isFinite(input.loudnessLufs)) {
     throw new RangeError(`The loudness of ad "${input.id}" must be a number of LUFS`);
   }
@@ -101,6 +107,15 @@ function inlineAd(input: VastAdInput, sequence: number | null): string {
     '            </TrackingEvents>',
     '            <MediaFiles>',
     ...files,
+    ...(input.captions === undefined || input.captions.length === 0
+      ? []
+      : [
+          '              <ClosedCaptionFiles>',
+          ...input.captions.map(
+            (caption) => `                <ClosedCaptionFile type="text/vtt" language="${caption.language}">${cdata(caption.url)}</ClosedCaptionFile>`,
+          ),
+          '              </ClosedCaptionFiles>',
+        ]),
     '            </MediaFiles>',
     '          </Linear>',
     ...(input.loudnessLufs === undefined
