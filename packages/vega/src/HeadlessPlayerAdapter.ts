@@ -17,6 +17,17 @@ interface Subscription {
   unsubscribe(): void;
 }
 
+/** The listener shapes of @amazon-devices/kepler-player-client, by their SDK names. */
+export interface HeadlessStatusListener {
+  onSessionStatusChanged(updatedStatus: HeadlessSessionStatus[]): void;
+}
+export interface HeadlessPositionListener {
+  onPositionUpdated(updatedPosition: Array<{ sessionId?: HeadlessSessionId; position: number }>): void;
+}
+export interface HeadlessErrorListener {
+  onError(error: { code: number; message: string }, sessionId?: HeadlessSessionId): void;
+}
+
 /**
  * The part of `IPlayerClient` from @amazon-devices/kepler-player-client that the adapter uses.
  * Declared here so the package does not ship or import the SDK.
@@ -37,9 +48,13 @@ export interface HeadlessPlayerClient {
   setVolume(volume: number, sessionId?: HeadlessSessionId): Promise<void>;
   // `never`: accepts the SDK's own parameter types without importing the SDK.
   setMediaControlFocus(componentInstance: never, mediaControlHandler?: never): Promise<void>;
-  registerStatusListener(listener: never, sessionId?: HeadlessSessionId): Promise<Subscription>;
-  registerPositionListener(listener: never, interval: number, sessionId?: HeadlessSessionId): Promise<Subscription>;
-  registerErrorListener(listener: never, sessionId?: HeadlessSessionId): Promise<Subscription>;
+  registerStatusListener(listener: HeadlessStatusListener, sessionId?: HeadlessSessionId): Promise<Subscription>;
+  registerPositionListener(
+    listener: HeadlessPositionListener,
+    interval: number,
+    sessionId?: HeadlessSessionId,
+  ): Promise<Subscription>;
+  registerErrorListener(listener: HeadlessErrorListener, sessionId?: HeadlessSessionId): Promise<Subscription>;
 }
 
 /** How often the service reports the position; the core's quartiles and countdown need ~4 per second. */
@@ -92,32 +107,32 @@ export class HeadlessPlayerAdapter implements PlayerPort {
     this.subscriptions = await Promise.all([
       this.client.registerStatusListener(
         {
-          onSessionStatusChanged: (update: HeadlessSessionStatus[]) => {
+          onSessionStatusChanged: (update) => {
             const status = update.find((s) => mine(s.sessionId));
             if (status) this.onStatus(status);
           },
-        } as never,
+        },
         this.session,
       ),
       this.client.registerPositionListener(
         {
-          onPositionUpdated: (update: Array<{ sessionId?: HeadlessSessionId; position: number }>) => {
+          onPositionUpdated: (update) => {
             const position = update.find((p) => mine(p.sessionId));
             if (position) {
               this.time = position.position;
               this.emit('timeupdate');
             }
           },
-        } as never,
+        },
         POSITION_INTERVAL_MS,
         this.session,
       ),
       this.client.registerErrorListener(
         {
-          onSessionError: (update: Array<{ sessionId?: HeadlessSessionId }>) => {
-            if (update.some((e) => mine(e.sessionId))) this.emit('error');
+          onError: (_error, sessionId) => {
+            if (mine(sessionId)) this.emit('error');
           },
-        } as never,
+        },
         this.session,
       ),
     ]);

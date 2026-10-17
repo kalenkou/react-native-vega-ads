@@ -32,8 +32,11 @@ export { HeadlessPlayerAdapter } from './HeadlessPlayerAdapter';
 export { HeadlessPlayerService } from './HeadlessPlayerService';
 export type { HeadlessPlayerServer, HeadlessServicePlayer } from './HeadlessPlayerService';
 export type {
+  HeadlessErrorListener,
   HeadlessPlayerClient,
   HeadlessPlayerOptions,
+  HeadlessPositionListener,
+  HeadlessStatusListener,
   HeadlessSessionId,
   HeadlessSessionStatus,
 } from './HeadlessPlayerAdapter';

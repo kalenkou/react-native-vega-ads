@@ -72,7 +72,8 @@ class RecordingClient implements HeadlessPlayerClient {
     this.position.forEach((l) => (l.onPositionUpdated as (u: unknown) => void)([{ sessionId: { id }, position }]));
   }
   sendError(id = 7) {
-    this.error.forEach((l) => (l.onSessionError as (u: unknown) => void)([{ sessionId: { id }, code: 3, message: 'decode' }]));
+    // IPlayerSessionErrorListener.onError(error, sessionId): one error at a time.
+    this.error.forEach((l) => (l.onError as (e: unknown, s: unknown) => void)({ code: 3, message: 'decode' }, { id }));
   }
 }
 
