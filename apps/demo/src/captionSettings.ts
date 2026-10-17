@@ -45,7 +45,8 @@ export function systemCaptionSettings(): CaptionSettingsSource | null {
         KeplerA11ySettingsInterface: CaptionSettingsSource;
       };
     return KeplerA11ySettingsInterface;
-  } catch {
+  } catch (error) {
+    console.log(`[captions] no accessibility settings: ${String(error)}`);
     return null;
   }
 }

@@ -77,6 +77,12 @@ export const PlayerScreen = ({
   const mode = adsMode(movie, classic, AVOID_REPEATS);
   const [captionSource] = useState(systemCaptionSettings);
   const captions = useCaptionSettings(captionSource);
+  // For the device log next to the IAB events: the viewer's caption setting.
+  useEffect(() => {
+    console.log(
+      `[captions] ${captions.enabled ? 'on' : 'off'} ${captions.fontSize}`,
+    );
+  }, [captions.enabled, captions.fontSize]);
   return (
     <VegaAdsPlayer
       source={{uri: movie.uri}}
