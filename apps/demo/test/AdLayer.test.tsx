@@ -10,6 +10,15 @@ jest.mock('@amazon-devices/react-native-w3cmedia', () => ({
   KeplerMediaControlHandler: class {},
 }));
 
+// TouchableOpacity animates its opacity on press with requestAnimationFrame: a setTimeout in the
+// Kepler Jest setup whose callback calls jest.now(), which this Jest does not have. With real
+// timers it fires after the test and stops the whole run; fake timers drop it.
+beforeEach(() => jest.useFakeTimers());
+afterEach(() => {
+  jest.clearAllTimers();
+  jest.useRealTimers();
+});
+
 function adsWith(ui: Partial<VegaAds['ui']>, skip = jest.fn()): VegaAds {
   return {
     ui: {
