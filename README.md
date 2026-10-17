@@ -208,7 +208,7 @@ The player with the same `ads` uses the answers once, within five minutes; other
 
 ### Customise any part
 
-Every part of `<VegaAdsPlayer>` can be replaced; the ads keep working.
+Every part of `<VegaAdsPlayer>` can be replaced; the ads keep working. The component is a thin default over the hook: `useVegaAds` gives the ad state (`ads.ui`, `ads.snapshot`, `ads.timeline`, `ads.pauseAd`) and the actions (`skip`, `togglePause`, `back`), and every built-in part reads only these. So you can draw all of the ad UI yourself; the components are optional defaults.
 
 Your own controls over the video (hidden during ads):
 
