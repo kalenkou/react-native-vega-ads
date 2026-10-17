@@ -28,6 +28,13 @@ export type { PreloadVegaAdsOptions } from './preloadVegaAds';
 // Players and the platform
 export { W3cPlayerAdapter } from './W3cPlayerAdapter';
 export type { W3cVideoPlayer } from './W3cPlayerAdapter';
+export { HeadlessPlayerAdapter } from './HeadlessPlayerAdapter';
+export type {
+  HeadlessPlayerClient,
+  HeadlessPlayerOptions,
+  HeadlessSessionId,
+  HeadlessSessionStatus,
+} from './HeadlessPlayerAdapter';
 export { rnvPlayerPort } from './rnvPlayerPort';
 export type { RnvPlayerLike, RnvPlayerPortOptions } from './rnvPlayerPort';
 export { createAdMediaControlHandler } from './adMediaControlHandler';
