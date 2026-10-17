@@ -515,6 +515,27 @@ The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read 
 - [`tools/vast-samples`](tools/vast-samples) runs every IAB Tech Lab VAST sample through the core: 46 of 46 linear H.264 samples and 7 of 7 live wrappers play (VAST 2.0–4.2). Google's public Ad Manager sample tags play too: VAST, wrapper, skippable, VMAP with a pod.
 - [`apps/demo`](apps/demo) is a small Vega app on `<VegaAdsPlayer>`: a movie page that preloads the ads, and a player with break marks, "Ad in 5", Skip and Back.
 
+## On AWS
+
+No ad server yet? The demo's whole ad backend runs on AWS from one script, and the library
+needs nothing AWS-specific: it reads the VAST and VMAP files from any HTTPS host.
+
+```
+make-vmap ──(Rekognition: shot cuts, black frames, end credits)──► VMAP with break times
+                                                                       │
+deploy-aws.sh ──► S3 (movies, ad creatives, VAST, VMAP, WebVTT) ──► CloudFront (HTTPS) ──► Fire TV app
+                                                                                             │
+                  DynamoDB ◄── Lambda function URL ◄────── IAB tracking pixels ◄─────────────┘
+                     └──► /report: impressions, quartiles, completion, ads left out, errors
+```
+
+1. [`tools/make-vmap`](tools/make-vmap) `--bucket B --key movie.mp4` sends the movie in S3 to Amazon Rekognition segment detection and places mid-rolls on shot cuts and black frames, never in the end credits. `--local` does the same on your computer with ffmpeg, to compare.
+2. `tools/demo-ads/deploy-aws.sh MEDIA_DIR` deploys [`tools/pixel-collector`](tools/pixel-collector) with AWS SAM (S3 + CloudFront with origin access control + Lambda function URL + DynamoDB on demand), uploads the media, and writes VAST, VMAP and WebVTT files that point to CloudFront and to the pixel collector.
+3. The app needs only the CloudFront URL. HTTPS media needs no cleartext entry in `manifest.toml`.
+4. `<pixel url>report` shows the day's counts per ad.
+
+The template has no keys or account IDs; `sam delete` removes it all.
+
 ## Development
 
 You need Node.js 22 and npm 10 (as in CI). For the demo app: the Vega SDK (we use 0.24.12112), and for its media: curl, shasum, unzip, ffmpeg with libx264 and AAC, and Python 3.
