@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { installImagePolyfill } from '../../src/vast/polyfill/image';
 import { requestVast, LinearAd } from '../../src/vast/request/VastRequester';
-import { stitchedBreak, StitchedAdTracker } from '../../src/stitched/StitchedAdTracker';
+import { loadStitchedAds, stitchedBreak, StitchedAdTracker } from '../../src/stitched/StitchedAdTracker';
 import { FakeClock } from '../fakes/FakeClock';
 import { FakeHttp } from '../fakes/FakeHttp';
 
@@ -131,4 +131,67 @@ it('skip is allowed after the skip offset and returns where the content goes on'
   tracker.update(110);
   play(110.25, 111);
   expect(events.filter((e) => e === 'impression')).toHaveLength(2);
+});
+
+describe('loadStitchedAds', () => {
+  const vmap = (name: string) => readFileSync(`${__dirname}/../../fixtures/vmap/${name}`, 'utf8');
+  const VMAP = 'https://ads.test/vmap.xml';
+
+  it('places every break of the VMAP on the stitched stream: start, time, percent and end', async () => {
+    const http = new FakeHttp()
+      .on(VMAP, { body: vmap('pre-mid-post.xml') })
+      .on('https://ads.test/pre.xml', { body: INLINE })
+      .on('https://ads.test/mid1.xml', { body: INLINE })
+      .on('https://ads.test/mid2.xml', { body: INLINE })
+      .on('https://ads.test/post.xml', { body: INLINE });
+    const ads = await loadStitchedAds(VMAP, { http, clock: new FakeClock() }, 600);
+    expect(ads.map((a) => [a.start, a.end])).toEqual([
+      [0, 10],
+      [90.5, 100.5],
+      [300, 310],
+      [590, 600],
+    ]);
+  });
+
+  it('a standard pod (two sources at one time) becomes one break of two ads', async () => {
+    const http = new FakeHttp()
+      .on(VMAP, { body: vmap('standard-pod.xml') })
+      .on('https://ads.test/pod-a.xml', { body: INLINE })
+      .on('https://ads.test/pod-b.xml', { body: INLINE })
+      .on('https://ads.test/pod-c.xml', { body: INLINE });
+    const ads = await loadStitchedAds(VMAP, { http, clock: new FakeClock() }, 600);
+    expect(ads.map((a) => [a.start, a.index, a.count])).toEqual([
+      [15, 1, 2],
+      [25, 2, 2],
+      [45, 1, 1],
+    ]);
+  });
+
+  it('without the stream length, percent and end breaks are left out; a failed VAST gives no ads', async () => {
+    const http = new FakeHttp()
+      .on(VMAP, { body: vmap('pre-mid-post.xml') })
+      .on('https://ads.test/pre.xml', { status: 404, body: '' })
+      .on('https://ads.test/mid1.xml', { body: INLINE })
+      .on('https://ads.test/mid2.xml', { body: INLINE })
+      .on('https://ads.test/post.xml', { body: INLINE });
+    const ads = await loadStitchedAds(VMAP, { http, clock: new FakeClock() }, NaN);
+    expect(ads.map((a) => a.start)).toEqual([90.5]);
+  });
+
+  it('every ad of a VAST pod is placed, one after another', async () => {
+    const POD = readFileSync(`${__dirname}/../../fixtures/vast/pod-cat.xml`, 'utf8');
+    const http = new FakeHttp()
+      .on(VMAP, { body: vmap('pre-mid-post.xml') })
+      .on('https://ads.test/mid1.xml', { body: POD });
+    const ads = await loadStitchedAds(VMAP, { http, clock: new FakeClock() }, NaN);
+    expect(ads.map((a) => [a.start, a.index, a.count])).toEqual([
+      [90.5, 1, 2],
+      [100.5, 2, 2],
+    ]);
+  });
+
+  it('a VMAP that cannot be loaded gives no ads', async () => {
+    const http = new FakeHttp().on(VMAP, { status: 500, body: '' });
+    expect(await loadStitchedAds(VMAP, { http, clock: new FakeClock() }, 600)).toEqual([]);
+  });
 });
