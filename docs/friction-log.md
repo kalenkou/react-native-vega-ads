@@ -212,3 +212,21 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Severity:** medium (the most used React Native video library cannot be tried on Vega, and the crash does not name the cause).
 - **Workaround:** a Vega backend for v7 built like its web one (`*.kepler.ts` platform files on w3cmedia), proposed upstream; it plays MP4 on the stick with the v7 API.
 - **Suggestion:** list Nitro-based libraries as unsupported in the Vega compatibility docs, and make `getEnforcing` failures readable.
+
+## FL-24 · Request headers for media work, but the only API for them is hidden (17.10.2026)
+- **Task:** play an MP4 that needs a request header (for example a token), with `VideoPlayer` from `@amazon-devices/react-native-w3cmedia` 2.3.2 in URL mode, Fire TV Stick 4K Select, Vega OS 2.0.
+- **Steps:** searched the Vega docs and the w3cmedia API page for headers; read the package's type files; called `setSrcWithCustomHeaders(url, { 'X-Rnv7-Test': 'hdr1' })` and logged the request on the server.
+- **Expected:** a documented way to send headers with the media request, or a note that it is not supported.
+- **Actual:** the docs do not mention headers. `setSrcWithCustomHeaders` exists in 2.3.2, but its type comment is `@hidden`; in 2.1.99 the method does not exist. Called on the stick, it works: the server received `X-Rnv7-Test: hdr1`.
+- **Severity:** low (works, but an app cannot know it may rely on it, or from which version).
+- **Workaround:** feature-detect the method; without it, load the URL and warn that headers are not sent.
+- **Suggestion:** document `setSrcWithCustomHeaders` with the first w3cmedia version that has it, or say which API to use instead.
+
+## FL-25 · react-native-keyevent is marked Vega-compatible but gets no key events on Vega (17.10.2026)
+- **Task:** read remote keys with `react-native-keyevent` 0.3.2, which React Native Directory marks `vegaos: true` and Amazon's Fire TV starter sample lists in its Vega app, on a Fire TV Stick 4K Select (Vega OS 2.0, React Native 0.83).
+- **Steps:** `KeyEvent.onKeyDownListener(cb)` and `onKeyUpListener(cb)` in a test screen with a focused button; pressed Down, Right, Right, Left, Select with `inputd-cli`; also registered `useTVEventHandler` in the same screen.
+- **Expected:** a key event per press, as on Android TV.
+- **Actual:** 0 events from react-native-keyevent; `useTVEventHandler` got all 10 (5 presses, down and up). The package listens to `DeviceEventEmitter('onKeyDown')`, which only its Android native module sends; it installs and imports on Vega without an error. Amazon's sample handles the remote with its own `TVEventHandler` code on Vega.
+- **Severity:** low (silent: the app runs, the keys just never arrive).
+- **Workaround:** `TVEventHandler` directly, or a Vega module for the package (we wrote one: `index.kepler.js` that maps Vega key names to Android key codes; on the stick 10 of 10 events).
+- **Suggestion:** in the Directory, mark packages as "installs" vs "works" on Vega, or note that key events need `TVEventHandler`.
