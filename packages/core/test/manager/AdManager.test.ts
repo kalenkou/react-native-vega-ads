@@ -27,7 +27,7 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 30; i++) await Promise.resolve();
 }
 
-function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats' | 'maxBreakAds' | 'maxBreakSeconds' | 'pauseAdUrl' | 'onPauseAd' | 'contentLoudness' | 'macros'> = {}) {
+function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats' | 'maxBreakAds' | 'maxBreakSeconds' | 'pauseAdUrl' | 'onPauseAd' | 'contentLoudness' | 'macros' | 'captionLanguage'> = {}) {
   const http = new FakeHttp();
   Object.entries(routes).forEach(([url, body]) => http.on(url, { body }));
   const clock = new FakeClock(1_000_000);
@@ -92,6 +92,30 @@ describe('AdManager', () => {
     expect(ctx.content.calls).toContain('play');
     expect(ctx.content.getCurrentTime()).toBe(0);
     expect(ctx.content.hasMediaControlFocus).toBe(true);
+    expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
+  });
+
+  it('shows the ad caption in the viewer language', async () => {
+    const files =
+      '<ClosedCaptionFiles><ClosedCaptionFile type="text/vtt" language="en"><![CDATA[https://cdn.test/ad.en.vtt]]></ClosedCaptionFile>' +
+      '<ClosedCaptionFile type="text/vtt" language="pl"><![CDATA[https://cdn.test/ad.pl.vtt]]></ClosedCaptionFile></ClosedCaptionFiles>';
+    const ctx = setup(
+      {
+        [VMAP]: fixture('vmap/pre-mid-post.xml'),
+        'https://ads.test/pre.xml': fixture('vast/inline.xml').replace('</MediaFiles>', `${files}</MediaFiles>`),
+        'https://cdn.test/ad.pl.vtt': 'WEBVTT\n\n00:00.000 --> 00:05.000\nKawa na długie wieczory\n',
+      },
+      { captionLanguage: 'pl-PL' },
+    );
+    const starting = ctx.manager.start({ vmapUrl: VMAP });
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    ctx.lastAdPlayer().emitTime(1);
+    expect(ctx.last()).toMatchObject({ state: 'playing', caption: 'Kawa na długie wieczory' });
+    await playAdToEnd(ctx);
     expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
   });
 

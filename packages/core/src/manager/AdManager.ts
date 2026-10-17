@@ -60,6 +60,11 @@ export interface AdManagerDeps {
   pauseAdDelayMs?: number;
   /** The pause ad to draw, or null to remove it. */
   onPauseAd?: (view: PauseAdView | null) => void;
+  /**
+   * The viewer's caption language (BCP 47, such as "en-US"), for ads with `<ClosedCaptionFiles>`.
+   * The snapshot's `caption` then has the line to show; the app shows it when captions are on.
+   */
+  captionLanguage?: string;
 }
 
 /** What a player UI shows outside the breaks: marks on its timeline and "Ad in 5". */
@@ -81,6 +86,7 @@ export const IDLE_SNAPSHOT: SessionSnapshot = Object.freeze({
   canSkip: false,
   skipIn: null,
   adSurface: null,
+  caption: '',
 });
 
 /**
@@ -439,6 +445,7 @@ export class AdManager {
       blockedAdCategories: adBreak.blockedAdCategories,
       sceneSignals: adBreak.sceneSignals,
       contentLoudness: this.deps.contentLoudness,
+      captionLanguage: this.deps.captionLanguage,
       onChange: (snapshot) => this.onSessionChange(id, session, snapshot),
       onEvent: (name) => {
         if (name === 'impression') {

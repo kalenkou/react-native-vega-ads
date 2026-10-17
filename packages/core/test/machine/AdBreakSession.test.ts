@@ -41,6 +41,7 @@ function setup(
     sceneSignals?: string[];
     content?: FakePlayer;
     holdInit?: (player: FakePlayer) => void;
+    captionLanguage?: string;
   } = {},
 ) {
   const http = new FakeHttp().on(TAG, { body });
@@ -75,10 +76,11 @@ function setup(
     contentLoudness: options.contentLoudness,
     blockedAdCategories: options.blockedAdCategories,
     sceneSignals: options.sceneSignals,
+    captionLanguage: options.captionLanguage,
     onChange: (snapshot) => states.push(snapshot),
     onEvent: (name) => events.push(name),
   });
-  return { session, content, adPlayers, states, events, clock };
+  return { session, content, adPlayers, states, events, clock, http };
 }
 
 /** Loads the break and lets the ad player report it can play. */
@@ -1246,5 +1248,74 @@ describe('AdBreakSession – a player call that fails', () => {
     await expect(loading).resolves.toBe('empty');
     expect(ctx.adPlayers[0]?.calls.some((c) => c.startsWith('src:'))).toBe(false);
     expect(ctx.adPlayers[0]?.deinitialized).toBe(true);
+  });
+});
+
+describe('AdBreakSession – captions from <ClosedCaptionFiles>', () => {
+  const VTT = 'https://cdn.test/ad.en.vtt';
+  const withCaptions = (files: string): string =>
+    fixture('inline.xml').replace('</MediaFiles>', `<ClosedCaptionFiles>${files}</ClosedCaptionFiles></MediaFiles>`);
+  const englishAndGerman = withCaptions(
+    '<ClosedCaptionFile type="text/vtt" language="de"><![CDATA[https://cdn.test/ad.de.vtt]]></ClosedCaptionFile>' +
+      `<ClosedCaptionFile type="text/vtt" language="en"><![CDATA[${VTT}]]></ClosedCaptionFile>`,
+  );
+  const cues = 'WEBVTT\n\n00:00.000 --> 00:02.000\nSlow coffee\n\n00:02.000 --> 00:04.000\nfor long evenings\n';
+
+  it('shows the cue at the ad time, in the viewer language', async () => {
+    const ctx = setup(englishAndGerman, { captionLanguage: 'en-US' });
+    ctx.http.on(VTT, { body: cues });
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    await settle();
+    player.emitTime(1);
+    expect(last(ctx.states)?.caption).toBe('Slow coffee');
+    player.emitTime(3);
+    expect(last(ctx.states)?.caption).toBe('for long evenings');
+    player.emitTime(5);
+    expect(last(ctx.states)?.caption).toBe('');
+    expect(ctx.http.requests.filter((url) => url.endsWith('.vtt'))).toEqual([VTT]);
+  });
+
+  it('shows the caption as soon as a late file arrives', async () => {
+    const ctx = setup(englishAndGerman, { captionLanguage: 'en' });
+    let answer: (body: string) => void = () => undefined;
+    const get = ctx.http.get.bind(ctx.http);
+    ctx.http.get = (url, options) =>
+      url === VTT
+        ? new Promise((resolve) => {
+            answer = (body) => resolve({ status: 200, ok: true, text: () => Promise.resolve(body) });
+          })
+        : get(url, options);
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitTime(1);
+    expect(last(ctx.states)?.caption).toBe('');
+    answer(cues);
+    await settle();
+    expect(last(ctx.states)?.caption).toBe('Slow coffee');
+  });
+
+  it('plays the ad without captions when the file fails, and sends no error', async () => {
+    const ctx = setup(englishAndGerman, { captionLanguage: 'en' });
+    ctx.http.on(VTT, { status: 500, body: cues }); // an error page is not the caption file
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    await settle();
+    player.emitTime(1);
+    expect(last(ctx.states)).toMatchObject({ state: 'playing', caption: '' });
+    expect(sent().filter((url) => url.includes('error'))).toEqual([]);
+  });
+
+  it('asks for no caption file when the ad has none', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitTime(1);
+    expect(last(ctx.states)?.caption).toBe('');
+    expect(ctx.http.requests).toEqual([TAG]);
   });
 });

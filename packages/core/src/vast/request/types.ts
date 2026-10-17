@@ -36,6 +36,8 @@ export interface VastLinearCreative {
   /** <UniversalAdId>: the creative's id in a registry that all ad servers share (VAST 4). */
   universalAdIds?: Array<{ idRegistry: string; value: string }>;
   creativeExtensions?: VastExtension[];
+  /** <ClosedCaptionFiles> (VAST 4.1): caption files for the ad, for example WebVTT. */
+  closedCaptionFiles?: Array<{ fileURL: string | null; type: string | null; language: string | null }>;
 }
 
 export interface VastAd {

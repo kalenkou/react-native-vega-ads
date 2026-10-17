@@ -106,6 +106,8 @@ export interface AdUiState {
   skipAnnouncement: string;
   /** Why the break looks as it does: "No Kettlo ad after a scene with injury · Volume matched to the movie". Empty when nothing changed. */
   why: string;
+  /** The ad's closed caption to show now; empty when there is none or no ad plays. */
+  caption: string;
 }
 
 function whyLine(why: BreakWhy | undefined, s: AdUiStrings): string {
@@ -155,6 +157,7 @@ export function adUiState(snapshot: SessionSnapshot, strings: Partial<AdUiString
     announcement: parts.join(', '),
     skipAnnouncement,
     why: whyLine(snapshot.why, s),
+    caption: visible ? snapshot.caption : '',
   };
 }
 

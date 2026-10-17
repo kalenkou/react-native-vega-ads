@@ -1,0 +1,103 @@
+import { captionAt, captionFileUrl, parseWebVtt } from '../../src/vast/captions';
+import type { LinearAd } from '../../src/vast';
+
+function withCaptions(closedCaptionFiles: unknown): LinearAd {
+  return { creative: { closedCaptionFiles } } as unknown as LinearAd;
+}
+
+const file = (fileURL: string | null, type: string | null, language: string | null = null) => ({ fileURL, type, language });
+
+describe('parseWebVtt', () => {
+  it('reads cue times and text, with or without hours and cue ids', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      '1',
+      '00:00:01.000 --> 00:00:03.500',
+      'Kettlebells that last',
+      '',
+      '00:03.500 --> 00:06.250 align:center line:85%',
+      'a lifetime.',
+      '',
+    ].join('\n');
+    expect(parseWebVtt(vtt)).toEqual([
+      { start: 1, end: 3.5, text: 'Kettlebells that last' },
+      { start: 3.5, end: 6.25, text: 'a lifetime.' },
+    ]);
+  });
+
+  it('keeps line breaks inside a cue and drops voice and style tags', () => {
+    const vtt = 'WEBVTT\r\n\r\n00:00.000 --> 00:02.000\r\n<v Narrator>Slow coffee</v>\r\n<i>for long evenings</i>\r\n';
+    expect(parseWebVtt(vtt)).toEqual([{ start: 0, end: 2, text: 'Slow coffee\nfor long evenings' }]);
+  });
+
+  it('skips NOTE and STYLE blocks and cues it cannot read', () => {
+    const vtt = [
+      'WEBVTT - demo',
+      '',
+      'NOTE made by whisper.cpp',
+      '',
+      'STYLE',
+      '::cue { color: yellow }',
+      '',
+      '00:00:01.000 --> soon',
+      'broken',
+      '',
+      '00:00:02.000 --> 00:00:01.000',
+      'ends before it starts',
+      '',
+      '00:00:04.000 --> 00:00:05.000',
+      'kept',
+    ].join('\n');
+    expect(parseWebVtt(vtt)).toEqual([{ start: 4, end: 5, text: 'kept' }]);
+  });
+
+  it('is empty for a file that is not WebVTT', () => {
+    expect(parseWebVtt('1\n00:00:01,000 --> 00:00:02,000\nSRT text\n')).toEqual([]);
+    expect(parseWebVtt('')).toEqual([]);
+  });
+});
+
+describe('captionAt', () => {
+  const cues = [
+    { start: 1, end: 3.5, text: 'first' },
+    { start: 3.5, end: 6, text: 'second' },
+    { start: 5, end: 7, text: 'overlap' },
+  ];
+
+  it('gives the cue that covers the time, from its start up to its end', () => {
+    expect(captionAt(cues, 0.9)).toBe('');
+    expect(captionAt(cues, 1)).toBe('first');
+    expect(captionAt(cues, 3.49)).toBe('first');
+    expect(captionAt(cues, 3.5)).toBe('second');
+    expect(captionAt(cues, 7)).toBe('');
+  });
+
+  it('joins cues that overlap, in file order', () => {
+    expect(captionAt(cues, 5.5)).toBe('second\noverlap');
+  });
+});
+
+describe('captionFileUrl', () => {
+  it('picks the WebVTT file in the viewer language, else the first WebVTT file', () => {
+    const ad = withCaptions([
+      file('https://cdn.test/a.ttml', 'application/ttml+xml', 'en'),
+      file('https://cdn.test/a.de.vtt', 'text/vtt', 'de'),
+      file('https://cdn.test/a.en.vtt', 'text/vtt', 'en'),
+    ]);
+    expect(captionFileUrl(ad, 'en')).toBe('https://cdn.test/a.en.vtt');
+    expect(captionFileUrl(ad, 'EN-us')).toBe('https://cdn.test/a.en.vtt');
+    expect(captionFileUrl(ad, 'pl')).toBe('https://cdn.test/a.de.vtt');
+    expect(captionFileUrl(ad)).toBe('https://cdn.test/a.de.vtt');
+  });
+
+  it('accepts a .vtt URL without a type, and trims the URL', () => {
+    expect(captionFileUrl(withCaptions([file('  https://cdn.test/b.vtt?x=1 ', null)]))).toBe('https://cdn.test/b.vtt?x=1');
+  });
+
+  it('is null without a WebVTT file', () => {
+    expect(captionFileUrl(withCaptions(undefined))).toBeNull();
+    expect(captionFileUrl(withCaptions([file('https://cdn.test/a.ttml', 'application/ttml+xml')]))).toBeNull();
+    expect(captionFileUrl(withCaptions([file(null, 'text/vtt')]))).toBeNull();
+  });
+});

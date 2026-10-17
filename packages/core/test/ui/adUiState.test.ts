@@ -2,7 +2,7 @@ import { adCountdownState, adUiState } from '../../src/ui/adUiState';
 import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
 
 function snapshot(overrides: Partial<SessionSnapshot>): SessionSnapshot {
-  return { state: 'playing', position: 1, total: 2, adTime: 3.2, adDuration: 15, canSkip: false, skipIn: null, adSurface: 'ad', ...overrides };
+  return { state: 'playing', position: 1, total: 2, adTime: 3.2, adDuration: 15, canSkip: false, skipIn: null, adSurface: 'ad', caption: '', ...overrides };
 }
 
 describe('adUiState (R26)', () => {
@@ -82,6 +82,11 @@ describe('adUiState (R26)', () => {
     for (const state of ['idle', 'loading', 'ready', 'empty', 'resuming', 'interrupted', 'finished'] as const) {
       expect(adUiState(snapshot({ state })).visible).toBe(false);
     }
+  });
+
+  it('shows the ad caption only while the ad plays', () => {
+    expect(adUiState(snapshot({ caption: 'Slow coffee' })).caption).toBe('Slow coffee');
+    expect(adUiState(snapshot({ state: 'resuming', caption: 'Slow coffee' })).caption).toBe('');
   });
 
   it('lets the app replace every string', () => {

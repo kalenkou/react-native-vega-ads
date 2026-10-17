@@ -4,6 +4,9 @@ import {
   adLoudness,
   AdSourceRef,
   AdTracker,
+  CaptionCue,
+  captionAt,
+  captionFileUrl,
   ClockPort,
   HttpPort,
   LinearAd,
@@ -11,6 +14,7 @@ import {
   Macros,
   MEDIA_FILE_NOT_SUPPORTED,
   MediaFileOptions,
+  parseWebVtt,
   requestVast,
   selectMediaFile,
   VastResult,
@@ -34,6 +38,8 @@ export interface SessionSnapshot {
   adSurface: string | null;
   /** Why the break looks as it does, for a "why these ads" line. */
   why?: BreakWhy;
+  /** The ad's closed caption at `adTime` (VAST `<ClosedCaptionFiles>`, WebVTT); '' when there is none. */
+  caption: string;
 }
 
 export interface BreakWhy {
@@ -102,6 +108,11 @@ export interface SessionDeps {
   sceneSignals?: readonly string[];
   /** Ad and break events by name; the full list is in the README, "Events (`onEvent`)". */
   onEvent?: (name: string) => void;
+  /**
+   * The viewer's caption language (BCP 47, such as "en-US"). The ad's WebVTT file in that
+   * language is used, else its first WebVTT file.
+   */
+  captionLanguage?: string;
 }
 
 /** VAST 4.1: "Inline Category violates Wrapper BlockedAdCategories"; here the break blocks it. */
@@ -182,6 +193,8 @@ export class AdBreakSession {
   private readonly quieter = new WeakSet<PlayerPort>();
   /** How much each loaded ad was turned down ("-8.0" dB), told to the app when the ad starts. */
   private readonly turnedDown = new WeakMap<LinearAd, string>();
+  /** Caption cues of each ad whose WebVTT file has arrived. */
+  private readonly captions = new WeakMap<LinearAd, CaptionCue[]>();
 
   constructor(deps: SessionDeps) {
     this.deps = deps;
@@ -496,6 +509,29 @@ export class AdBreakSession {
       }
     }
     player.setSrc(url);
+    this.loadCaptions(ad);
+  }
+
+  /**
+   * Fetches the ad's WebVTT file while the ad buffers. Captions are optional: a file that fails
+   * or arrives late never holds or ends the ad, and sends no VAST error.
+   */
+  private loadCaptions(ad: LinearAd): void {
+    const url = captionFileUrl(ad, this.deps.captionLanguage);
+    if (url === null || this.captions.has(ad)) {
+      return;
+    }
+    this.captions.set(ad, []);
+    this.deps.http
+      .get(url)
+      .then((response) => (response.ok ? response.text() : ''))
+      .then((vtt) => {
+        this.captions.set(ad, parseWebVtt(vtt));
+        if (this.current?.item.ad === ad) {
+          this.emitChange();
+        }
+      })
+      .catch(() => undefined);
   }
 
   /** Resolves null when the ad can play, otherwise the VAST error code to send. */
@@ -887,6 +923,7 @@ export class AdBreakSession {
         repeatsLeftOut: this.repeatsLeftOut,
         quieter: this.player !== null && this.quieter.has(this.player),
       },
+      caption: current ? captionAt(this.captions.get(current.item.ad) ?? [], this.player?.getCurrentTime() ?? 0) : '',
     });
   }
 }

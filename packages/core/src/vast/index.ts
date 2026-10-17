@@ -11,6 +11,8 @@ export { requestVmap, parseTimeOffset } from './request/VmapRequester';
 export type { BreakOffset, BreakSource, ScheduledBreak, VmapResult, VmapTrackingEvent } from './request/VmapRequester';
 export { selectMediaFile, MEDIA_FILE_NOT_SUPPORTED } from './request/mediaFileSelector';
 export { adLoudness, loudnessGain } from './loudness';
+export { captionAt, captionFileUrl, parseWebVtt } from './captions';
+export type { CaptionCue } from './captions';
 export type { MediaFileChoice, MediaFileOptions } from './request/mediaFileSelector';
 export type { AdSourceRef, VastAd, VastLinearCreative, VastMediaFile } from './request/types';
 export { AdTracker, adIdMacros } from './tracking/AdTracker';
