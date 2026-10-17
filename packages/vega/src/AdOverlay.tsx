@@ -15,11 +15,6 @@ export interface AdOverlayProps {
   styles?: AdStyles;
 }
 
-/** The part of the label that names the ad ("Ad 1 of 3"), without the countdown. */
-function adName(label: string): string {
-  return label.split(' · ')[0] ?? label;
-}
-
 /**
  * VoiceView announcements for an ad overlay: each ad once (R26), and the moment Skip becomes
  * possible, since a viewer who cannot see the button would not know it. `AdOverlay` calls it; call
@@ -29,7 +24,7 @@ export function useAdAnnouncements(ui: AdUiState): void {
   const announced = useRef<string | null>(null);
   /** This ad has shown a Skip countdown, so "you can skip now" is news. */
   const skipWaited = useRef(false);
-  const key = ui.visible ? adName(ui.label) : null;
+  const key = ui.visible ? ui.name : null;
   const waiting = ui.skip.visible && !ui.skip.enabled;
 
   useEffect(() => {

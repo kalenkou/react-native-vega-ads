@@ -7,7 +7,7 @@ export interface UseVideoPlayerOptions {
   createVideoPlayer?: () => W3cVideoPlayer;
 }
 
-const newVideoPlayer = (): W3cVideoPlayer => new VideoPlayer() as unknown as W3cVideoPlayer;
+export const newVideoPlayer = (): W3cVideoPlayer => new VideoPlayer() as unknown as W3cVideoPlayer;
 
 /**
  * A w3cmedia content player for `uri`, ready for `useVegaAds`: initialized, `autoplay` off,

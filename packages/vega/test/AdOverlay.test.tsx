@@ -5,12 +5,15 @@ import { AdOverlay, useAdAnnouncements } from '../src/AdOverlay';
 
 const announce = AccessibilityInfo.announceForAccessibility as jest.Mock;
 
+/** Like the core's state: `name` and `timeLeft` are the two parts of `label`. */
 function ui(overrides: Partial<AdUiState> = {}): AdUiState {
+  const label = overrides.label ?? 'Ad 1 of 3 · 0:12';
+  const [name = label, timeLeft = ''] = label.split(' · ');
   return {
     visible: true,
-    label: 'Ad 1 of 3 · 0:12',
-    name: 'Ad 1 of 3',
-    timeLeft: '0:12',
+    label,
+    name,
+    timeLeft,
     skip: { visible: false, enabled: false, label: '' },
     announcement: 'Ad 1 of 3, 12 seconds',
     skipAnnouncement: '',

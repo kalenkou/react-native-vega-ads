@@ -7,7 +7,7 @@ import type { AdStyles } from './AdStyles';
 import { PauseAd } from './PauseAd';
 import { AdSurfaceLayers } from './AdSurfaceLayers';
 import { DualSurfaceView } from './DualSurfaceView';
-import { useVegaAds, type UseVegaAdsOptions, type VegaAds } from './useVegaAds';
+import { isPlayerPort, useVegaAds, type UseVegaAdsOptions, type VegaAds } from './useVegaAds';
 import { useVideoPlayer } from './useVideoPlayer';
 import { vegaMacros } from './preloadVegaAds';
 import type { VegaAdIdRetriever } from './vegaAdIdSource';
@@ -109,8 +109,8 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
   const created = useVideoPlayer(ownsPlayer ? (source?.uri ?? null) : null, { createVideoPlayer: options.createVideoPlayer });
   const contentPlayer = ownsPlayer ? created : appPlayer;
   // A PlayerPort has no w3cmedia surface to draw: the app shows the content itself.
-  const port = contentPlayer !== null && 'takeMediaControlFocus' in contentPlayer;
-  const player = port ? null : (contentPlayer as W3cVideoPlayer | null);
+  const port = contentPlayer !== null && isPlayerPort(contentPlayer);
+  const player = contentPlayer === null || isPlayerPort(contentPlayer) ? null : contentPlayer;
   // The ID is read once per retriever and macro values: the user's choice does not change
   // during playback, and apps often pass `macros` as a new object on every render.
   const macrosKey = macros === undefined ? '' : JSON.stringify(macros);

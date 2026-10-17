@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler } from 'react-native';
 import { useKeplerAppStateManager } from '@amazon-devices/react-native-kepler';
-import { VideoPlayer } from '@amazon-devices/react-native-w3cmedia';
 import {
   AdManager,
   AdSchedule,
@@ -25,6 +24,7 @@ import { fetchHttp, systemClock } from './platform';
 import { createAdMediaControlHandler } from './adMediaControlHandler';
 import { contentMediaControlHandler } from './contentMediaControlHandler';
 import { takePreload } from './preloadVegaAds';
+import { newVideoPlayer } from './useVideoPlayer';
 
 export interface UseVegaAdsOptions {
   /** A VMAP URL, or VAST tags with their times. `null` waits (for example, until the title is known). */
@@ -131,9 +131,7 @@ export interface VegaAds {
 
 const NO_TIMELINE: AdTimeline = Object.freeze({ marks: [], nextBreakIn: null });
 
-const newVideoPlayer = (): W3cVideoPlayer => new VideoPlayer() as unknown as W3cVideoPlayer;
-
-const isPort = (player: W3cVideoPlayer | PlayerPort): player is PlayerPort => 'takeMediaControlFocus' in player;
+export const isPlayerPort = (player: W3cVideoPlayer | PlayerPort): player is PlayerPort => 'takeMediaControlFocus' in player;
 
 /**
  * Client-side ads for one piece of content on Vega:
@@ -166,7 +164,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   const sourceKey = options.source ? JSON.stringify(options.source) : null;
   // A w3cmedia player is identified by the object; a PlayerPort may be a new wrapper on every
   // render, so a port change alone does not restart the ads (change `source` to start over).
-  const contentKey = options.contentPlayer === null ? null : isPort(options.contentPlayer) ? 'port' : options.contentPlayer;
+  const contentKey = options.contentPlayer === null ? null : isPlayerPort(options.contentPlayer) ? 'port' : options.contentPlayer;
 
   useEffect(() => {
     const source = latest.current.source;
@@ -189,7 +187,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       ownContentHandler ??= contentMediaControlHandler(undefined, viewerPaused);
       return ownContentHandler;
     };
-    const content = isPort(contentPlayer)
+    const content = isPlayerPort(contentPlayer)
       ? contentPlayer
       : new W3cPlayerAdapter(contentPlayer, componentInstance, contentHandler, o.mediaControls ?? true);
     const adHandler = createAdMediaControlHandler({ allowPause: o.adPause ?? true });

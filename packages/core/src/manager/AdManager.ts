@@ -4,7 +4,7 @@ import { BreakMark, BreakScheduler, Decision } from '../schedule/BreakScheduler'
 import type { PlayerPort } from '../ports';
 import { RepeatGuard, RepeatOptions } from '../pod/RepeatGuard';
 import { PauseAdController, PauseAdView } from '../pause/PauseAdController';
-import { PreloadedAds, resolveSchedule, scheduleKey, withBreakLimits } from './preloadAds';
+import { positive, PreloadedAds, resolveSchedule, scheduleKey, withBreakLimits } from './preloadAds';
 
 /** Where the breaks come from: a VMAP document, or a list of VAST tags with their times. */
 export type AdSchedule =
@@ -61,9 +61,6 @@ export interface AdManagerDeps {
   /** The pause ad to draw, or null to remove it. */
   onPauseAd?: (view: PauseAdView | null) => void;
 }
-
-const positive = (value: number | undefined): number | undefined =>
-  value !== undefined && Number.isFinite(value) && value > 0 ? value : undefined;
 
 /** What a player UI shows outside the breaks: marks on its timeline and "Ad in 5". */
 export interface AdTimeline {

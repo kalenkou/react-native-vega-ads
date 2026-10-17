@@ -23,7 +23,7 @@ export interface PreloadDeps {
   maxBreakSeconds?: number;
 }
 
-const positive = (value: number | undefined): number | undefined =>
+export const positive = (value: number | undefined): number | undefined =>
   value !== undefined && Number.isFinite(value) && value > 0 ? value : undefined;
 
 /** The app's macros plus the VAST 4.2 break limit macros; undefined when there are none. */
