@@ -113,6 +113,23 @@ describe('useVegaAds', () => {
     expect(ctx.http.requests).toEqual([PRE]);
   });
 
+  it('plays ads on the PlayerPort ad players from createAdPlayer (for example headless sessions)', async () => {
+    const portPlayers: FakeW3cPlayer[] = [];
+    const ctx = setup({
+      createVideoPlayer: () => {
+        throw new Error('not used when createAdPlayer is given');
+      },
+      createAdPlayer: () => {
+        const player = new FakeW3cPlayer(10);
+        portPlayers.push(player);
+        return new W3cPlayerAdapter(player, () => ({ name: 'main' }));
+      },
+    });
+    await ctx.surfacesReady();
+    expect(portPlayers).toHaveLength(1);
+    expect(portPlayers[0]!.src).toMatch(/^https:/);
+  });
+
   it('waits for the content surface, so the content never starts without a picture', async () => {
     const ctx = setup({ source: { breaks: [] } });
     act(() => ctx.ads().surfaces.onAdSurface('a1'));

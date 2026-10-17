@@ -94,6 +94,11 @@ export interface UseVegaAdsOptions {
   componentInstance?: () => unknown;
   /** For tests and other runtimes. */
   createVideoPlayer?: () => W3cVideoPlayer;
+  /**
+   * Ad players as any `PlayerPort`, for example a `HeadlessPlayerAdapter` session of a headless
+   * player service. Each call must return a new player. Replaces `createVideoPlayer`.
+   */
+  createAdPlayer?: () => PlayerPort;
   http?: HttpPort;
   clock?: ClockPort;
 }
@@ -201,6 +206,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       clock: o.clock ?? systemClock,
       content,
       createAdPlayer: () =>
+        o.createAdPlayer?.() ??
         new W3cPlayerAdapter(
           (o.createVideoPlayer ?? newVideoPlayer)(),
           componentInstance,
