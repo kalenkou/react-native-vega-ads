@@ -43,7 +43,8 @@ flowchart LR
 | 1 minute | The three screenshots above, then [Measured on a real device](#measured-on-a-real-device): every number comes from a Fire TV Stick 4K Select, not the simulator. |
 | 2 minutes | [The break watches the movie first](#the-break-watches-the-movie-first): where breaks go, what the vision model reports, and the blind-labelled eval with its weak spots ([`tools/make-vmap/eval`](tools/make-vmap/eval/README.md)). |
 | 3 minutes | [Quick start](#quick-start): one component, `<VegaAdsPlayer source ads />`; then [Customise any part](#customise-any-part) for your own player, overlay and styles. |
-| 5 minutes, a terminal | `npm ci && npm run check` runs lint, types and the unit tests of the packages and tools (the demo app's 18 tests: see [Development](#development)). [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md) has each device run with its result, failures included; [`docs/friction-log.md`](docs/friction-log.md) has 20 platform issues with steps and suggestions. |
+| 5 minutes, a terminal | `npm ci && npm run check` runs lint, types and the unit tests of the packages and tools (the demo app's 22 tests: see [Development](#development)). [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md) has each device run with its result, failures included; [`docs/friction-log.md`](docs/friction-log.md) has 26 platform issues with steps and suggestions. |
+| No ad server | [On AWS](#on-aws): one script puts the movies, ads, VAST, VMAP and captions on S3 + CloudFront and counts the pixels with Lambda and DynamoDB. |
 
 > Status: early. The API can still change. The packages are not on npm yet. Tested on one device (see below).
 
