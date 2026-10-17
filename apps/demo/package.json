@@ -20,6 +20,7 @@
     "use-core": "npm run build --prefix ../../packages/core && npm run build --prefix ../../packages/vega && mkdir -p .tmp && npm pack ../../packages/core ../../packages/vega --pack-destination .tmp && npm install --no-save .tmp/react-native-ads-core-0.1.0.tgz .tmp/react-native-vega-ads-0.1.0.tgz"
   },
   "dependencies": {
+    "@amazon-devices/kepler-a11y-settings-interface-turbo": "1.0.0",
     "@amazon-devices/kepler-adid-retriever": "^1.0.18",
     "@amazon-devices/kepler-performance-api": "^0.1.4",
     "@amazon-devices/react-native-async-storage__async-storage": "2.1.9000000001",

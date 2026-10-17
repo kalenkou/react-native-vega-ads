@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {BackHandler, StyleSheet, Text} from 'react-native';
 import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
 import AsyncStorage from '@amazon-devices/react-native-async-storage__async-storage';
@@ -9,6 +9,7 @@ import {
   type W3cVideoPlayer,
 } from 'react-native-vega-ads';
 import {adsMode} from '../adsMode';
+import {systemCaptionSettings, useCaptionSettings} from '../captionSettings';
 import type {Movie} from '../catalog';
 import {PlayerChrome} from '../components/PlayerChrome';
 import {MUTED} from '../media.local';
@@ -74,6 +75,8 @@ export const PlayerScreen = ({
 }: PlayerScreenProps) => {
   useBackToClose(onClose);
   const mode = adsMode(movie, classic, AVOID_REPEATS);
+  const [captionSource] = useState(systemCaptionSettings);
+  const captions = useCaptionSettings(captionSource);
   return (
     <VegaAdsPlayer
       source={{uri: movie.uri}}
@@ -82,6 +85,7 @@ export const PlayerScreen = ({
       pauseAdStyle={styles.pauseAd}
       avoidRepeats={mode.avoidRepeats}
       contentLoudness={mode.contentLoudness}
+      captionLanguage="en"
       adId={AdIdRetriever}
       showWhy={mode.showWhy}
       countdown={mode.countdown}
@@ -97,6 +101,7 @@ export const PlayerScreen = ({
             player={player}
             ads={ads}
             showWhy={mode.showWhy}
+            captions={captions}
           />
           {classic && (
             <Text testID="classic-badge" style={styles.badge}>

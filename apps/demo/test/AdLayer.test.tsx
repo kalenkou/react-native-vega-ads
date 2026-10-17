@@ -1,5 +1,6 @@
 import React from 'react';
 import TestRenderer, {act} from 'react-test-renderer';
+import {StyleSheet} from 'react-native';
 import type {VegaAds} from 'react-native-vega-ads';
 import {AdLayer, adBadge} from '../src/components/AdLayer';
 
@@ -29,6 +30,7 @@ function adsWith(ui: Partial<VegaAds['ui']>, skip = jest.fn()): VegaAds {
       skip: {visible: false, enabled: false, label: ''},
       announcement: '',
       skipAnnouncement: '',
+      caption: '',
       why: 'No Kettlo ad after a scene with injury · Volume matched to the movie',
       ...ui,
     },
@@ -123,6 +125,38 @@ describe('AdLayer', () => {
     });
     act(() => button().props.onPress());
     expect(skip).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the ad caption at the bottom when the viewer has captions on, in their size', () => {
+    const ads = adsWith({caption: 'Kettlebells that last'});
+    const draw = (captions?: {enabled: boolean; fontSize: number}) => {
+      let renderer!: TestRenderer.ReactTestRenderer;
+      act(() => {
+        renderer = TestRenderer.create(
+          <AdLayer
+            title="Sintel"
+            ads={ads}
+            position={0}
+            duration={1}
+            showWhy={false}
+            captions={captions}
+          />,
+        );
+      });
+      return renderer.root.findAll(
+        (n) =>
+          n.props.testID === 'ad-caption' && (n.type as unknown) === 'View',
+      )[0];
+    };
+    expect(draw()).toBeUndefined();
+    expect(draw({enabled: false, fontSize: 36})).toBeUndefined();
+    const box = draw({enabled: true, fontSize: 46});
+    expect(box?.props.pointerEvents).toBe('none');
+    const text = box?.findAll((n) => (n.type as unknown) === 'Text')[0];
+    expect(text?.props.children).toBe('Kettlebells that last');
+    expect(StyleSheet.flatten(text?.props.style)).toMatchObject({
+      fontSize: 46,
+    });
   });
 
   it('draws nothing outside an ad', () => {

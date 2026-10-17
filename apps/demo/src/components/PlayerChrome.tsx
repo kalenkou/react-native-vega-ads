@@ -8,6 +8,7 @@ import {
 import {useRemoteKeys} from '../remote';
 import {colors, fonts} from '../theme';
 import {timecode} from '../time';
+import type {CaptionSettings} from '../captionSettings';
 import {AdLayer} from './AdLayer';
 import {Timeline} from './Timeline';
 
@@ -20,6 +21,8 @@ export interface PlayerChromeProps {
   ads: VegaAds;
   /** Show why a break looks as it does, in the ad overlay. */
   showWhy?: boolean;
+  /** The viewer's caption setting, for the ad captions. */
+  captions?: CaptionSettings;
 }
 
 /** Position, duration and play state of the content player, from its events. */
@@ -74,6 +77,7 @@ export const PlayerChrome = ({
   player,
   ads,
   showWhy = false,
+  captions,
 }: PlayerChromeProps) => {
   const {position, duration, paused} = usePlayback(player);
   useAdAnnouncements(ads.ui);
@@ -137,6 +141,7 @@ export const PlayerChrome = ({
           position={position}
           duration={duration}
           showWhy={showWhy}
+          captions={captions}
         />
       </View>
     );

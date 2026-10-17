@@ -1,6 +1,7 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {AdSkipButton, type AdStyles, type VegaAds} from 'react-native-vega-ads';
+import type {CaptionSettings} from '../captionSettings';
 import {colors, fonts} from '../theme';
 import {timecode} from '../time';
 import {Timeline} from './Timeline';
@@ -13,6 +14,8 @@ export interface AdLayerProps {
   duration: number;
   /** Show why the break looks as it does (`ads.ui.why`). */
   showWhy: boolean;
+  /** The viewer's caption setting: the ad caption (`ads.ui.caption`) shows when it is on. */
+  captions?: CaptionSettings;
 }
 
 /** The demo's short ad badge: "AD 1/2" in a pod, "AD" for a single ad. */
@@ -32,6 +35,7 @@ export const AdLayer = ({
   position,
   duration,
   showWhy,
+  captions,
 }: AdLayerProps) => {
   const {ui} = ads;
   if (!ui.visible) {
@@ -69,6 +73,16 @@ export const AdLayer = ({
           <Text style={styles.time}>{timecode(Math.floor(duration))}</Text>
         </View>
       </View>
+      {captions?.enabled && ui.caption !== '' && (
+        <View
+          testID="ad-caption"
+          style={styles.captionBox}
+          pointerEvents="none">
+          <Text style={[styles.caption, {fontSize: captions.fontSize}]}>
+            {ui.caption}
+          </Text>
+        </View>
+      )}
       <AdSkipButton ui={ui} onSkip={ads.skip} styles={skipStyles} />
     </View>
   );
@@ -115,6 +129,23 @@ const styles = StyleSheet.create({
     lineHeight: 42,
   },
   times: {flexDirection: 'row', justifyContent: 'space-between'},
+  // Above the Skip button's row, centred like TV captions.
+  captionBox: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 150,
+    alignItems: 'center',
+  },
+  caption: {
+    maxWidth: 1400,
+    color: colors.text,
+    fontFamily: fonts.body,
+    textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
   time: {color: colors.muted, fontFamily: fonts.mono, fontSize: 22},
 });
 
