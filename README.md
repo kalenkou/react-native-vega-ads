@@ -138,7 +138,7 @@ npm pack ./packages/core ./packages/vega   # builds both packages first
 
 Then, in your app, install the two `.tgz` files: `npm install path/to/react-native-ads-core-0.1.0.tgz path/to/react-native-vega-ads-0.1.0.tgz`. After the npm release this becomes `npm install react-native-vega-ads`.
 
-Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. Your Vega app already has them. The examples below also pass the Fire TV advertising ID: for that, add `@amazon-devices/kepler-adid-retriever` to your app. `react-native-ads-core` has no Vega dependency. `react-native-vega-ads` needs the two Amazon packages at run time; they are marked optional only for installing.
+Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. Your Vega app already has them. The examples below also pass the Fire TV advertising ID: for that, add `@amazon-devices/kepler-adid-retriever` to your app. `react-native-ads-core` has no Vega dependency. `react-native-vega-ads` needs the two Amazon packages at run time; they are marked optional only so that installing works where they are missing, for example in a fresh clone of this repository.
 
 ### 2. Add entries to `manifest.toml`
 

@@ -1,6 +1,6 @@
 # Requirements
 
-The rules the library was built against. Code comments and test names refer to them as `(R1)`…`(R26)`. Each one has tests that were written before the code. "Device" means it was also checked on a Fire TV Stick 4K Select ([`apps/spike/DEVICE-TESTS.md`](../apps/spike/DEVICE-TESTS.md)).
+The rules the library was built against. Code comments and test names refer to them as `(R1)`…`(R28)`. Each one has tests that were written before the code. "Device" means it was also checked on a Fire TV Stick 4K Select ([`apps/spike/DEVICE-TESTS.md`](../apps/spike/DEVICE-TESTS.md)).
 
 ## VAST, VMAP and tracking
 
