@@ -185,3 +185,30 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Severity:** low (a developer can believe the TTFD KPI is met and implemented, and the TTFD workflow's own check for a missing marker never fires).
 - **Workaround:** check the app code for `useReportFullyDrawn()` instead of trusting a non-empty TTFD value.
 - **Suggestion:** report TTFD as missing when the app did not emit the marker, or document which component emits the automatic `fully_drawn` and when.
+
+## FL-21 · w3cmedia events differ from HTML5 in four places, without a note in the docs (11.10.2026, again 17.10.2026)
+- **Task:** play MP4 by URL with `VideoPlayer` from `@amazon-devices/react-native-w3cmedia` 2.3.2 (React Native 0.83 template) on a Fire TV Stick 4K Select, and map its events to a player API written for HTML5 (react-native-video v7's web backend does this for `<video>`).
+- **Steps:** log every media event with `currentTime`, `readyState` and `paused`; `src` → `play()`; `currentTime = 40` after 5 s; let the video play to its end.
+- **Expected:** HTML5 order and values, as the docs describe the player as an HTMLMediaElement: one `loadstart` per source; `durationchange` after `loadedmetadata`; `seeked` with `currentTime` at the new position; after `ended`, `paused === true`.
+- **Actual:** `loadstart` came twice (at `src`, `readyState` 0, and again after the metadata, `readyState` 3); `durationchange` came before `loadedmetadata`; at `seeked` `currentTime` was 5.31–5.32 although the seek went to 40 (the picture from 40 followed ~0.6 s later); after `ended` there was no `pause` event, `paused` stayed `false` and `readyState` stayed 2. Same in 2 runs on 11.10 and 5 runs on 17.10.
+- **Severity:** medium (a player built on HTML5 semantics reports a double load, a wrong seek position and "still playing" at the end).
+- **Workaround:** react-native-video's Vega backend sends `onLoadStart` once per source, `onLoad` after the metadata, `onSeek` with the seek target, and keeps its own "ended" flag.
+- **Suggestion:** fix these four to match HTML5, or list the differences on the w3cmedia API page.
+
+## FL-22 · w3cmedia in URL mode never reports the video size (17.10.2026)
+- **Task:** fill `onLoad` (width and height) for react-native-video v7 on Vega, from w3cmedia `VideoPlayer` 2.3.2, Fire TV Stick 4K Select, MP4 720p by URL.
+- **Steps:** read `videoWidth` and `videoHeight` at `loadedmetadata`, at `loadeddata` (`readyState` 3), and during playback at 5 s and 43 s.
+- **Expected:** 1280×720 from `loadedmetadata` on, as on HTML5.
+- **Actual:** 0×0 at every point, in 2 runs, for 2 sources.
+- **Severity:** low (apps cannot pick a layout or show the resolution from the player).
+- **Workaround:** none in the player; the app must know the size from its catalog.
+- **Suggestion:** fill `videoWidth`/`videoHeight` in URL mode, or document that they are MSE-only.
+
+## FL-23 · react-native-video v7 crashes a Vega app at import; the only advice is "remove it" (11.10.2026, again 17.10.2026)
+- **Task:** use react-native-video v7 (`7.0.0-beta.12`, the npm `beta` tag) in a Vega app made from the React Native 0.83 template.
+- **Steps:** `npm install react-native-video react-native-nitro-modules`, import `useVideoPlayer` and `VideoView`, build, run on the stick.
+- **Expected:** a build error or a clear runtime message that the package has no Vega support. Amazon's Vega knowledge base (media playback API, migration notes) says: "`react-native-video` must be removed: It has native Android code (ExoPlayer) that does not work on Vega. There is no compatibility layer."
+- **Actual:** the build passes; the app aborts ~1 s after launch (SIGABRT): `react-native-nitro-modules` calls `TurboModuleRegistry.getEnforcing('NitroModules')`, and building its error message fails in React Native for Vega with "__fbBatchedBridgeConfig is not set, cannot invoke native modules".
+- **Severity:** medium (the most used React Native video library cannot be tried on Vega, and the crash does not name the cause).
+- **Workaround:** a Vega backend for v7 built like its web one (`*.kepler.ts` platform files on w3cmedia), proposed upstream; it plays MP4 on the stick with the v7 API.
+- **Suggestion:** list Nitro-based libraries as unsupported in the Vega compatibility docs, and make `getEnforcing` failures readable.
