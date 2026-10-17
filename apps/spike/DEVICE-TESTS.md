@@ -419,3 +419,14 @@ Build with `cd341b7` (a seek over a break whose ads still load waits for them), 
 
 The first try at 01:05 did not start: `Unable to launch component … Display not available` (the TV was in standby and the stick had just rebooted). Not counted.
 
+
+## react-native-video props and the empty break (17.10.2026, night)
+
+Build with `a146eba` (`break:<id>:empty`) and `48d7416` (the demo mutes its players again at each load step). A scratch app played through the community `react-native-video-vega` port with this library as its ad engine (`source.ad.adTagUrl`, `onReceiveAdEvent`). Muted.
+
+| Check | Result |
+|---|---|
+| Our VMAP on Tears of Steel through the port: `paused` at mount, ref calls during ads, mid-roll after a seek, post-roll | PASS: no content before the pre-roll (position 0.0 after it); `seek`/`resume` during an ad ignored; `AD_BREAK_ENDED`, then `ALL_ADS_COMPLETED`, then `onEnd` |
+| Google IMA sample tags through the port: VMAP `premidpost`, skippable VAST, wrapper VAST, two source changes in one session | PASS: every break played; each replaced player released once |
+| IMA sample tag `skippablelinear` | Google answered with an empty VAST (also from the Mac): the content started with no event. With `a146eba` the app gets `break:break-1:empty` 0.5 s after launch, then the content plays (checked on the stick through the port: `LOG` event) |
+| Full demo run with `48d7416` | 1/1 PASS; 17 `set muted true`, no unmute |
