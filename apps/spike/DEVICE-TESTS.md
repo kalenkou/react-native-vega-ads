@@ -430,3 +430,14 @@ Build with `a146eba` (`break:<id>:empty`) and `48d7416` (the demo mutes its play
 | Google IMA sample tags through the port: VMAP `premidpost`, skippable VAST, wrapper VAST, two source changes in one session | PASS: every break played; each replaced player released once |
 | IMA sample tag `skippablelinear` | Google answered with an empty VAST (also from the Mac): the content started with no event. With `a146eba` the app gets `break:break-1:empty` 0.5 s after launch, then the content plays (checked on the stick through the port: `LOG` event) |
 | Full demo run with `48d7416` | 1/1 PASS; 17 `set muted true`, no unmute |
+
+## Regression on the 0.1.0 candidate (17.10.2026, day)
+
+Demo built with the packages at `44b3ceb` (all fixes up to `a146eba` and the mute fix `48d7416`). Muted: every run log shows only `set muted true` (15–20 per run).
+
+| Check | Result |
+|---|---|
+| Full demo run (`gate-run.sh 3`) | 3/3 PASS |
+| Seek over the mid-roll (`seek-run.sh 3`) | 3/3 PASS: the seek targets 142.6–143.3 s before the mid-roll starts; the pod plays; the movie resumes at 142.6–143.3 s |
+| Seek, earlier tries the same day | 1/3 and 2/3 by the script, 6/6 by the app: in each run the seek went past the break first and the pod played, but the system log dropped the line the script judged by (`content play` after `breakEnd`). The script now also accepts the content's pause position at the break and the seek target logged before the break; on all older logs it gives no false pass |
+| `react-native-video-vega` port at its last commit, our VMAP | PASS: no content before the pre-roll, `paused` applied at the break end, mid-roll after a seek, post-roll, then `AD_BREAK_ENDED`, `ALL_ADS_COMPLETED`, `onEnd` |
