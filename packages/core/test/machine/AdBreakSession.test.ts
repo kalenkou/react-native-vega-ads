@@ -496,6 +496,22 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
     expect(third.src).toBe('https://cdn.test/buffet.mp4');
   });
 
+  it('keeps prebuffering when a finished ad player fails to release', async () => {
+    const ctx = setup(fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">'), { standby: true });
+    const first = await playFirst(ctx);
+    first.deinitialize = () => Promise.reject(new Error('already gone'));
+    const second = ctx.adPlayers[1] as FakePlayer;
+    second.emitCanPlay();
+    await settle();
+    first.emitTime(9.6);
+    await settle();
+    await second.flush();
+    first.emitEnded();
+    await settle();
+    const third = ctx.adPlayers[2] as FakePlayer;
+    expect(third?.surface).toBe(SURFACE);
+  });
+
   it('when the next ad is on the lower surface, keeps the upper one shown until its ad ends', async () => {
     const ctx = setup(fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">'), { standby: true });
     const first = await playFirst(ctx);

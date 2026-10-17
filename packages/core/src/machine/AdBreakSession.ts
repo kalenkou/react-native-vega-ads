@@ -468,7 +468,7 @@ export class AdBreakSession {
       const player = await this.createPlayer(this.deps.adSurface);
       if (this.state !== 'loading') {
         // Back or Home came while the player started: it must not take the surface or a decoder.
-        await this.free(player, this.deps.adSurface).catch(() => undefined);
+        await this.free(player, this.deps.adSurface);
         throw new Error('ad break left while the ad player started');
       }
       this.player = player;
@@ -847,15 +847,18 @@ export class AdBreakSession {
     this.previous = null;
     for (const [player, surface] of players) {
       if (player) {
-        await this.free(player, surface ?? null).catch(() => undefined); // a release that fails still ends the break
+        await this.free(player, surface ?? null);
       }
     }
     // The finishing player is gone too: whoever waits for it must not wait forever.
     this.previousReleased();
   }
 
-  /** Amazon's cleanup order for a w3cmedia player: clear its surface handle, then deinitialize. */
-  private free(player: PlayerPort, surface: string | null): Promise<void> {
+  /**
+   * Amazon's cleanup order for a w3cmedia player: clear its surface handle, then deinitialize.
+   * Never rejects: a player that fails to release must not stop the break.
+   */
+  private async free(player: PlayerPort, surface: string | null): Promise<void> {
     if (surface !== null) {
       try {
         player.detachSurface(surface);
@@ -863,7 +866,7 @@ export class AdBreakSession {
         // The player is released below anyway.
       }
     }
-    return player.deinitialize();
+    await player.deinitialize().catch(() => undefined);
   }
 
   private setState(state: SessionState): void {
