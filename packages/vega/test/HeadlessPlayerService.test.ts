@@ -229,3 +229,18 @@ test('an unload before the player is initialized still releases it', async () =>
   await players[0]!.finishInit();
   expect(players[0]!.calls).toEqual(['initialize', 'pause', 'deinitialize']);
 });
+
+test('view, volume and mute sent before the load (the core does that) still reach the player', async () => {
+  const { players, service } = setup();
+  service.handleSetVideoView({ handle: 'a1' }, B);
+  service.handleSetVolume(0.3, B);
+  service.handleSetMute(true, B);
+  service.handlePause(A);
+  service.handleClearVideoView(A);
+  service.handleLoad(media('https://ads.test/ad.mp4'), { startPosition: 0, autoPlay: false }, B);
+  await players[0]!.finishInit();
+  expect(players).toHaveLength(1);
+  expect(players[0]!.calls).toEqual(['initialize', 'setSurface:a1', 'src=https://ads.test/ad.mp4']);
+  expect(players[0]!.volume).toBe(0.3);
+  expect(players[0]!.muted).toBe(true);
+});
