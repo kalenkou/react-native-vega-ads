@@ -40,7 +40,7 @@ You need:
 
 The template contains no keys and no account IDs.
 
-1. Build: `sam build` (from this folder; esbuild bundles `src/index.ts`).
+1. Build: `npm run sam:build` (from this folder). It runs `sam build` with the repo's esbuild on the `PATH`, which bundles `src/index.ts`; a plain `sam build` stops with "Cannot find esbuild" unless esbuild is installed globally.
 2. Deploy: `sam deploy --guided`. Choose a stack name and a region. `samconfig.toml` stays local; git ignores it.
 3. Read the stack outputs:
    - `MediaBucketName`: upload creatives and VMAP files here.
