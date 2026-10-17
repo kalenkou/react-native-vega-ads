@@ -96,6 +96,7 @@ On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no offi
 - Macros for the Fire TV advertising ID and the user's tracking choice (`IFA`, `LIMITADTRACKING`). `[ASSETURI]` names the media file that actually plays (vast-client alone puts the first file of the list there).
 - Remote and Alexa play/pause during ads. Seek, skip and speed commands are blocked during an ad.
 - 10-foot overlay: "Ad 1 of 3 · 0:12", a Skip button with D-pad focus, VoiceView announcements: each ad with its length and when Skip comes ("Ad 1 of 2, 15 seconds, you can skip in 5 seconds"), then "You can skip the ad now" when it does.
+- Captions in ads: a VAST 4.1 `<ClosedCaptionFiles>` WebVTT file is fetched while the ad buffers, in the viewer's language (`captionLanguage`, else the first WebVTT file), and `ui.caption` has the line for the current ad time. `adCaptions` shows it at the bottom of the built-in overlay; pass the viewer's Closed Captions setting to it (on Vega, `isClosedCaptioningEnabled()` of `@amazon-devices/kepler-a11y-settings-interface-turbo`). A caption file that fails or comes late never holds the ad and sends no VAST error.
 - Back during an ad goes to your app, as in the movie, so an ad without Skip cannot be skipped with Back. If you want Back to end the break and go on with the movie, set `backDuringAd: 'content'`. Back on a pause ad closes it.
 - Home during an ad releases the ad players, as Amazon requires for apps in the background. On return the content continues; the interrupted break is not shown again.
 - Errors and timeouts never stop playback: the content continues. An ad whose player is not ready in 8 s is skipped with VAST error 402. An ad that shows no frame in 5 s, buffers for 10 s, or stops with no media event for 30 s is skipped with VAST error 405. The long silent timeout covers Alexa requests: Fire TV stops the picture without an event while the viewer talks.
@@ -232,7 +233,7 @@ Your own content surface (the screen already draws one): the component adds only
 </VegaAdsPlayer>
 ```
 
-Your fonts and colours on the built-in ad UI, with no own overlay: `adStyles` adds to the defaults of each part (`label`, `why`, `skip`, `skipWaiting`, `skipText`, `skipWaitingText`, `countdown`, `pauseAdLabel`, `pauseAdHint`).
+Your fonts and colours on the built-in ad UI, with no own overlay: `adStyles` adds to the defaults of each part (`label`, `why`, `caption`, `skip`, `skipWaiting`, `skipText`, `skipWaitingText`, `countdown`, `pauseAdLabel`, `pauseAdHint`).
 
 ```tsx
 <VegaAdsPlayer
@@ -374,8 +375,9 @@ useTVEventHandler((event) => {
 | `renderOverlay` | `(ads) => ...` your own ad label and Skip button instead of `AdOverlay`. |
 | `countdown` | "Ad in N" before each mid-roll (`AdCountdown`). Default `true`. |
 | `showWhy` | Show `ui.why` in the built-in overlay: why the break looks as it does ("No Kettlo ad after a scene with injury · Volume matched to the movie"). Default `false`. |
+| `adCaptions` | Show the ad's closed caption (`ui.caption`) at the bottom of the built-in overlay. Pass the viewer's caption setting. Default `false`. |
 | `pauseAdStyle` | Style of the pause ad, to keep it clear of your own controls. |
-| `adStyles` | Your fonts, colours and positions for the parts of the built-in ad UI (`AdStyles`: `label`, `why`, `skip`, `skipWaiting`, `skipText`, `skipWaitingText`, `countdown`, `pauseAdLabel`, `pauseAdHint`), on top of the defaults. |
+| `adStyles` | Your fonts, colours and positions for the parts of the built-in ad UI (`AdStyles`: `label`, `why`, `caption`, `skip`, `skipWaiting`, `skipText`, `skipWaitingText`, `countdown`, `pauseAdLabel`, `pauseAdHint`), on top of the defaults. |
 | `style`, `scalingMode` | Layout and w3cmedia scaling mode (default `'fit'`). |
 | other | Any `useVegaAds` option below (`onEvent`, `strings`, `adPause`, ...). |
 
@@ -394,6 +396,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |
 | `pauseAdUrl`, `pauseAdDelayMs` | VAST tag of a pause ad (`<NonLinear>` image), and how long the content stays paused before it shows. Default 1500 ms. |
 | `contentLoudness` | The content's integrated loudness in LUFS, for example from `ffmpeg -i movie.mp4 -af ebur128 -f null -`. Ads with a louder `loudness` creative extension are turned down to it. |
+| `captionLanguage` | The viewer's caption language (BCP 47, for example `'en-US'`). Picks the ad's WebVTT file in that language, else its first WebVTT file. |
 | `maxBreakAds`, `maxBreakSeconds` | Caps for every break, also sent as `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. Preloaded pre-roll requests use the macros you pass to `preloadVegaAds`. |
 | `avoidRepeats` | `{ withinMs, memory }`: how long a shown creative is not shown again (default 30 minutes), and where to remember it across titles and launches: `{ read, write }` of one string, for example `{ read: () => AsyncStorage.getItem('vega-ads.seen'), write: (v) => AsyncStorage.setItem('vega-ads.seen', v) }` with `@amazon-devices/react-native-async-storage__async-storage`. At most 500 creatives are kept. `false` turns the no-repeat rules off. |
 | `mediaFile` | Media file choice: `maxHeight`, `targetBitrateKbps`, or your own `select`. |
@@ -411,7 +414,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 | `playing` | `true` while an ad is on screen. |
 | `ended` | `true` after the content ended and the post-roll, if any, is over. |
 | `snapshot` | Current break state: ad position, total, time, skip state. |
-| `ui` | Data for an ad overlay: `label` ("Ad 1 of 3 · 0:12") and its parts `name` and `timeLeft`, `skip`, `why`, the VoiceView texts. |
+| `ui` | Data for an ad overlay: `label` ("Ad 1 of 3 · 0:12") and its parts `name` and `timeLeft`, `skip`, `why`, `caption`, the VoiceView texts. |
 | `timeline` | `marks`: the mid-rolls (`id`, `time` in seconds, `done`) for your timeline. `nextBreakIn`: whole seconds to the next mid-roll in its last `countdownSeconds`, only once its ads are loaded; otherwise `null`. |
 | `surfaces` | Pass to `DualSurfaceView` or `AdSurfaceLayers`. |
 | `pauseAd` | The pause ad to draw with `<PauseAd view={ads.pauseAd} />`, or `null`. Back closes it. |
@@ -454,7 +457,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 |---|---|
 | `DualSurfaceView` | `surfaces`, `contentPlayer?`, `onContentSurfaceCreated?`, `onContentSurfaceDestroyed?`, `scalingMode?` (default `'fit'`), `style?` |
 | `AdSurfaceLayers` | `surfaces`, `scalingMode?` (default `'fit'`), `style?` |
-| `AdOverlay` | `ui`, `onSkip`, `showWhy?`, `style?`, `styles?` (`AdStyles`) |
+| `AdOverlay` | `ui`, `onSkip`, `showWhy?`, `captions?`, `style?`, `styles?` (`AdStyles`) |
 | `AdSkipButton` | `ui`, `onSkip`, `styles?`. Skip for your own overlay: takes the D-pad focus, ignores presses until Skip is allowed; during a non-skippable ad holds the focus. |
 | `AdCountdown` | `nextBreakIn`, `strings?`, `style?`, `styles?`. Takes no D-pad focus; announces the break once for VoiceView. |
 | `PauseAd` | `view` (`ads.pauseAd`), `strings?`, `style?`, `styles?`. The image beside the paused picture (up to 600 px high), "Ad", the QR code if any, "Back closes the ad". Takes no D-pad focus; announced once for VoiceView. `VegaAdsPlayer` draws it for you. |

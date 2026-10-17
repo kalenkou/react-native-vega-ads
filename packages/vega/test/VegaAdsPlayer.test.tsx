@@ -188,6 +188,16 @@ describe('VegaAdsPlayer – customising', () => {
     expect(await overlay({ showWhy: true })).toBe(true);
   });
 
+  it('passes adCaptions on to the default ad overlay', async () => {
+    const overlay = async (props: Partial<VegaAdsPlayerProps>) => {
+      const ctx = setup(props);
+      await settle();
+      return ctx.renderer.root.findAll((node) => node.type === AdOverlay)[0]?.props.captions;
+    };
+    expect(await overlay({})).toBe(false);
+    expect(await overlay({ adCaptions: true })).toBe(true);
+  });
+
   it('passes adStyles on to the built-in ad overlay, countdown and pause ad', async () => {
     const adStyles = { label: { fontFamily: 'Brand' }, countdown: { color: 'gold' } };
     const ctx = setup({ adStyles });

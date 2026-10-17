@@ -68,6 +68,11 @@ export interface UseVegaAdsOptions {
    */
   contentLoudness?: number;
   /**
+   * The viewer's caption language (BCP 47, such as "en-US"), for ads with `<ClosedCaptionFiles>`:
+   * the WebVTT file in it, else the first one. `ads.ui.caption` has the line to show.
+   */
+  captionLanguage?: string;
+  /**
    * VAST tag of a pause ad (IAB CTV Ad Portfolio, a `<NonLinear>` image): shown when the viewer
    * pauses the content, never when a break pauses it. Draw it with `<PauseAd view={ads.pauseAd} />`.
    */
@@ -212,6 +217,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       maxBreakAds: o.maxBreakAds,
       maxBreakSeconds: o.maxBreakSeconds,
       contentLoudness: o.contentLoudness,
+      captionLanguage: o.captionLanguage,
       pauseAdUrl: o.pauseAdUrl,
       pauseAdDelayMs: o.pauseAdDelayMs,
       onPauseAd: setPauseAd,

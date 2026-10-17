@@ -381,6 +381,17 @@ describe('useVegaAds', () => {
     expect(ctx.lastAd().volume).toBe(0.398);
   });
 
+  it('fetches the ad captions in the viewer language', async () => {
+    const files =
+      '<ClosedCaptionFiles><ClosedCaptionFile type="text/vtt" language="en"><![CDATA[https://cdn.test/ad.en.vtt]]></ClosedCaptionFile>' +
+      '<ClosedCaptionFile type="text/vtt" language="de"><![CDATA[https://cdn.test/ad.de.vtt]]></ClosedCaptionFile></ClosedCaptionFiles>';
+    const ctx = setup({ captionLanguage: 'de-DE' });
+    ctx.http.on(PRE, { body: inline.replace('</MediaFiles>', `${files}</MediaFiles>`) });
+    await ctx.surfacesReady();
+    expect(ctx.http.requests).toContain('https://cdn.test/ad.de.vtt');
+    expect(ctx.http.requests).not.toContain('https://cdn.test/ad.en.vtt');
+  });
+
   it('shows a pause ad on "Alexa, pause", which reaches the content media controls but sends no pause event', async () => {
     const PAUSE = 'https://ads.test/pause.xml';
     const ctx = setup({ source: { breaks: [] }, pauseAdUrl: PAUSE });

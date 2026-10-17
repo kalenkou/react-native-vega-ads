@@ -60,6 +60,12 @@ export interface VegaAdsPlayerProps extends Omit<UseVegaAdsOptions, 'source' | '
    */
   showWhy?: boolean;
   /**
+   * Show the ad's closed caption (VAST `<ClosedCaptionFiles>`, WebVTT) at the bottom of the
+   * built-in ad overlay. Pass the viewer's caption setting; `captionLanguage` picks the file.
+   * Default false.
+   */
+  adCaptions?: boolean;
+  /**
    * "Ad in 5" before each mid-roll whose ads are ready. false: draw your own from
    * `ads.timeline.nextBreakIn`. Default true.
    */
@@ -97,6 +103,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
     contentSurface = true,
     renderOverlay,
     showWhy = false,
+    adCaptions = false,
     countdown = true,
     pauseAdStyle,
     adStyles,
@@ -146,7 +153,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
       )}
       {countdown && !ads.playing && <AdCountdown nextBreakIn={ads.timeline.nextBreakIn} strings={options.strings} styles={adStyles} />}
       <PauseAd view={ads.pauseAd} strings={options.strings} style={pauseAdStyle} styles={adStyles} />
-      {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} showWhy={showWhy} styles={adStyles} />}
+      {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} showWhy={showWhy} captions={adCaptions} styles={adStyles} />}
     </View>
   );
 }

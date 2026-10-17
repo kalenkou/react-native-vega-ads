@@ -9,6 +9,11 @@ export interface AdOverlayProps {
   onSkip: () => void;
   /** Show `ui.why` under the label: why an ad is missing or quieter. Off by default. */
   showWhy?: boolean;
+  /**
+   * Show the ad's closed caption (`ui.caption`, from its VAST `<ClosedCaptionFiles>`) at the
+   * bottom. Turn it on when the viewer has captions on. Off by default.
+   */
+  captions?: boolean;
   /** The overlay's box over the video. */
   style?: StyleProp<ViewStyle>;
   /** Your fonts and colours for the label, the why line and Skip. */
@@ -49,7 +54,7 @@ export function useAdAnnouncements(ui: AdUiState): void {
 }
 
 /** Ad label ("Ad 1 of 3 · 0:12") and a Skip button that takes D-pad focus, with VoiceView announcements. */
-export function AdOverlay({ ui, onSkip, showWhy = false, style, styles: app = {} }: AdOverlayProps): ReactElement | null {
+export function AdOverlay({ ui, onSkip, showWhy = false, captions = false, style, styles: app = {} }: AdOverlayProps): ReactElement | null {
   useAdAnnouncements(ui);
 
   if (!ui.visible) {
@@ -62,6 +67,11 @@ export function AdOverlay({ ui, onSkip, showWhy = false, style, styles: app = {}
         <Text testID="vega-ads-why" style={[styles.why, app.why]}>
           {ui.why}
         </Text>
+      )}
+      {captions && ui.caption !== '' && (
+        <View testID="vega-ads-caption" style={styles.captionBox} pointerEvents="none">
+          <Text style={[styles.caption, app.caption]}>{ui.caption}</Text>
+        </View>
       )}
       <AdSkipButton ui={ui} onSkip={onSkip} styles={app} />
     </View>
@@ -90,5 +100,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: 12,
     paddingVertical: 4,
+  },
+  // Above the Skip button's row, centred like TV captions.
+  captionBox: { position: 'absolute', left: 0, right: 0, bottom: 140, alignItems: 'center' },
+  caption: {
+    maxWidth: 1400,
+    color: '#fff',
+    fontSize: 32,
+    textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
   },
 });

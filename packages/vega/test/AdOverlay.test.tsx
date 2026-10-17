@@ -18,6 +18,7 @@ function ui(overrides: Partial<AdUiState> = {}): AdUiState {
     announcement: 'Ad 1 of 3, 12 seconds',
     skipAnnouncement: '',
     why: '',
+    caption: '',
     ...overrides,
   };
 }
@@ -76,6 +77,30 @@ describe('AdOverlay', () => {
     expect(StyleSheet.flatten(text('Skip Ad')?.props.style)).toMatchObject({ fontFamily: 'Brand' });
     const skip = renderer.root.findAll((n) => n.props.testID === 'vega-ads-skip' && typeof (n.type as unknown) === 'string')[0];
     expect(StyleSheet.flatten(skip?.props.style)).toMatchObject({ borderColor: 'gold' });
+  });
+
+  it('shows the ad caption at the bottom when the app turns captions on, and never takes touches or focus', () => {
+    const caption = 'Slow coffee\nfor long evenings';
+    expect(render(ui({ caption })).texts()).not.toContain(caption);
+
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<AdOverlay ui={ui({ caption })} onSkip={jest.fn()} captions styles={{ caption: { fontSize: 40 } }} />);
+    });
+    const box = renderer.root.findAll((n) => n.props.testID === 'vega-ads-caption' && (n.type as unknown) === 'View')[0];
+    expect(box?.props.pointerEvents).toBe('none');
+    expect(StyleSheet.flatten(box?.props.style)).toMatchObject({ position: 'absolute', bottom: expect.any(Number) });
+    const text = box?.findAll((n) => (n.type as unknown) === 'Text')[0];
+    expect(text?.props.children).toBe(caption);
+    expect(StyleSheet.flatten(text?.props.style)).toMatchObject({ fontSize: 40, color: '#fff' });
+  });
+
+  it('draws no caption box while there is no caption', () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<AdOverlay ui={ui()} onSkip={jest.fn()} captions />);
+    });
+    expect(renderer.root.findAll((n) => n.props.testID === 'vega-ads-caption')).toHaveLength(0);
   });
 
   it('shows no empty why line', () => {

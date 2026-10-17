@@ -9,6 +9,8 @@ export interface AdStyles {
   label?: StyleProp<TextStyle>;
   /** The line under the label, why the break looks as it does (`AdOverlay` with `showWhy`). */
   why?: StyleProp<TextStyle>;
+  /** The ad's closed caption at the bottom (`AdOverlay` with `captions`). */
+  caption?: StyleProp<TextStyle>;
   /** The Skip button (`AdOverlay`, `AdSkipButton`). */
   skip?: StyleProp<ViewStyle>;
   /** Added to `skip` while the viewer still has to wait ("Skip in 3"). */
