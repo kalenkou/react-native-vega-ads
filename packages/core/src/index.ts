@@ -20,6 +20,8 @@ export { preloadAds } from './manager/preloadAds';
 export type { PreloadDeps, PreloadedAds } from './manager/preloadAds';
 export { adPlan, adPlanLabel } from './manager/adPlan';
 export type { AdPlan, AdPlanMark } from './manager/adPlan';
+export { StitchedAdTracker, stitchedBreak } from './stitched/StitchedAdTracker';
+export type { StitchedAd, StitchedAdState, StitchedOptions } from './stitched/StitchedAdTracker';
 export { watchReport, watchReportLabel } from './manager/watchReport';
 export type { WatchReport } from './manager/watchReport';
 export { adCountdownState, adUiState, defaultAdUiStrings } from './ui/adUiState';
