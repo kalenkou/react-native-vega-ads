@@ -6,6 +6,7 @@
 - **Never louder than the movie.** An ad louder than the film is turned down to the film's loudness (EBU R128), never up.
 - **Never the same ad twice.** A creative is not shown again within 30 minutes, and a break has one ad per advertiser.
 - **Fewer unfitting ads after a hard scene.** A local vision model looks at the scene before each break, so there are no car ads right after a car crash. The player leaves out the blocked categories.
+- **Captions on ads, too.** `adCaptions` shows the ad's WebVTT captions from VAST 4.1 `<ClosedCaptionFiles>`; the demo turns them on and sizes them from the Fire TV Closed Captions setting.
 
 | Before Play: the break map, with what the model saw before each break | A break: why it looks like this | Paused: a pause ad |
 | --- | --- | --- |
