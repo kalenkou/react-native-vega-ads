@@ -18,7 +18,6 @@ export class FakePlayer implements PlayerPort {
   private initialized = false;
   private time = 0;
   private readonly duration: number;
-  private errorMessage: string | undefined;
   private listeners = new Map<PlayerEventName, Set<() => void>>();
   private queue: PlayerEventName[] = [];
 
@@ -88,10 +87,6 @@ export class FakePlayer implements PlayerPort {
     return this.duration;
   }
 
-  getErrorMessage(): string | undefined {
-    return this.errorMessage;
-  }
-
   async takeMediaControlFocus(): Promise<void> {
     this.calls.push('focus');
     this.hasMediaControlFocus = true;
@@ -144,8 +139,7 @@ export class FakePlayer implements PlayerPort {
     this.emit('ended');
   }
 
-  emitError(message: string): void {
-    this.errorMessage = message;
+  emitError(): void {
     this.emit('error');
   }
 

@@ -91,14 +91,6 @@ describe('rnvPlayerPort', () => {
     expect(heard).toEqual(['timeupdate', 'ended', 'playing', 'pause', 'waiting', 'canplay', 'error']);
   });
 
-  it('keeps the last error message', () => {
-    const rnv = new FakeRnvPlayer();
-    const port = rnvPlayerPort(rnv);
-    expect(port.getErrorMessage()).toBeUndefined();
-    rnv.emit('onError', { code: 'source/network', message: 'HTTP 403' });
-    expect(port.getErrorMessage()).toBe('source/network: HTTP 403');
-  });
-
   it('stops a listener when vega-ads unsubscribes, and all of them on deinitialize', async () => {
     const rnv = new FakeRnvPlayer();
     const port = rnvPlayerPort(rnv);

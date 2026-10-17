@@ -56,16 +56,11 @@ const EVENTS: Record<PlayerEventName, { event: string; when?: (payload: unknown)
  */
 export function rnvPlayerPort(player: RnvPlayerLike, options: RnvPlayerPortOptions = {}): PlayerPort {
   const subscriptions = new Set<Subscription>();
-  let lastError: string | undefined;
   const listen = (event: string, listener: (payload: unknown) => void): Subscription => {
     const subscription = player.addEventListener(event, listener);
     subscriptions.add(subscription);
     return subscription;
   };
-  listen('onError', (error) => {
-    const { code, message } = (error ?? {}) as { code?: string; message?: string };
-    lastError = `${code ?? 'error'}: ${message ?? ''}`;
-  });
 
   return {
     initialize: () => player.initialize(),
@@ -81,7 +76,6 @@ export function rnvPlayerPort(player: RnvPlayerLike, options: RnvPlayerPortOptio
     getCurrentTime: () => player.currentTime,
     setCurrentTime: (seconds) => player.seekTo(seconds),
     getDuration: () => (Number.isFinite(player.duration) ? player.duration : 0),
-    getErrorMessage: () => lastError,
     takeMediaControlFocus: options.takeMediaControlFocus ?? (() => Promise.resolve()),
     on(name, listener) {
       const { event, when } = EVENTS[name];

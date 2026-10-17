@@ -17,7 +17,6 @@ describe('public API', () => {
     'parseTimeOffset',
     'selectMediaFile',
     'BreakScheduler',
-    'silentLogger',
     'PodController',
     'AdTracker',
     'adIdMacros',

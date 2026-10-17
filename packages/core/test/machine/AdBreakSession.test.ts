@@ -236,7 +236,7 @@ describe('AdBreakSession – pods (R17)', () => {
     const player = await loadReady(ctx);
     await ctx.session.start();
     await player.flush();
-    player.emitError('decoder failed');
+    player.emitError();
     await settle();
     expect(player.src).toBe('https://cdn.test/buffet.mp4');
     expect(last(ctx.states)).toMatchObject({ position: 1, total: 2 });
@@ -560,7 +560,7 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
     const first = await playFirst(ctx);
     const next = ctx.adPlayers[1] as FakePlayer;
     next.emitCanPlay();
-    first.emitError('decoder failed');
+    first.emitError();
     await settle();
     expect(next.deinitialized).toBe(true);
     expect(first.src).toBe('https://cdn.test/buffet.mp4');
@@ -745,7 +745,7 @@ describe('AdBreakSession – stuck players never keep the content paused (goal 7
   it('fails the ad at once when its player broke while waiting for the break', async () => {
     const ctx = setup(fixture('inline.xml'));
     const player = await loadReady(ctx);
-    player.emitError('decoder lost');
+    player.emitError();
     await ctx.session.start();
     await settle();
     expect(ctx.events).toContain('error:405');
@@ -761,7 +761,7 @@ describe('AdBreakSession – stuck players never keep the content paused (goal 7
     await settle();
     const standby = ctx.adPlayers[1] as FakePlayer;
     standby.emitCanPlay();
-    standby.emitError('stream broke');
+    standby.emitError();
     await settle();
     expect(standby.deinitialized).toBe(true);
 
@@ -956,7 +956,7 @@ describe('AdBreakSession – event order and stuck players', () => {
     first.emitTime(9.6); // hand-over: first is the finishing player
     await settle();
     sent();
-    first.emitError('MediaError 3');
+    first.emitError();
     await settle();
     expect(sent()).toEqual(['https://t.test/error-pod-1?code=405']);
     expect(ctx.events).not.toContain('complete');
@@ -970,7 +970,7 @@ describe('AdBreakSession – event order and stuck players', () => {
     let result: string | null = null;
     void ctx.session.load([{ kind: 'url', url: TAG }]).then((r) => (result = r));
     await settle();
-    (ctx.adPlayers[0] as FakePlayer).emitError('MediaError 4');
+    (ctx.adPlayers[0] as FakePlayer).emitError();
     await settle();
     expect(result).toBe('empty');
     expect(ctx.events).toContain('error:400');

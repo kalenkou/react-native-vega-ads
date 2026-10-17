@@ -23,13 +23,10 @@ export interface PlayerPort {
   getCurrentTime(): number;
   setCurrentTime(seconds: number): void;
   getDuration(): number;
-  /** Human-readable reason of the last error, if the platform gives one. */
-  getErrorMessage(): string | undefined;
   /** Give remote and voice play/pause to this player. */
   takeMediaControlFocus(): Promise<void>;
   on(event: PlayerEventName, listener: () => void): () => void;
   deinitialize(): Promise<void>;
 }
 
-export type { ClockPort, HttpPort, HttpRequestOptions, HttpResponse, LoggerPort } from './vast';
-export { silentLogger } from './vast';
+export type { ClockPort, HttpPort, HttpRequestOptions, HttpResponse } from './vast';

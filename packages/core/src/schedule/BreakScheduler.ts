@@ -143,11 +143,6 @@ export class BreakScheduler {
     return this.entries.filter((e) => e.id === breakId).every((e) => e.done);
   }
 
-  /** Mark a break as used without playing it (for example, its ad request failed). */
-  skip(breakId: string): void {
-    this.entries.filter((e) => e.id === breakId).forEach((e) => (e.done = true));
-  }
-
   /** The mid-rolls inside the content, in time order: where a timeline can mark the breaks. */
   marks(): BreakMark[] {
     return this.entries

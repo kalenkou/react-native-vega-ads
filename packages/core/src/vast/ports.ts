@@ -22,12 +22,3 @@ export interface HttpPort {
   get(url: string, options?: HttpRequestOptions): Promise<HttpResponse>;
 }
 
-export interface LoggerPort {
-  debug(message: string): void;
-  warn(message: string): void;
-}
-
-export const silentLogger: LoggerPort = {
-  debug: () => undefined,
-  warn: () => undefined,
-};

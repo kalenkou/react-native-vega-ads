@@ -16,7 +16,6 @@ describe('public API', () => {
     'requestVmap',
     'parseTimeOffset',
     'selectMediaFile',
-    'silentLogger',
     'AdTracker',
     'adIdMacros',
   ])('exports %s', (name) => {

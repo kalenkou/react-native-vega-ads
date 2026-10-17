@@ -9,6 +9,7 @@ import {
   LinearAd,
   loudnessGain,
   Macros,
+  MEDIA_FILE_NOT_SUPPORTED,
   MediaFileOptions,
   requestVast,
   selectMediaFile,
@@ -107,7 +108,6 @@ const CATEGORY_BLOCKED = 205;
 const MEDIA_LOAD_ERROR = 400;
 /** VAST: "Timeout of MediaFile URI"; the file did not become playable in time. */
 const MEDIA_TIMEOUT = 402;
-const MEDIA_NOT_SUPPORTED = 403;
 const PLAYBACK_ERROR = 405;
 
 /**
@@ -387,7 +387,7 @@ export class AdBreakSession {
       tracker.playsFile(choice.file.fileURL);
       return choice.file.fileURL;
     }
-    this.fail(tracker, MEDIA_NOT_SUPPORTED);
+    this.fail(tracker, MEDIA_FILE_NOT_SUPPORTED);
     return null;
   }
 

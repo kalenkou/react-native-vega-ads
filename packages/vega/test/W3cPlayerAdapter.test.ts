@@ -9,7 +9,6 @@ class RecordingPlayer implements W3cVideoPlayer {
   src = '';
   currentTime = 0;
   duration = NaN;
-  error: { code: number; message?: string } | null = null;
   listeners = new Map<string, Set<(event?: unknown) => void>>();
 
   async initialize(): Promise<void> {
@@ -100,15 +99,6 @@ describe('W3cPlayerAdapter', () => {
     expect(port.getDuration()).toBe(0);
     native.duration = 12.5;
     expect(port.getDuration()).toBe(12.5);
-  });
-
-  it('describes the player error from player.error', () => {
-    const { native, port } = make();
-    expect(port.getErrorMessage()).toBeUndefined();
-    native.error = { code: 4, message: '' };
-    expect(port.getErrorMessage()).toBe('MediaError 4');
-    native.error = { code: 3, message: 'decode failed' };
-    expect(port.getErrorMessage()).toBe('MediaError 3: decode failed');
   });
 
   it('gives media control focus to this player with the app component instance', async () => {

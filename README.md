@@ -486,7 +486,6 @@ interface PlayerPort {
   getCurrentTime(): number; // seconds
   setCurrentTime(seconds: number): void;
   getDuration(): number;
-  getErrorMessage(): string | undefined;
   takeMediaControlFocus(): Promise<void>;
   on(event: 'canplay' | 'playing' | 'pause' | 'waiting' | 'timeupdate' | 'ended' | 'error', listener: () => void): () => void; // 'waiting': a buffering ad gets 10 s, a silent stall 30 s
   deinitialize(): Promise<void>;

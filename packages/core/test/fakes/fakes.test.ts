@@ -34,11 +34,11 @@ describe('FakePlayer (mirrors w3cmedia behaviour)', () => {
     const events: string[] = [];
     player.on('timeupdate', () => events.push(`t${player.getCurrentTime()}`));
     player.on('ended', () => events.push('ended'));
-    player.on('error', () => events.push(`error:${player.getErrorMessage() ?? ''}`));
+    player.on('error', () => events.push('error'));
     player.emitTime(2.5);
     player.emitEnded();
-    player.emitError('decode failed');
-    expect(events).toEqual(['t2.5', 'ended', 'error:decode failed']);
+    player.emitError();
+    expect(events).toEqual(['t2.5', 'ended', 'error']);
   });
 
   it('stops emitting after unsubscribe and after deinitialize', async () => {

@@ -190,13 +190,6 @@ describe('BreakScheduler (R10, R24)', () => {
     expect(play(scheduler, 60.5, 70)).toEqual([]);
   });
 
-  it('can skip a break on request, for example when its request failed', () => {
-    const scheduler = new BreakScheduler([{ id: 'm60', offset: at(60) }]);
-    play(scheduler, 0, 50);
-    scheduler.skip('m60');
-    expect(play(scheduler, 50.5, 70)).toEqual([]);
-  });
-
   it('ignores breaks after the end of content', () => {
     const scheduler = new BreakScheduler([{ id: 'late', offset: at(500) }]);
     scheduler.setDuration(100);

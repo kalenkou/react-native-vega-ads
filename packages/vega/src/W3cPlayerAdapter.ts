@@ -12,7 +12,6 @@ export interface W3cVideoPlayer {
   src: string;
   currentTime: number;
   readonly duration: number;
-  readonly error: { code: number; message?: string } | null | undefined;
   initialize(): Promise<void>;
   setSurfaceHandle(handle: string): void;
   clearSurfaceHandle(handle: string): void;
@@ -88,14 +87,6 @@ export class W3cPlayerAdapter implements PlayerPort {
   getDuration(): number {
     const duration = this.player.duration;
     return Number.isFinite(duration) ? duration : 0;
-  }
-
-  getErrorMessage(): string | undefined {
-    const error = this.player.error;
-    if (!error) {
-      return undefined;
-    }
-    return error.message ? `MediaError ${error.code}: ${error.message}` : `MediaError ${error.code}`;
   }
 
   /** async: a native call that throws at once (a player being released) becomes a rejection. */
