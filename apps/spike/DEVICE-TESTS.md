@@ -456,3 +456,14 @@ All runs muted.
 | Ad backend on AWS (eu-north-1), 3 runs | deploy of the stack and 960 MB of media in about 10 minutes. 3/3: the movie and every ad from CloudFront, the report counted every pixel |
 | After merging 0.2 into main and `onEvent(name, info)` (`gate-run.sh 3`) | 3/3 PASS |
 | Sintel break context after the merge (`why-run.sh`) | PASS: Kettlo left out with VAST error 205 at 2:42, Brewnord and Voltaro play, the ad shows "No Kettlo ad after a scene with injury · Volume matched to the movie" |
+
+## Content player released in the background (19.10.2026, night)
+
+Muted demo, `resume-run.sh`. Before the fix the system ended the app about 2 s after Home during the movie (`onBackground Kill <pid> for using session media-playback`).
+
+| Check | Result |
+|---|---|
+| Home after 11 s of the movie, back after 15 s | PASS: the same app process comes back, no kill in the log. A new movie player, no ad again. The frame 15 s after the return is at 0:25 of the movie, so it continued at 0:11 |
+| Same, before the seek fix | FAIL: the movie started at 0:00. A log in the app showed the seek to 10.97 s on the new player with `readyState 0`, and Vega dropped it. The adapter now seeks again on `loadedmetadata` or `canplay` |
+| Home during the pre-roll, back after 15 s | PASS: no kill. The pre-roll was on screen, so it is not shown again: the movie starts at 0:00 with no new ad pixel |
+
