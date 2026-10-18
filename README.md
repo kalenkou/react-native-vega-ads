@@ -2,6 +2,8 @@
 
 Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, the IAB standards for video ads and ad breaks. It plays the ads on Vega's video player (w3cmedia) and sends the IAB tracking pixels: the requests that tell the ad server an ad was seen. It is for apps that have their own ad server. Open source, Apache-2.0.
 
+Vega has no other open library that plays VAST or VMAP ads in the app. [Why this library](docs/why.md) compares the options.
+
 An optional AI tool places the breaks between lines of dialogue and leaves out ads that do not fit the scene. See [AI break placement](#ai-break-placement-optional).
 
 | Movie page: where the ad breaks are, and what the scene before each break shows | During a break: the ad says what was left out and why | On pause: a pause ad with a QR code |
@@ -12,6 +14,8 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 
 > Tested on a Fire TV Stick 4K Select (Vega OS 2.0). The API can change before 1.0.
 
+Measured on that stick: the switch from the movie to an ad takes 56-151 ms, memory peaks at 91 MB with 27 ads in 11 minutes, and the demo app starts in 1.09 s (P90). More: [device results](docs/device-results.md). To try it, build the demo app in [`apps/demo`](apps/demo): two films with ads, and a "Compare: ads as usual" button.
+
 ## Features
 
 - Ads before, during and after the movie (pre-, mid- and post-rolls). The break times come from a VMAP file or from your own list of ad URLs (VAST tags).
@@ -19,7 +23,7 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 - No black frame between the movie and the ads. The movie resumes where it stopped.
 - The remote and Alexa pause and play the ads. The Skip button gets the remote's focus. VoiceView, the Fire TV screen reader, reads out each ad.
 - IAB tracking: the ad server learns when an ad was shown, each quarter of it, pause, skip and errors, and when a break starts and ends.
-- No repeats. The same ad does not come back within 30 minutes, and a break has one ad per advertiser.
+- No repeats. The same ad does not come back within 30 minutes, and a break has one ad per advertiser. With `avoidRepeats.memory` the app remembers the shown ads across movies and launches.
 - An ad is never louder than the movie, when its VAST says how loud the ad is.
 - Pause ads (an ad with a QR code while the movie is paused) and captions in ads.
 - A break can block ad categories, for example no car ads right after a car crash. The list comes from the VMAP or from your code.
