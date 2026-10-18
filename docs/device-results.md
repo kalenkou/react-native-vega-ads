@@ -1,6 +1,6 @@
 # Measured on a real device
 
-Fire TV Stick 4K Select, Vega OS 2.0, 11 to 16.10.2026. Details: [`apps/spike/DEVICE-TESTS.md`](../apps/spike/DEVICE-TESTS.md).
+Fire TV Stick 4K Select, Vega OS 2.0, 11 to 18.10.2026. Details: [`apps/spike/DEVICE-TESTS.md`](../apps/spike/DEVICE-TESTS.md).
 
 | Check | Result |
 |---|---|

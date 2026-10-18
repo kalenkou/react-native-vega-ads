@@ -41,7 +41,7 @@ You need:
    to `src/media.local.ts` and set `MEDIA_BASE` to that address. `media.local.ts` is not committed.
    Set `MUTED = true` there to mute the movie and the ads, for test runs where the TV must stay silent.
 
-3. Let the app load `http://` media from your computer. Add to `apps/demo/manifest.toml`:
+3. Let the app load `http://` media from your computer. In `apps/demo/manifest.toml`, put your computer's address here (the file has the address of our test network):
 
    ```toml
    [network-traffic-policy.cleartext]

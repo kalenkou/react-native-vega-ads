@@ -2,7 +2,7 @@
 
 VAST/VMAP video ads for React Native on Amazon Vega OS (Fire TV): w3cmedia players, a React hook, video surfaces and a 10-foot overlay.
 
-Part of [react-native-vega-ads](https://github.com/kalenkou/react-native-vega-ads). Full guide, manifest entries and device measurements: [main README](https://github.com/kalenkou/react-native-vega-ads#readme).
+Part of [react-native-vega-ads](https://github.com/kalenkou/react-native-vega-ads). Full guide and manifest entries: [main README](https://github.com/kalenkou/react-native-vega-ads#readme). Device measurements: [docs/device-results.md](https://github.com/kalenkou/react-native-vega-ads/blob/main/docs/device-results.md).
 
 ## Use
 

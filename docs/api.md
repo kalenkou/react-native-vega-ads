@@ -78,12 +78,12 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
   source={{ uri }}
   ads={{ vmapUrl }}
   onEvent={(name, info) => {
-    if (name === 'impression') analytics.track('ad_seen', { ad: info?.ad?.id, break: info?.breakId });
+    if (name === 'impression') analytics.track('ad_seen', { ad: info.ad?.id, break: info.breakId });
   }}
 />
 ```
 
-Events without a break, such as `vmap:error:<code>`, have no `info`. The types are `AdEventInfo` and `AdEventAd`.
+`info` is `{}` for events without a break or ad: `vmap:error:<code>`, `error:start`, `content:ended` and the `pauseAd:*` events. In `useStitchedAds` (preview) `info` is always `{}`. The types are `AdEventHandler`, `AdEventInfo` and `AdEventAd`.
 
 | Event | When | react-native-video `AdEvent` |
 |---|---|---|

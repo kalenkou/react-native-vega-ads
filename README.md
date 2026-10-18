@@ -19,11 +19,11 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 - Pre-, mid- and post-rolls from a VMAP, or from your own list of VAST tags.
 - VAST 4 wrappers, ad pods and skippable ads.
 - No black frame between the movie and the ads. The movie resumes where it stopped.
-- The remote and Alexa pause and play the ads. Skip gets the D-pad focus, and VoiceView reads the ads aloud.
+- The remote and Alexa pause and play the ads. Skip gets the D-pad focus, and each ad is announced to VoiceView.
 - IAB tracking: impression, quartiles, pause, skip, VAST error codes and the VMAP break events.
 - No repeats. The same ad does not come back within 30 minutes, and a break has one ad per advertiser.
-- An ad is never louder than the movie.
-- Pause ads, captions in ads, and ad categories left out after sensitive scenes.
+- An ad is never louder than the movie, when its VAST carries the ad's loudness.
+- Pause ads, captions in ads, and ad categories left out after sensitive scenes (from the VMAP that `make-vmap` writes).
 - In preview: tracking for ads that a server stitched into the stream, and Amazon's headless player.
 
 More detail: [docs/features.md](docs/features.md).
@@ -73,7 +73,7 @@ Ad and movie URLs must be HTTPS. The w3cmedia player refuses `http://` media and
 allowed-domains = ["192.168.1.20"]
 ```
 
-Keep the usual w3cmedia services of a Vega video app. A full manifest: [`apps/spike/manifest.toml`](apps/spike/manifest.toml).
+Keep the usual w3cmedia services of a Vega video app. The build adds the `[[needs.module]]` entries itself. A full manifest: [`apps/demo/manifest.toml`](apps/demo/manifest.toml).
 
 ### 3. Play a movie with ads
 
@@ -87,7 +87,7 @@ export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: 
       source={{ uri }}
       ads={{ vmapUrl }}
       adId={AdIdRetriever}
-      onEvent={(name, info) => console.log(name, info?.ad?.id)}
+      onEvent={(name, info) => console.log(name, info.ad?.id)}
       onEnd={onClose}
     />
   );

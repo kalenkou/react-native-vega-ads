@@ -441,3 +441,18 @@ Demo built with the packages at `44b3ceb` (all fixes up to `a146eba` and the mut
 | Seek over the mid-roll (`seek-run.sh 3`) | 3/3 PASS: the seek targets 142.6-143.3 s before the mid-roll starts. The pod plays. The movie resumes at 142.6-143.3 s |
 | Seek, earlier tries the same day | 1/3 and 2/3 by the script, 6/6 by the app: in each run the seek went past the break first and the pod played, but the system log dropped the line the script judged by (`content play` after `breakEnd`). The script now also accepts the content's pause position at the break and the seek target logged before the break. On all older logs it gives no false pass |
 | `react-native-video-vega` port at its last commit, our VMAP | PASS: no content before the pre-roll, `paused` applied at the break end, mid-roll after a seek, post-roll, then `AD_BREAK_ENDED`, `ALL_ADS_COMPLETED`, `onEnd` |
+
+## Headless, stitched ads, captions, AWS and the merged 0.1.0 (18.10.2026)
+
+All runs muted.
+
+| Check | Result |
+|---|---|
+| Regression at night (`gate-run.sh 3`, `seek-run.sh 3`) | gate 3/3 PASS. Seek: the first try failed 3 times because the script's Python had lost Pillow after an update, not because of the library. After the script fix 3/3 PASS |
+| Home while the pre-roll loads | 1 FAIL: the pre-roll started 12 ms before Home, so its impression came while the app was still on screen. The script now calls this case inconclusive. Repeat PASS: no ad pixel after Home |
+| Headless approach (Amazon's player service, one session per player), 3 runs | 3/3: pre-roll, seek to 2:05, the repeated Kettlo left out, the mid-roll at 2:19.9, a two-ad pod with the hand-over, the movie goes on |
+| Stitched ads (a 110 s stream with two ads inside), 5 runs | 4/5: impression and quartiles by the stream time, Skip at 5 s moves the player to 10.00, the mid-roll to `complete`, 11 of 11 pixels on the server. 1 run sent no event after Skip. The cause is unknown: that run had no diagnostics, the later runs with a log of every tick passed |
+| Captions with Closed Captions off | the ad played from impression to complete, no caption on screen. Closed Captions on: not checked yet |
+| Ad backend on AWS (eu-north-1), 3 runs | deploy of the stack and 960 MB of media in about 10 minutes. 3/3: the movie and every ad from CloudFront, the report counted every pixel |
+| After merging 0.2 into main and `onEvent(name, info)` (`gate-run.sh 3`) | 3/3 PASS |
+| Sintel break context after the merge (`why-run.sh`) | PASS: Kettlo left out with VAST error 205 at 2:42, Brewnord and Voltaro play, the ad shows "No Kettlo ad after a scene with injury · Volume matched to the movie" |

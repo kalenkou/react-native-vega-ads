@@ -10,7 +10,7 @@ Part of [react-native-vega-ads](https://github.com/kalenkou/react-native-vega-ad
 
 `core` never imports a player SDK, `fetch` or timers. Give it:
 
-- `PlayerPort`: your content player and a factory for ad players (see the main README for the interface)
+- `PlayerPort`: your content player and a factory for ad players (the interface is in [docs/architecture.md](https://github.com/kalenkou/react-native-vega-ads/blob/main/docs/architecture.md))
 - `HttpPort`: `get(url, { signal })`
 - `ClockPort`: `now`, `setTimeout`, `clearTimeout`.
 
@@ -27,7 +27,7 @@ const manager = new AdManager({
   adSurface: 'ad-a',
   standbySurface: 'ad-b',            // optional: prebuffer the next ad on a second player
   onChange: (snapshot) => render(adUiState(snapshot)),
-  onEvent: (name) => console.log(name),
+  onEvent: (name, info) => console.log(name, info.ad?.id),
 });
 
 await manager.start({ vmapUrl: 'https://ads.example.com/vmap.xml' });
