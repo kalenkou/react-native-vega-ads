@@ -1233,6 +1233,31 @@ describe('AdManager', () => {
       expect(ctx.http.requests).toEqual([asked]);
     });
 
+    it("keeps the app's own [BLOCKEDADCATEGORIES] and adds the break's", async () => {
+      const tag = 'https://ads.test/pod-cat.xml?bcat=[BLOCKEDADCATEGORIES]';
+      const asked = 'https://ads.test/pod-cat.xml?bcat=1001%2C1571%2C1551';
+      const ctx = setup({ [asked]: fixture('vast/pod-cat.xml') }, { macros: { BLOCKEDADCATEGORIES: '1001,1571' } });
+      const starting = ctx.manager.start({
+        breaks: [{ offset: 'start', vastUrl: tag, blockedAdCategories: ['1571', '1551'] }],
+      });
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      expect(ctx.http.requests).toEqual([asked]);
+    });
+
+    it("sends the app's own [BLOCKEDADCATEGORIES] for a break that blocks nothing", async () => {
+      const asked = 'https://ads.test/pod-cat.xml?bcat=1001';
+      const ctx = setup({ [asked]: fixture('vast/pod-cat.xml') }, { macros: { BLOCKEDADCATEGORIES: '1001' } });
+      const starting = ctx.manager.start(
+        manual([{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml?bcat=[BLOCKEDADCATEGORIES]' }]),
+      );
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      expect(ctx.http.requests).toEqual([asked]);
+    });
+
     it('preloadAds() tells the ad server the blocked categories of the pre-roll', async () => {
       const asked = 'https://ads.test/pod-cat.xml?bcat=1571';
       const ctx = setup({ [asked]: fixture('vast/pod-cat.xml') });
