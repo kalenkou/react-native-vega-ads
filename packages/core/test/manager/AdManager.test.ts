@@ -1177,6 +1177,48 @@ describe('AdManager', () => {
       expect(ctx.lastAdPlayer().src).toBe('https://cdn.test/coffee.mp4');
     });
 
+    it('tells the ad server the blocked categories of the break ([BLOCKEDADCATEGORIES], VAST 4.1)', async () => {
+      const tag = 'https://ads.test/pod-cat.xml?bcat=[BLOCKEDADCATEGORIES]';
+      const asked = 'https://ads.test/pod-cat.xml?bcat=1571%2C1551';
+      const ctx = setup({ [asked]: fixture('vast/pod-cat.xml') });
+      const starting = ctx.manager.start({ breaks: [{ offset: 'start', vastUrl: tag, blockedAdCategories: ['1571', '1551'] }] });
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      expect(ctx.http.requests).toEqual([asked]);
+    });
+
+    it('sends an empty [BLOCKEDADCATEGORIES] for a break that blocks nothing', async () => {
+      const asked = 'https://ads.test/pod-cat.xml?bcat=';
+      const ctx = setup({ [asked]: fixture('vast/pod-cat.xml') });
+      const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml?bcat=[BLOCKEDADCATEGORIES]' }]));
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      expect(ctx.http.requests).toEqual([asked]);
+    });
+
+    it('preloadAds() tells the ad server the blocked categories of the pre-roll', async () => {
+      const asked = 'https://ads.test/pod-cat.xml?bcat=1571';
+      const ctx = setup({ [asked]: fixture('vast/pod-cat.xml') });
+      await preloadAds(
+        { breaks: [{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml?bcat=[BLOCKEDADCATEGORIES]', blockedAdCategories: ['1571'] }] },
+        { http: ctx.http, clock: ctx.clock },
+      );
+      expect(ctx.http.requests).toEqual([asked]);
+    });
+
+    it('plays a stand-by ad of the response (VAST 4 ad buffet) instead of a blocked one', async () => {
+      const buffet = fixture('vast/pod-cat.xml').replace(' sequence="1"', '').replace(' sequence="2"', '');
+      const ctx = setup({ 'https://ads.test/buffet.xml': buffet });
+      const starting = ctx.manager.start({ breaks: [{ offset: 'start', vastUrl: 'https://ads.test/buffet.xml', blockedAdCategories: ['1571'] }] });
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      expect(ctx.lastAdPlayer().src).toBe('https://cdn.test/coffee.mp4');
+      expect(ctx.last()).toMatchObject({ position: 1, total: 1 });
+    });
+
     it('passes the scene signals on, so the break can say why an ad is missing', async () => {
       const ctx = setup({ 'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml') });
       const starting = ctx.manager.start({

@@ -1,4 +1,5 @@
 import { ClockPort, HttpPort, Macros, requestVast, requestVmap, ScheduledBreak, VastResult } from '../vast';
+import { withBlockedCategories } from '../vast/request/VastRequester';
 import type { AdSchedule } from './AdManager';
 
 /** The ad requests of a title made before its player exists: the schedule and the pre-roll's VAST. */
@@ -80,7 +81,11 @@ export async function preloadAds(schedule: AdSchedule, deps: PreloadDeps): Promi
     }
     const pre = breaks.find((b) => b.offset.kind === 'start');
     const results = pre
-      ? await Promise.all(pre.sources.map((s) => requestVast(s.source, { http: deps.http, clock: deps.clock, macros })))
+      ? await Promise.all(
+          pre.sources.map((s) =>
+            requestVast(s.source, { http: deps.http, clock: deps.clock, macros: withBlockedCategories(macros, pre.blockedAdCategories) }),
+          ),
+        )
       : null;
     return { key, at, breaks, preroll: pre && results ? { breakId: pre.id, results } : null };
   } catch {

@@ -21,6 +21,7 @@ import {
   VastResult,
 } from '../vast';
 import type { PlayerPort } from '../ports';
+import { withBlockedCategories } from '../vast/request/VastRequester';
 
 export type SessionState = 'idle' | 'loading' | 'ready' | 'empty' | 'playing' | 'resuming' | 'interrupted' | 'finished';
 
@@ -220,7 +221,11 @@ export class AdBreakSession {
       const result =
         ready && ready.status !== 'failed'
           ? ready
-          : await requestVast(source, { http: this.deps.http, clock: this.deps.clock, macros: this.deps.macros });
+          : await requestVast(source, {
+              http: this.deps.http,
+              clock: this.deps.clock,
+              macros: withBlockedCategories(this.deps.macros, this.deps.blockedAdCategories),
+            });
       if (this.state !== 'loading') {
         return 'empty'; // interrupted while the ad server answered
       }

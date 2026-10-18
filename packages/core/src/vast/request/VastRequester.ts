@@ -55,6 +55,15 @@ export function fillMacros(url: string, deps: Pick<VastRequestDeps, 'clock' | 'm
   );
 }
 
+/**
+ * The macros of a break's ad requests: the given ones plus `[BLOCKEDADCATEGORIES]` (VAST 4.1), the
+ * categories the break blocks, comma separated and in the taxonomy they were given in. Empty
+ * when the break blocks nothing, so the ad server can choose fitting ads up front.
+ */
+export function withBlockedCategories(macros: Macros | undefined, blocked: readonly string[] | undefined): Macros {
+  return { ...macros, BLOCKEDADCATEGORIES: (blocked ?? []).join(',') };
+}
+
 /** Every request, the ad tag and each wrapper's VASTAdTagURI, gets its macros filled (VAST 4.x). */
 function withMacros(handler: UrlHandler, deps: VastRequestDeps): UrlHandler {
   return { get: (url, options) => handler.get(fillMacros(url, deps), options) };
