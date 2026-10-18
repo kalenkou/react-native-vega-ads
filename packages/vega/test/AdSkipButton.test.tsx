@@ -13,6 +13,7 @@ function ui(skip: AdUiState['skip']): AdUiState {
     announcement: 'Ad 1 of 3, 12 seconds',
     skipAnnouncement: '',
     why: '',
+    caption: '',
   };
 }
 
