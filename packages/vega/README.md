@@ -82,8 +82,8 @@ const client = new PlayerClientFactory().getOrMakeClient('com.example.app.servic
 const content = new HeadlessPlayerAdapter(client, { id: 1 }, getComponentInstance);
 let session = 2;
 
-content.setSrc(movieUrl);
 await content.initialize(); // the content is your player: you start it
+content.setSrc(movieUrl); // no autoplay: the library starts the movie after the pre-roll
 
 <VegaAdsPlayer
   player={content}
@@ -102,8 +102,10 @@ await content.initialize(); // the content is your player: you start it
 Checked on a Fire TV Stick 4K Select (muted): pre-roll, seek, a two-ad mid-roll pod with the
 hand-over between ads, a repeated ad left out, the content back at the break time. The position
 comes from the service 4 times a second, so a break starts at most about 0.25 s after its time.
-The manifest needs the service component, the process group and `wants`/`offers` for the service,
-as in Amazon's guide. With React Native 0.83, `@amazon-devices/kepler-player-client@2.3.0-rn-83`
+Ad players from `createAdPlayer` take the remote through the service: `adPause` and the built-in
+ad media-control handler (seek and skip blocked during ads) apply only to the default w3cmedia ad
+players. The manifest needs the service component, the process group and `wants`/`offers` for the
+service, as in Amazon's guide. With React Native 0.83, `@amazon-devices/kepler-player-client@2.3.0-rn-83`
 asks for `kepler-player-server@^2.3.0`, which npm cannot match: add
 `"overrides": { "@amazon-devices/kepler-player-server": "2.3.0-rn-83" }` to your `package.json`.
 
@@ -117,15 +119,22 @@ included.
 ```tsx
 const player = useVideoPlayer(streamUrl);
 const ads = useStitchedAds({ vmapUrl, player, streamSeconds: 110, onEvent: console.log });
+useEffect(() => {
+  if (ads.ready) void player?.play(); // start once the ad schedule is known
+}, [ads.ready, player]);
 
 {ads.ad && <Text>{`Ad ${ads.ad.index} of ${ads.ad.count} · ${ads.ad.remaining}s`}</Text>}
 {ads.ad?.secondsUntilSkip === 0 && <Button title="Skip" onPress={ads.skip} />}
 ```
 
-Rules: an ad counts only when playback enters it at its start (within 2 s). A seek out of an ad
-ends its tracking without `complete`. Each ad is tracked once. `skip()` seeks to the end of the ad
-once skipping is allowed. `streamSeconds` is needed for `n%` and `end` breaks; with `NaN` they are
-left out.
+Rules: an ad counts only when playback enters it at its start (within 2 s), so start the stream
+when `ready` is true. A seek out of an ad ends its tracking without `complete`. Each ad is tracked
+once. The end of the stream completes an ad that ends with it. `skip()` seeks to the end of the ad
+once skipping is allowed. Each break holds the ads a client-side break would play: one where the
+VMAP allows one (`allowMultipleAds="false"`), a pod in `sequence` order. `streamSeconds` is needed
+for `n%` and `end` breaks; leave it out while unknown and pass it when the player knows the
+duration: those breaks are placed then, without loading the VMAP again. Break times come from the
+VMAP only, not from SCTE-35 or HLS/DASH ad markers.
 
 Checked on a Fire TV Stick 4K Select (muted), a 110 s stream with a 10 s pre-roll and a 10 s
 mid-roll at 1:10: impression, start, quartiles and skip of the pre-roll (skip at 5 s moved the

@@ -96,7 +96,9 @@ export interface UseVegaAdsOptions {
   createVideoPlayer?: () => W3cVideoPlayer;
   /**
    * Ad players as any `PlayerPort`, for example a `HeadlessPlayerAdapter` session of a headless
-   * player service. Each call must return a new player. Replaces `createVideoPlayer`.
+   * player service. Each call must return a new player. Replaces `createVideoPlayer`. Such players
+   * handle the remote themselves: `adPause` and the built-in ad media-control handler apply only
+   * to the default w3cmedia ad players.
    */
   createAdPlayer?: () => PlayerPort;
   http?: HttpPort;
