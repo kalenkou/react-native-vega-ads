@@ -14,7 +14,7 @@ export interface AdEventAd {
   advertiser?: string;
   /** Seconds, from `<Duration>`; 0 when the VAST has none. */
   duration: number;
-  /** Position in an ad pod (`<Ad sequence>`), or null for a stand-alone ad. */
+  /** Its place in the ad pod: `<Ad sequence>`, or the place of a blocked ad that this spare ad took. Null for a stand-alone ad. */
   sequence: number | null;
   /** Seconds until Skip is allowed, or null when the ad is not skippable. */
   skipAfter: number | null;

@@ -239,7 +239,8 @@ export class AdBreakSession {
     if (this.state !== 'loading') {
       return 'empty';
     }
-    this.pod = new PodController(this.withoutRepeats(this.withoutBlocked(responses)), {
+    const { kept, freed } = this.withoutBlocked(responses);
+    this.pod = new PodController(withSpares(this.withoutRepeats(kept), freed), {
       budgetMs: this.deps.budgetMs,
       maxAds: this.deps.maxAds,
       onSkipped: (ad) => this.notUsed(ad, 'budget'),
@@ -371,17 +372,17 @@ export class AdBreakSession {
   }
 
   /**
-   * Drops the ads of a category the break blocks; the ad server hears error 205 for each. A
-   * blocked pod ad gets the place of the response's next spare ad (VAST 4 ad buffet), as a
-   * failed one would.
+   * Drops the ads of a category the break blocks; the ad server hears error 205 for each. Also
+   * gives the pod places (`sequence`) the blocked ads leave free in each response.
    */
-  private withoutBlocked(responses: LinearAd[][]): LinearAd[][] {
+  private withoutBlocked(responses: LinearAd[][]): { kept: LinearAd[][]; freed: number[][] } {
     const blocked = new Set(this.deps.blockedAdCategories ?? []);
     if (blocked.size === 0) {
-      return responses;
+      return { kept: responses, freed: responses.map(() => []) };
     }
-    return responses.map((ads) => {
-      const kept = ads.filter((linear) => {
+    const freed: number[][] = [];
+    const kept = responses.map((ads) => {
+      const left = ads.filter((linear) => {
         if (!(linear.ad.categories ?? []).some((category) => blocked.has(category.value))) {
           return true;
         }
@@ -390,18 +391,10 @@ export class AdBreakSession {
         this.deps.onEvent?.('skipped:category', { ad: adEventAd(linear) });
         return false;
       });
-      const spares = kept.filter((linear) => linear.sequence === null);
-      const freed = ads.filter((linear) => linear.sequence !== null && !kept.includes(linear));
-      if (kept.length === spares.length || freed.length === 0) {
-        return kept; // no pod left, or no pod ad blocked: the buffet works as usual
-      }
-      const moved = new Map<LinearAd, LinearAd>();
-      freed.forEach((slot, index) => {
-        const spare = spares[index];
-        if (spare) moved.set(spare, { ...spare, sequence: slot.sequence });
-      });
-      return kept.map((linear) => moved.get(linear) ?? linear);
+      freed.push(ads.filter((linear) => !left.includes(linear)).flatMap((linear) => linear.sequence ?? []));
+      return left;
     });
+    return { kept, freed };
   }
 
   /** Drops the ads the viewer rules do not allow; the ad server hears `notUsed` for each. */
@@ -996,6 +989,24 @@ export class AdBreakSession {
     }
     return info;
   }
+}
+
+/**
+ * Gives the places of blocked pod ads to the spare ads of the same response (VAST 4 ad buffet),
+ * lowest place first, as a failed pod ad would get one. Runs after the repeat rules, so a spare
+ * the rules leave out does not take a place.
+ */
+function withSpares(responses: LinearAd[][], freed: number[][]): LinearAd[][] {
+  return responses.map((ads, index) => {
+    const places = [...(freed[index] ?? [])].sort((a, b) => a - b);
+    const spares = ads.filter((linear) => linear.sequence === null);
+    const moved = new Map<LinearAd, LinearAd>();
+    places.forEach((sequence, place) => {
+      const spare = spares[place];
+      if (spare) moved.set(spare, { ...spare, sequence });
+    });
+    return ads.map((linear) => moved.get(linear) ?? linear);
+  });
 }
 
 /** The ad a response plays first: the lowest sequence of its pod, or its first ad. */

@@ -1312,6 +1312,70 @@ describe('AdManager', () => {
       expect(ctx.last()).toMatchObject({ position: 1, total: 2 });
     });
 
+    /** An ad like those of pod-cat.xml: `id` names its file, category 1133 unless given. */
+    const catAd = (id: string, ad: { sequence?: number; category?: string; advertiser?: string } = {}): string =>
+      `  <Ad id="${id}"${ad.sequence ? ` sequence="${ad.sequence}"` : ''}><InLine><AdSystem>fx</AdSystem>` +
+      `<AdTitle>${id}</AdTitle>${ad.advertiser ? `<Advertiser>${ad.advertiser}</Advertiser>` : ''}` +
+      `<Category authority="https://iabtechlab.com">${ad.category ?? '1133'}</Category>` +
+      `<Impression><![CDATA[https://t.test/imp-${id}]]></Impression>` +
+      `<Creatives><Creative id="cr-${id}"><Linear><Duration>00:00:10</Duration><MediaFiles>` +
+      `<MediaFile delivery="progressive" type="video/mp4" width="1280" height="720" bitrate="2500">` +
+      `<![CDATA[https://cdn.test/${id}.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad>\n`;
+    const vastOf = (...ads: string[]): string =>
+      `<?xml version="1.0" encoding="UTF-8"?>\n<VAST version="4.2">\n${ads.join('')}</VAST>`;
+    const startBlocked = async (xml: string) => {
+      const ctx = setup({ 'https://ads.test/spares.xml': xml });
+      const starting = ctx.manager.start({
+        breaks: [{ offset: 'start', vastUrl: 'https://ads.test/spares.xml', blockedAdCategories: ['1571'] }],
+      });
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      return ctx;
+    };
+
+    it('fills every blocked pod ad with a spare ad when the whole pod is blocked', async () => {
+      const ctx = await startBlocked(
+        vastOf(
+          catAd('a1', { sequence: 1, category: '1571' }),
+          catAd('b2', { sequence: 2, category: '1571' }),
+          catAd('s1'),
+          catAd('s2'),
+        ),
+      );
+      expect(ctx.lastAdPlayer().src).toBe('https://cdn.test/s1.mp4');
+      expect(ctx.last()).toMatchObject({ position: 1, total: 2 });
+    });
+
+    it('gives the spare ads the free places in pod order, whatever the order in the file', async () => {
+      const ctx = await startBlocked(
+        vastOf(
+          catAd('c3', { sequence: 3, category: '1571' }),
+          catAd('b2', { sequence: 2 }),
+          catAd('a1', { sequence: 1, category: '1571' }),
+          catAd('s1'),
+        ),
+      );
+      expect(ctx.lastAdPlayer().src).toBe('https://cdn.test/s1.mp4');
+      expect(ctx.last()).toMatchObject({ position: 1, total: 2 });
+    });
+
+    it('fills a blocked place with the next spare when the first one breaks the break rules', async () => {
+      const ctx = await startBlocked(
+        vastOf(
+          catAd('a1', { sequence: 1, advertiser: 'Brewnord' }),
+          catAd('b2', { sequence: 2, category: '1571' }),
+          catAd('s1', { advertiser: 'Brewnord' }), // the same advertiser as a1: one ad per advertiser in a break
+          catAd('s2'),
+        ),
+      );
+      expect(ctx.last()).toMatchObject({ position: 1, total: 2 });
+      expect(ctx.lastAdPlayer().src).toBe('https://cdn.test/a1.mp4');
+      await playAdToEnd(ctx);
+      expect(ctx.adPlayers.map((player) => player.src)).toContain('https://cdn.test/s2.mp4');
+      expect(ctx.adPlayers.map((player) => player.src)).not.toContain('https://cdn.test/s1.mp4');
+    });
+
     it('passes the scene signals on, so the break can say why an ad is missing', async () => {
       const ctx = setup({ 'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml') });
       const starting = ctx.manager.start({
