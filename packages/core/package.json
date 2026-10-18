@@ -17,14 +17,14 @@
   ],
   "license": "Apache-2.0",
   "author": "Yury Kalenkou",
-  "homepage": "https://github.com/kalenkou/vega-ads#readme",
+  "homepage": "https://github.com/kalenkou/react-native-vega-ads#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kalenkou/vega-ads.git",
+    "url": "git+https://github.com/kalenkou/react-native-vega-ads.git",
     "directory": "packages/core"
   },
   "bugs": {
-    "url": "https://github.com/kalenkou/vega-ads/issues"
+    "url": "https://github.com/kalenkou/react-native-vega-ads/issues"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
