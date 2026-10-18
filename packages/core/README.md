@@ -45,7 +45,7 @@ What it handles:
 
 ## VAST and VMAP only
 
-Vega has no `DOMParser`, and `@dailymotion/vast-client` needs one. It wires `vast-client` and `@dailymotion/vmap` to a pure-JS parser (`@xmldom/xmldom`), adds timeouts, wrapper limits, VAST error codes and a tracking pixel sender that works without `Image`.
+Vega has no `DOMParser`. `@dailymotion/vast-client` needs one. It wires `vast-client` and `@dailymotion/vmap` to a pure-JS parser (`@xmldom/xmldom`), adds timeouts, wrapper limits, VAST error codes and a tracking pixel sender that works without `Image`.
 
 ```ts
 import { requestVast, requestVmap, selectMediaFile, AdTracker, installImagePolyfill } from 'react-native-ads-core';

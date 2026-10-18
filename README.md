@@ -6,7 +6,7 @@ Vega has no other open library that plays VAST or VMAP ads in the app. [Why this
 
 An optional AI tool places the breaks between lines of dialogue and leaves out ads that do not fit the scene. See [AI break placement](#ai-break-placement-optional).
 
-| Movie page: where the ad breaks are, and what the scene before each break shows | During a break: the ad says what was left out and why | On pause: a pause ad with a QR code |
+| Movie page: where the ad breaks are and what the scene before each break shows | During a break: the ad says what was left out and why | On pause: a pause ad with a QR code |
 | --- | --- | --- |
 | ![Sintel's movie page with the break map: pre-roll, 00:02:42.083 after injury, 00:09:03.125 after death and weapons, post-roll](docs/images/movie-page.jpg) | ![An ad in a mid-roll of Sintel: "No Kettlo ad after a scene with injury · Volume matched to the movie"](docs/images/ad-break.jpg) | ![The paused movie with a pause ad and a QR code](docs/images/pause-ad.jpg) |
 
@@ -14,7 +14,7 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 
 > Tested on a Fire TV Stick 4K Select (Vega OS 2.0). The API can change before 1.0.
 
-Measured on that stick: the switch from the movie to an ad takes 56-151 ms, memory peaks at 91 MB with 27 ads in 11 minutes, and the demo app starts in 1.09 s (P90). More: [device results](docs/device-results.md). To try it, build the demo app in [`apps/demo`](apps/demo): two films with ads, and a "Compare: ads as usual" button.
+Measured on that stick: the switch from the movie to an ad takes 56-151 ms. Memory peaks at 91 MB with 27 ads in 11 minutes. The demo app starts in 1.09 s (P90). More: [device results](docs/device-results.md). To try it, build the demo app in [`apps/demo`](apps/demo). It plays two films with ads. Its "Compare: ads as usual" button plays the same film with ads on a timer, for comparison.
 
 ## Features
 
@@ -22,12 +22,12 @@ Measured on that stick: the switch from the movie to an ad takes 56-151 ms, memo
 - VAST 4 wrappers (one ad server passes the request on to another), ad pods (several ads in one break) and skippable ads.
 - No black frame between the movie and the ads. The movie resumes where it stopped.
 - The remote and Alexa pause and play the ads. The Skip button gets the remote's focus. VoiceView, the Fire TV screen reader, reads out each ad.
-- IAB tracking: the ad server learns when an ad was shown, each quarter of it, pause, skip and errors, and when a break starts and ends.
-- No repeats. The same ad does not come back within 30 minutes, and a break has one ad per advertiser. With `avoidRepeats.memory` the app remembers the shown ads across movies and launches.
+- IAB tracking: the ad server learns when an ad was shown, each quarter of it, pause, skip and errors. It also learns when a break starts and ends.
+- No repeats. The same ad does not come back within 30 minutes. A break has one ad per advertiser. With `avoidRepeats.memory` the app remembers the shown ads across movies and launches.
 - An ad is never louder than the movie, when its VAST says how loud the ad is.
 - Pause ads (an ad with a QR code while the movie is paused) and captions in ads.
 - A break can block ad categories, for example no car ads right after a car crash. The list comes from the VMAP or from your code.
-- Your own ad UI: ad events come with the ad's data (`onEvent(name, info)`), the ad on screen is in `ads.ad`, and you can replace the overlay (`renderOverlay`), its styles (`adStyles`) and its texts, in any language (`strings`).
+- Your own ad UI: ad events come with the ad's data (`onEvent(name, info)`). The ad on screen is in `ads.ad`. You can replace the overlay (`renderOverlay`), its styles (`adStyles`) and its texts in any language (`strings`).
 - In preview, the API can change:
   - Tracking for server-side ads, where your server puts the ads into the video stream itself.
   - Amazon's headless player, where the video plays in a separate process.
@@ -129,7 +129,7 @@ export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: 
 - `onEnd` runs when the movie and its post-roll are over.
 - `adId` is optional. Without it, no advertising ID is sent.
 
-Your own controls, ad overlay or player (Shaka, react-native-video v7), and ads loaded on the title page: see the [Guide](docs/guide.md).
+Your own controls, ad overlay or player (Shaka, react-native-video v7) and ads loaded on the title page: see the [Guide](docs/guide.md).
 
 ## Packages
 
@@ -180,11 +180,11 @@ Films:
 - *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0.
 - *Big Buck Bunny* (eval only), (CC) Blender Foundation | [www.bigbuckbunny.org](https://www.bigbuckbunny.org), CC BY 3.0.
 
-Fonts: the demo ads use Inter, and the demo app ships [IBM Plex](https://github.com/IBM/plex). Both are under the SIL Open Font License 1.1. The IBM Plex TTF files are unchanged from IBM's releases, with the licence in `apps/demo/assets/fonts`.
+Fonts: the demo ads use Inter. The demo app ships [IBM Plex](https://github.com/IBM/plex). Both are under the SIL Open Font License 1.1. The IBM Plex TTF files are unchanged from IBM's releases, with the licence in `apps/demo/assets/fonts`.
 
 The packages depend on [@dailymotion/vast-client](https://github.com/dailymotion/vast-client-js), [@dailymotion/vmap](https://github.com/dailymotion/vmap-js) and [@xmldom/xmldom](https://github.com/xmldom/xmldom), all MIT.
 
-`make-vmap` runs [ffmpeg](https://ffmpeg.org) (LGPL/GPL, called as a program), [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (MIT) with its `ggml-base.en` model (MIT), and [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) with [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (Apache-2.0). They are not in this repository or in the npm packages. You install them yourself.
+`make-vmap` runs [ffmpeg](https://ffmpeg.org) (LGPL/GPL, called as a program), [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (MIT) with its `ggml-base.en` model (MIT) and [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) with [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (Apache-2.0). They are not in this repository or in the npm packages. You install them yourself.
 
 ## License
 

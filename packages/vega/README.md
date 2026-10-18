@@ -46,7 +46,7 @@ Required in `manifest.toml`: the media category, the `IMediaPlaybackServer` inte
 | `W3cPlayerAdapter` | `PlayerPort` on a w3cmedia `VideoPlayer` |
 | `createAdMediaControlHandler` | media controls during ads: play/pause allowed, seek and skip blocked |
 | `preloadVegaAds(schedule)` | asks for the VMAP and the pre-roll on the title page, so the pre-roll starts sooner after Play |
-| `useAdPlan(schedule)`, `adPlanLabel` | before Play: "4 ad breaks · first: 2 ads, 25 s, skippable after 5 s", and `marks`: where each break is, with the scene signals from the VMAP |
+| `useAdPlan(schedule)`, `adPlanLabel` | before Play: "4 ad breaks · first: 2 ads, 25 s, skippable after 5 s". `marks`: where each break is, with the scene signals from the VMAP |
 | `vegaAdIdSource`, `adIdMacros` | the Fire TV advertising ID as `IFA`, `IFATYPE`, `LIMITADTRACKING` macros |
 | `rnvPlayerPort(player)` | a react-native-video v7 `VideoPlayer` as the content player |
 | `HeadlessPlayerAdapter`, `HeadlessPlayerService` | Amazon's CSAI "Headless approach": the content and every ad play as sessions of your app's player service (see below) |
@@ -58,7 +58,7 @@ Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmed
 ### Headless approach (preview)
 
 Amazon's CSAI guide offers a second way: the w3cmedia players run in a service component of
-your app, and the UI controls them through `IPlayerClient` (`@amazon-devices/kepler-player-client`).
+your app. The UI controls them through `IPlayerClient` (`@amazon-devices/kepler-player-client`).
 The UI thread then never waits for the player. Here the content and each ad are sessions of
 that service.
 
@@ -112,7 +112,7 @@ asks for `kepler-player-server@^2.3.0`, which npm cannot match: add
 ### Stitched ads (preview)
 
 When the server already put the ads into the stream (server-side ad insertion, SSAI), the player
-never switches. `useStitchedAds` only tracks: the content time says which ad plays, and the same
+never switches. `useStitchedAds` only tracks: the content time says which ad plays. The same
 IAB pixels go out as for client-side ads. The VMAP break times are positions in that stream, ads
 included.
 
