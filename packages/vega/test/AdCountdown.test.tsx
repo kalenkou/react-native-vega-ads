@@ -14,7 +14,8 @@ function render(nextBreakIn: number | null) {
       renderer.update(<AdCountdown nextBreakIn={next} />);
     });
   };
-  const texts = (): string[] => renderer.root.findAll((n) => (n.type as unknown) === 'Text').map((n) => String(n.props.children));
+  const texts = (): string[] =>
+    renderer.root.findAll((n) => (n.type as unknown) === 'Text').map((n) => String(n.props.children));
   return { renderer, update, texts };
 }
 
@@ -24,7 +25,9 @@ describe('AdCountdown', () => {
   it('takes the app style for its text', () => {
     let renderer!: TestRenderer.ReactTestRenderer;
     act(() => {
-      renderer = TestRenderer.create(<AdCountdown nextBreakIn={5} styles={{ countdown: { fontFamily: 'Brand', color: 'gold' } }} />);
+      renderer = TestRenderer.create(
+        <AdCountdown nextBreakIn={5} styles={{ countdown: { fontFamily: 'Brand', color: 'gold' } }} />,
+      );
     });
     const text = renderer.root.findAll((n) => (n.type as unknown) === 'Text')[0];
     expect(StyleSheet.flatten(text?.props.style)).toMatchObject({ fontFamily: 'Brand', color: 'gold', fontSize: 24 });

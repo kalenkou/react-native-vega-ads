@@ -51,10 +51,12 @@ export const MOODS = ['calm', 'happy', 'romantic', 'sad', 'tense', 'violent'] as
 const SCENE_MAX = 200;
 
 /** Words of a guess: evidence that only "suggests" something does not block an ad. */
-const GUESS = /\b(suggests?|suggesting|potential(ly)?|possibl[ey]|could|may|might|appears?|seems?|likely|resembl\w*|indicat\w*|impl(y|ies))\b/i;
+const GUESS =
+  /\b(suggests?|suggesting|potential(ly)?|possibl[ey]|could|may|might|appears?|seems?|likely|resembl\w*|indicat\w*|impl(y|ies))\b/i;
 
 /** Evidence that the thing is not there; the schema makes the model fill the field anyway. */
-const ABSENT = /\b(no evidence|there (is|are) no|no (signs?|mention)|(is|are) not (visible|shown|seen|present|mentioned)|none)\b|^no \w+ (is|are)\b/i;
+const ABSENT =
+  /\b(no evidence|there (is|are) no|no (signs?|mention)|(is|are) not (visible|shown|seen|present|mentioned)|none)\b|^no \w+ (is|are)\b/i;
 
 /** Seconds before the break of the frames the model looks at. */
 export const FRAME_OFFSETS: readonly number[] = [28, 15, 2];
@@ -69,7 +71,21 @@ export function frameTimes(at: number, offsets: readonly number[] = FRAME_OFFSET
 
 /** ffmpeg arguments that write the frame at `time` seconds as a JPEG, 640 pixels wide by default. */
 export function frameArgs(file: string, time: number, out: string, width = 640): string[] {
-  return ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String(time), '-i', file, '-frames:v', '1', '-vf', `scale=${width}:-2`, out];
+  return [
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-y',
+    '-ss',
+    String(time),
+    '-i',
+    file,
+    '-frames:v',
+    '1',
+    '-vf',
+    `scale=${width}:-2`,
+    out,
+  ];
 }
 
 /** The lines spoken (and sound labels) in the minute before a break at `at` seconds. */
@@ -94,7 +110,10 @@ export function contextSchema(): object {
         maxItems: 4,
         items: {
           type: 'object',
-          properties: { signal: { enum: Object.keys(SENSITIVITY_RULES) }, evidence: { type: 'string', maxLength: 100 } },
+          properties: {
+            signal: { enum: Object.keys(SENSITIVITY_RULES) },
+            evidence: { type: 'string', maxLength: 100 },
+          },
           required: ['signal', 'evidence'],
         },
       },
@@ -109,10 +128,17 @@ export interface PromptOptions {
 }
 
 export function contextPrompt(dialogue: string, frames: number, options: PromptOptions = {}): string {
-  const said = dialogue ? `The dialogue of the minute before it: "${dialogue}".` : 'There is no dialogue in the minute before it.';
-  const meanings = (options.definitions ?? true)
-    ? [`What counts: ${Object.entries(SIGNAL_DEFINITIONS).map(([signal, meaning]) => `${signal}: ${meaning}`).join(' ')}`]
-    : [];
+  const said = dialogue
+    ? `The dialogue of the minute before it: "${dialogue}".`
+    : 'There is no dialogue in the minute before it.';
+  const meanings =
+    (options.definitions ?? true)
+      ? [
+          `What counts: ${Object.entries(SIGNAL_DEFINITIONS)
+            .map(([signal, meaning]) => `${signal}: ${meaning}`)
+            .join(' ')}`,
+        ]
+      : [];
   return [
     `You place TV ad breaks. ${frames} frames from the 30 seconds before an ad break are attached. ${said}`,
     'Describe the scene in under 20 words and give its mood. Then list sensitive content the scene clearly',
@@ -170,15 +196,26 @@ export interface VisionModel {
 }
 
 /** Arguments for llama.cpp's `llama-mtmd-cli`: greedy decoding, the answer bound to the schema. */
-export function llamaVisionArgs(vision: VisionModel, prompt: string, images: readonly string[], schemaFile: string): string[] {
+export function llamaVisionArgs(
+  vision: VisionModel,
+  prompt: string,
+  images: readonly string[],
+  schemaFile: string,
+): string[] {
   return [
-    '-m', vision.model,
-    '--mmproj', vision.mmproj,
+    '-m',
+    vision.model,
+    '--mmproj',
+    vision.mmproj,
     ...images.flatMap((image) => ['--image', image]),
-    '-p', prompt,
-    '-jf', schemaFile,
-    '--temp', '0',
-    '-n', '256',
+    '-p',
+    prompt,
+    '-jf',
+    schemaFile,
+    '--temp',
+    '0',
+    '-n',
+    '256',
   ];
 }
 
@@ -220,12 +257,17 @@ export interface BreakContextDeps {
 }
 
 /** The context of each break, in order; null where the model failed or gave no usable answer. */
-export async function breakContexts(times: readonly number[], deps: BreakContextDeps): Promise<Array<BreakContext | null>> {
+export async function breakContexts(
+  times: readonly number[],
+  deps: BreakContextDeps,
+): Promise<Array<BreakContext | null>> {
   const result: Array<BreakContext | null> = [];
   for (const at of times) {
     try {
       const images = await deps.frames(at);
-      result.push(parseContext(await deps.ask(contextPrompt(dialogueBefore(deps.lines, at), images.length, deps.prompt), images)));
+      result.push(
+        parseContext(await deps.ask(contextPrompt(dialogueBefore(deps.lines, at), images.length, deps.prompt), images)),
+      );
     } catch {
       result.push(null);
     }

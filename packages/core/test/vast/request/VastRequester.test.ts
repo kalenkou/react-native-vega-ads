@@ -169,7 +169,10 @@ describe('requestVast', () => {
   });
 
   it('reports 100 for broken embedded VAST', async () => {
-    const result = await requestVast({ kind: 'xml', xml: '<VAST><Ad>' }, { http: new FakeHttp(), clock: new FakeClock() });
+    const result = await requestVast(
+      { kind: 'xml', xml: '<VAST><Ad>' },
+      { http: new FakeHttp(), clock: new FakeClock() },
+    );
     expect(result).toEqual({ status: 'failed', errorCode: 100, failure: { kind: 'xml' } });
   });
 
@@ -180,14 +183,21 @@ describe('requestVast', () => {
       return defaultParseXml(text);
     };
     const http = new FakeHttp().on(INLINE, { body: fixture('inline.xml') });
-    const result = await requestVast({ kind: 'xml', xml: wrapperTo(INLINE, 'w1') }, { http, clock: new FakeClock(), parseXml });
+    const result = await requestVast(
+      { kind: 'xml', xml: wrapperTo(INLINE, 'w1') },
+      { http, clock: new FakeClock(), parseXml },
+    );
     expect(result.status).toBe('ok');
     expect(seen).toEqual(['wrapper', 'inline']);
   });
 
   it('adds a cache-busting value to the ad tag when it has the macro', async () => {
     const http = new FakeHttp();
-    const result = await requestVast('https://ads.test/tag?cb=[CACHEBUSTING]', { http, clock: new FakeClock(), random: () => 0.12345678 });
+    const result = await requestVast('https://ads.test/tag?cb=[CACHEBUSTING]', {
+      http,
+      clock: new FakeClock(),
+      random: () => 0.12345678,
+    });
     expect(result.status).toBe('failed');
     expect(http.requests[0]).toBe('https://ads.test/tag?cb=12345678');
   });
@@ -196,7 +206,9 @@ describe('requestVast', () => {
     const tag = 'https://ads.test/w1?lat=[LIMITADTRACKING]&ifa=[IFA]&ts=[TIMESTAMP]&cb=[CACHEBUSTING]&x=[UNKNOWN]';
     const next = 'https://ads.test/inline.xml?lat=[LIMITADTRACKING]&cb=[CACHEBUSTING]';
     const http = new FakeHttp()
-      .on('https://ads.test/w1?lat=0&ifa=a%2Fb%20c&ts=2026-10-11T12%3A00%3A00.000Z&cb=12345678&x=[UNKNOWN]', { body: wrapperTo(next, 'w1') })
+      .on('https://ads.test/w1?lat=0&ifa=a%2Fb%20c&ts=2026-10-11T12%3A00%3A00.000Z&cb=12345678&x=[UNKNOWN]', {
+        body: wrapperTo(next, 'w1'),
+      })
       .on('https://ads.test/inline.xml?lat=0&cb=12345678', { body: fixture('inline.xml') });
     const result = await requestVast(tag, {
       http,
@@ -216,7 +228,11 @@ describe('requestVast', () => {
     ['an empty VAST (303, sent by vast-client)', 'empty.xml', 'https://t.test/empty?code=303&ifa=abc'],
   ])('fills the app macros in the Error URL of %s (C1-5)', async (_label, name, expected) => {
     const body = fixture(name).replace('?code=[ERRORCODE]', '?code=[ERRORCODE]&ifa=[IFA]');
-    await requestVast(INLINE, { http: new FakeHttp().on(INLINE, { body }), clock: new FakeClock(), macros: { IFA: 'abc' } });
+    await requestVast(INLINE, {
+      http: new FakeHttp().on(INLINE, { body }),
+      clock: new FakeClock(),
+      macros: { IFA: 'abc' },
+    });
     expect(pixels.requests).toEqual([expected]);
   });
 });

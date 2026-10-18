@@ -98,7 +98,12 @@ describe('requestVmap (R18)', () => {
   </vmap:AdBreak>
 </vmap:VMAP>`;
     const http = new FakeHttp().on(URL, { body: doc });
-    const result = await requestVmap(URL, { http, clock: new FakeClock(0), macros: { IFA: 'id 1', LIMITADTRACKING: '1' }, random: () => 0.5 });
+    const result = await requestVmap(URL, {
+      http,
+      clock: new FakeClock(0),
+      macros: { IFA: 'id 1', LIMITADTRACKING: '1' },
+      random: () => 0.5,
+    });
     const pre = result.status === 'ok' ? result.breaks[0] : undefined;
     pre?.sources[0]?.track('breakStart');
     pre?.sources[0]?.track('error', 1004);
@@ -215,7 +220,10 @@ describe('requestVmap (R18)', () => {
 
   it('fails with 1008 on an HTTP error', async () => {
     const http = new FakeHttp().on(URL, { status: 500, body: '' });
-    await expect(requestVmap(URL, { http, clock: new FakeClock() })).resolves.toEqual({ status: 'failed', errorCode: 1008 });
+    await expect(requestVmap(URL, { http, clock: new FakeClock() })).resolves.toEqual({
+      status: 'failed',
+      errorCode: 1008,
+    });
   });
 
   it('fails with 1002 on malformed XML and 1000 when the root is not VMAP', async () => {
@@ -253,4 +261,3 @@ describe('requestVmap break context', () => {
     expect(result.status === 'ok' && result.breaks[0]?.blockedAdCategories).toBeUndefined();
   });
 });
-

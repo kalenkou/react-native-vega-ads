@@ -49,7 +49,9 @@ describe('appendCustParams', () => {
   });
 
   it('starts a query when there is none and keeps the fragment last', () => {
-    expect(appendCustParams('https://ads.test/vast#top', { k: 'v' })).toBe('https://ads.test/vast?cust_params=k%3Dv#top');
+    expect(appendCustParams('https://ads.test/vast#top', { k: 'v' })).toBe(
+      'https://ads.test/vast?cust_params=k%3Dv#top',
+    );
     expect(appendCustParams('https://ads.test/vast?', { k: 'v' })).toBe('https://ads.test/vast?cust_params=k%3Dv');
   });
 
@@ -88,7 +90,9 @@ describe('buildVmap', () => {
     expect(root.getAttribute('version')).toBe('1.0');
 
     const breaks = Array.from(doc.getElementsByTagNameNS(VMAP_NS, 'AdBreak'));
-    expect(breaks.map((b) => [b.getAttribute('timeOffset'), b.getAttribute('breakId'), b.getAttribute('breakType')])).toEqual([
+    expect(
+      breaks.map((b) => [b.getAttribute('timeOffset'), b.getAttribute('breakId'), b.getAttribute('breakType')]),
+    ).toEqual([
       ['start', 'preroll', 'linear'],
       ['00:05:00.000', 'midroll-1', 'linear'],
       ['00:15:00.250', 'midroll-2', 'linear'],
@@ -108,15 +112,17 @@ describe('buildVmap', () => {
     const result = await load(xml);
     expect(result.status).toBe('ok');
     if (result.status !== 'ok') return;
-    expect(result.breaks.map((b) => ({ id: b.id, offset: b.offset, sources: b.sources.map((s) => s.source) }))).toEqual([
-      { id: 'preroll', offset: { kind: 'start' }, sources: [{ kind: 'url', url: pre }] },
-      {
-        id: 'midroll-1',
-        offset: { kind: 'time', seconds: 600.5 },
-        sources: [{ kind: 'url', url: `${mid}&cust_params=scene%3Dbeach` }],
-      },
-      { id: 'postroll', offset: { kind: 'end' }, sources: [{ kind: 'url', url: post }] },
-    ]);
+    expect(result.breaks.map((b) => ({ id: b.id, offset: b.offset, sources: b.sources.map((s) => s.source) }))).toEqual(
+      [
+        { id: 'preroll', offset: { kind: 'start' }, sources: [{ kind: 'url', url: pre }] },
+        {
+          id: 'midroll-1',
+          offset: { kind: 'time', seconds: 600.5 },
+          sources: [{ kind: 'url', url: `${mid}&cust_params=scene%3Dbeach` }],
+        },
+        { id: 'postroll', offset: { kind: 'end' }, sources: [{ kind: 'url', url: post }] },
+      ],
+    );
     expect(result.breaks.every((b) => b.sources.every((s) => s.allowMultipleAds))).toBe(true);
   });
 
@@ -185,17 +191,30 @@ describe('buildVmap break context', () => {
     expect(xml).toContain('<Mood>violent</Mood>');
     expect(xml).toContain('<Signal name="vehicle crash">A car hits a &lt;wall&gt;.</Signal>');
     const result = await load(xml);
-    expect(result.status === 'ok' && result.breaks.map((b) => b.blockedAdCategories)).toEqual([['1551', '1571'], undefined]);
-    expect(result.status === 'ok' && result.breaks.map((b) => b.sceneSignals)).toEqual([['vehicle crash', 'injury'], undefined]);
+    expect(result.status === 'ok' && result.breaks.map((b) => b.blockedAdCategories)).toEqual([
+      ['1551', '1571'],
+      undefined,
+    ]);
+    expect(result.status === 'ok' && result.breaks.map((b) => b.sceneSignals)).toEqual([
+      ['vehicle crash', 'injury'],
+      undefined,
+    ]);
   });
 
   it('writes the mood even when nothing is blocked, and refuses a bad category code', () => {
-    const xml = buildVmap({ midrolls: [{ time: 60, vastUrl: 'https://ads.test/m.xml', context: { mood: 'calm & warm', blockedAdCategories: [] } }] });
+    const xml = buildVmap({
+      midrolls: [
+        { time: 60, vastUrl: 'https://ads.test/m.xml', context: { mood: 'calm & warm', blockedAdCategories: [] } },
+      ],
+    });
     expect(xml).toContain('<Mood>calm &amp; warm</Mood>');
     expect(xml).not.toContain('BlockedAdCategories');
     expect(() =>
-      buildVmap({ midrolls: [{ time: 60, vastUrl: 'https://ads.test/m.xml', context: { mood: 'calm', blockedAdCategories: ['15 51'] } }] }),
+      buildVmap({
+        midrolls: [
+          { time: 60, vastUrl: 'https://ads.test/m.xml', context: { mood: 'calm', blockedAdCategories: ['15 51'] } },
+        ],
+      }),
     ).toThrow(TypeError);
   });
 });
-

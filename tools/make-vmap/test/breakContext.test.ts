@@ -47,7 +47,10 @@ describe('dialogueBefore', () => {
 describe('contextSchema and contextPrompt', () => {
   it('lets the model answer only with known moods and signals', () => {
     const schema = contextSchema() as {
-      properties: { mood: { enum: string[] }; signals: { items: { properties: { signal: { enum: string[] } }; required: string[] } } };
+      properties: {
+        mood: { enum: string[] };
+        signals: { items: { properties: { signal: { enum: string[] } }; required: string[] } };
+      };
     };
     expect(schema.properties.mood.enum).toEqual(['calm', 'happy', 'romantic', 'sad', 'tense', 'violent']);
     expect(schema.properties.signals.items.properties.signal.enum).toEqual(Object.keys(SENSITIVITY_RULES));
@@ -62,7 +65,9 @@ describe('contextSchema and contextPrompt', () => {
   // The eval (eval/README.md) chose this on the selection set: F1 0.43 -> 0.51 with Qwen3.6.
   it('tells the model what counts as each signal, unless turned off', () => {
     const prompt = contextPrompt('', 3);
-    Object.entries(SIGNAL_DEFINITIONS).forEach(([signal, meaning]) => expect(prompt).toContain(`${signal}: ${meaning}`));
+    Object.entries(SIGNAL_DEFINITIONS).forEach(([signal, meaning]) =>
+      expect(prompt).toContain(`${signal}: ${meaning}`),
+    );
     expect(contextPrompt('', 3, { definitions: false })).not.toContain(SIGNAL_DEFINITIONS.violence);
   });
 
@@ -77,7 +82,9 @@ describe('contextSchema and contextPrompt', () => {
   });
 
   it('blocks only categories with a name from the IAB list', () => {
-    Object.values(SENSITIVITY_RULES).flat().forEach((code) => expect(AD_CATEGORIES[code]).toBeDefined());
+    Object.values(SENSITIVITY_RULES)
+      .flat()
+      .forEach((code) => expect(AD_CATEGORIES[code]).toBeDefined());
   });
 });
 
@@ -94,10 +101,17 @@ describe('parseContext', () => {
   });
 
   const said = (signal: string, evidence: string) => ({ signal, evidence });
-  const answer = (...signals: Array<{ signal: string; evidence: string }>) => JSON.stringify({ scene: 'x', mood: 'sad', signals });
+  const answer = (...signals: Array<{ signal: string; evidence: string }>) =>
+    JSON.stringify({ scene: 'x', mood: 'sad', signals });
 
   it('lists a signal and a category once', () => {
-    const context = parseContext(answer(said('death', 'A body lies on the floor.'), said('grief', 'She cries over him.'), said('death', 'He is dead.')));
+    const context = parseContext(
+      answer(
+        said('death', 'A body lies on the floor.'),
+        said('grief', 'She cries over him.'),
+        said('death', 'He is dead.'),
+      ),
+    );
     expect(context?.signals).toEqual([
       { name: 'death', evidence: 'A body lies on the floor.' },
       { name: 'grief', evidence: 'She cries over him.' },
@@ -137,7 +151,9 @@ describe('parseContext', () => {
   it('is null for an answer it cannot trust', () => {
     expect(parseContext('no json here')).toBeNull();
     expect(parseContext('{ "scene": "x", "mood": "angry", "signals": [] }')).toBeNull();
-    expect(parseContext('{ "scene": "x", "mood": "calm", "signals": [{ "signal": "explosions", "evidence": "boom" }] }')).toBeNull();
+    expect(
+      parseContext('{ "scene": "x", "mood": "calm", "signals": [{ "signal": "explosions", "evidence": "boom" }] }'),
+    ).toBeNull();
     expect(parseContext('{ "scene": "x", "mood": "calm", "signals": [{ "signal": "death" }] }')).toBeNull();
     expect(parseContext('{ "scene": "x", "mood": "calm", "signals": ["death"] }')).toBeNull();
     expect(parseContext('{ "scene": "x", "mood": "calm", "signals": "death" }')).toBeNull();
@@ -153,10 +169,26 @@ describe('parseContext', () => {
 
 describe('llamaVisionArgs', () => {
   it('runs llama-mtmd-cli with the images, the schema file and no randomness', () => {
-    expect(llamaVisionArgs({ model: 'm.gguf', mmproj: 'p.gguf' }, 'PROMPT', ['a.jpg', 'b.jpg'], 'schema.json')).toEqual([
-      '-m', 'm.gguf', '--mmproj', 'p.gguf', '--image', 'a.jpg', '--image', 'b.jpg',
-      '-p', 'PROMPT', '-jf', 'schema.json', '--temp', '0', '-n', '256',
-    ]);
+    expect(llamaVisionArgs({ model: 'm.gguf', mmproj: 'p.gguf' }, 'PROMPT', ['a.jpg', 'b.jpg'], 'schema.json')).toEqual(
+      [
+        '-m',
+        'm.gguf',
+        '--mmproj',
+        'p.gguf',
+        '--image',
+        'a.jpg',
+        '--image',
+        'b.jpg',
+        '-p',
+        'PROMPT',
+        '-jf',
+        'schema.json',
+        '--temp',
+        '0',
+        '-n',
+        '256',
+      ],
+    );
   });
 });
 
@@ -170,8 +202,14 @@ describe('llamaServerRequest', () => {
         {
           role: 'user',
           content: [
-            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${Buffer.from('jpeg-1').toString('base64')}` } },
-            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${Buffer.from('jpeg-2').toString('base64')}` } },
+            {
+              type: 'image_url',
+              image_url: { url: `data:image/jpeg;base64,${Buffer.from('jpeg-1').toString('base64')}` },
+            },
+            {
+              type: 'image_url',
+              image_url: { url: `data:image/jpeg;base64,${Buffer.from('jpeg-2').toString('base64')}` },
+            },
             { type: 'text', text: 'PROMPT' },
           ],
         },

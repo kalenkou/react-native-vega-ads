@@ -114,7 +114,9 @@ function contextExtension(context: BreakContext): string[] {
       ? [
           // The names again in one attribute: VMAP readers keep one <Signal> child per element name.
           `        <Signals names="${escapeXml(context.signals.map((signal) => signal.name).join(','))}">`,
-          ...context.signals.map((signal) => `          <Signal name="${escapeXml(signal.name)}">${escapeXml(signal.evidence)}</Signal>`),
+          ...context.signals.map(
+            (signal) => `          <Signal name="${escapeXml(signal.name)}">${escapeXml(signal.evidence)}</Signal>`,
+          ),
           '        </Signals>',
         ]
       : []),
@@ -156,7 +158,9 @@ export function buildVmap(input: VmapInput): string {
 
   const breaks: string[] = [];
   if (input.preroll !== undefined) breaks.push(adBreak('start', 'preroll', asTag(input.preroll)));
-  midrolls.forEach((midroll, index) => breaks.push(adBreak(formatTimeOffset(midroll.time), `midroll-${index + 1}`, midroll)));
+  midrolls.forEach((midroll, index) =>
+    breaks.push(adBreak(formatTimeOffset(midroll.time), `midroll-${index + 1}`, midroll)),
+  );
   if (input.postroll !== undefined) breaks.push(adBreak('end', 'postroll', asTag(input.postroll)));
 
   return [

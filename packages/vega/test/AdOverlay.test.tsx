@@ -33,8 +33,10 @@ function render(state: AdUiState, onSkip = jest.fn()) {
       renderer.update(<AdOverlay ui={next} onSkip={onSkip} />);
     });
   };
-  const skipButton = (): ReactTestInstance | undefined => renderer.root.findAll((n) => n.props.testID === 'vega-ads-skip' && typeof (n.type as unknown) === 'string')[0];
-  const texts = (): string[] => renderer.root.findAll((n) => (n.type as unknown) === 'Text').map((n) => String(n.props.children));
+  const skipButton = (): ReactTestInstance | undefined =>
+    renderer.root.findAll((n) => n.props.testID === 'vega-ads-skip' && typeof (n.type as unknown) === 'string')[0];
+  const texts = (): string[] =>
+    renderer.root.findAll((n) => (n.type as unknown) === 'Text').map((n) => String(n.props.children));
   return { renderer, update, skipButton, texts, onSkip };
 }
 
@@ -65,17 +67,34 @@ describe('AdOverlay', () => {
 
   it('takes the app styles for the label, the why line and Skip, without an own overlay', () => {
     let renderer!: TestRenderer.ReactTestRenderer;
-    const styles = { label: { fontFamily: 'Brand', color: 'gold' }, why: { fontSize: 30 }, skip: { borderColor: 'gold' }, skipText: { fontFamily: 'Brand' } };
+    const styles = {
+      label: { fontFamily: 'Brand', color: 'gold' },
+      why: { fontSize: 30 },
+      skip: { borderColor: 'gold' },
+      skipText: { fontFamily: 'Brand' },
+    };
     act(() => {
       renderer = TestRenderer.create(
-        <AdOverlay ui={ui({ why: 'Volume matched to the movie', skip: { visible: true, enabled: true, label: 'Skip Ad' } })} onSkip={jest.fn()} showWhy styles={styles} />,
+        <AdOverlay
+          ui={ui({ why: 'Volume matched to the movie', skip: { visible: true, enabled: true, label: 'Skip Ad' } })}
+          onSkip={jest.fn()}
+          showWhy
+          styles={styles}
+        />,
       );
     });
-    const text = (content: string) => renderer.root.findAll((n) => (n.type as unknown) === 'Text' && n.props.children === content)[0];
-    expect(StyleSheet.flatten(text('Ad 1 of 3 · 0:12')?.props.style)).toMatchObject({ fontFamily: 'Brand', color: 'gold', fontSize: 28 });
+    const text = (content: string) =>
+      renderer.root.findAll((n) => (n.type as unknown) === 'Text' && n.props.children === content)[0];
+    expect(StyleSheet.flatten(text('Ad 1 of 3 · 0:12')?.props.style)).toMatchObject({
+      fontFamily: 'Brand',
+      color: 'gold',
+      fontSize: 28,
+    });
     expect(StyleSheet.flatten(text('Volume matched to the movie')?.props.style)).toMatchObject({ fontSize: 30 });
     expect(StyleSheet.flatten(text('Skip Ad')?.props.style)).toMatchObject({ fontFamily: 'Brand' });
-    const skip = renderer.root.findAll((n) => n.props.testID === 'vega-ads-skip' && typeof (n.type as unknown) === 'string')[0];
+    const skip = renderer.root.findAll(
+      (n) => n.props.testID === 'vega-ads-skip' && typeof (n.type as unknown) === 'string',
+    )[0];
     expect(StyleSheet.flatten(skip?.props.style)).toMatchObject({ borderColor: 'gold' });
   });
 
@@ -85,9 +104,13 @@ describe('AdOverlay', () => {
 
     let renderer!: TestRenderer.ReactTestRenderer;
     act(() => {
-      renderer = TestRenderer.create(<AdOverlay ui={ui({ caption })} onSkip={jest.fn()} captions styles={{ caption: { fontSize: 40 } }} />);
+      renderer = TestRenderer.create(
+        <AdOverlay ui={ui({ caption })} onSkip={jest.fn()} captions styles={{ caption: { fontSize: 40 } }} />,
+      );
     });
-    const box = renderer.root.findAll((n) => n.props.testID === 'vega-ads-caption' && (n.type as unknown) === 'View')[0];
+    const box = renderer.root.findAll(
+      (n) => n.props.testID === 'vega-ads-caption' && (n.type as unknown) === 'View',
+    )[0];
     expect(box?.props.pointerEvents).toBe('none');
     expect(StyleSheet.flatten(box?.props.style)).toMatchObject({ position: 'absolute', bottom: expect.any(Number) });
     const text = box?.findAll((n) => (n.type as unknown) === 'Text')[0];
@@ -118,7 +141,9 @@ describe('AdOverlay', () => {
 
   it('holds the D-pad focus during a non-skippable ad, so the app behind does not react', () => {
     const { renderer } = render(ui());
-    const anchor = renderer.root.findAll((n) => n.props.testID === 'vega-ads-focus' && typeof (n.type as unknown) === 'string')[0];
+    const anchor = renderer.root.findAll(
+      (n) => n.props.testID === 'vega-ads-focus' && typeof (n.type as unknown) === 'string',
+    )[0];
     expect(anchor?.props.hasTVPreferredFocus).toBe(true);
     expect(anchor?.props.accessibilityLabel).toBe('Ad 1 of 3 · 0:12');
   });
@@ -154,7 +179,9 @@ describe('AdOverlay', () => {
 
   it('does not announce again while the Skip countdown changes the text', () => {
     const skip = { visible: true, enabled: false, label: 'Skip in 5' };
-    const { update } = render(ui({ label: 'Ad · 0:15', announcement: 'Ad, 15 seconds, you can skip in 5 seconds', skip }));
+    const { update } = render(
+      ui({ label: 'Ad · 0:15', announcement: 'Ad, 15 seconds, you can skip in 5 seconds', skip }),
+    );
     update(ui({ label: 'Ad · 0:14', announcement: 'Ad, 15 seconds, you can skip in 4 seconds', skip }));
     expect(announce).toHaveBeenCalledTimes(1);
   });
@@ -181,8 +208,17 @@ describe('AdOverlay', () => {
   });
 
   it('does not say "skip now" for the next ad of a pod that starts skippable', () => {
-    const { update } = render(ui({ label: 'Ad 1 of 2 · 0:15', skip: { visible: true, enabled: false, label: 'Skip in 5' } }));
-    update(ui({ label: 'Ad 2 of 2 · 0:10', announcement: 'Ad 2 of 2, 10 seconds', skip: { visible: true, enabled: true, label: 'Skip Ad' }, skipAnnouncement: 'You can skip the ad now' }));
+    const { update } = render(
+      ui({ label: 'Ad 1 of 2 · 0:15', skip: { visible: true, enabled: false, label: 'Skip in 5' } }),
+    );
+    update(
+      ui({
+        label: 'Ad 2 of 2 · 0:10',
+        announcement: 'Ad 2 of 2, 10 seconds',
+        skip: { visible: true, enabled: true, label: 'Skip Ad' },
+        skipAnnouncement: 'You can skip the ad now',
+      }),
+    );
     expect(announce.mock.calls.map((c) => c[0])).toEqual(['Ad 1 of 3, 12 seconds', 'Ad 2 of 2, 10 seconds']);
   });
 });
@@ -195,7 +231,10 @@ describe('useAdAnnouncements', () => {
 
   it('gives an app overlay the same announcements: each ad once, then when Skip opens', () => {
     let renderer!: TestRenderer.ReactTestRenderer;
-    const waiting = ui({ skip: { visible: true, enabled: false, label: 'Skip in 3' }, skipAnnouncement: 'You can skip the ad now' });
+    const waiting = ui({
+      skip: { visible: true, enabled: false, label: 'Skip in 3' },
+      skipAnnouncement: 'You can skip the ad now',
+    });
     act(() => {
       renderer = TestRenderer.create(<Custom state={waiting} />);
     });

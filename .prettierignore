@@ -1,0 +1,16 @@
+# Generated or downloaded
+**/dist/
+**/coverage/
+**/build/
+**/.aws-sam/
+**/node_modules/
+**/package-lock.json
+tools/vast-samples/samples/
+# Text: kept as written
+**/*.md
+# Data the eval and the demo read
+tools/make-vmap/eval/*.json
+tools/demo-ads/contexts/
+# The first test app on the device, kept as it was measured
+apps/spike/
+**/buildinfo.json

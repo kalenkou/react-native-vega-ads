@@ -15,9 +15,12 @@ function render(s: AdSurfaces, onContent = jest.fn(), onContentGone = jest.fn())
       <DualSurfaceView surfaces={s} onContentSurfaceCreated={onContent} onContentSurfaceDestroyed={onContentGone} />,
     );
   });
-  const layer = (id: string): ReactTestInstance => renderer.root.find((n) => n.props.testID === id && (n.type as unknown) === 'View');
-  const surface = (id: string): ReactTestInstance => layer(id).find((n) => (n.type as unknown) === 'KeplerVideoSurfaceView');
-  const style = (id: string): Record<string, unknown> => Object.assign({}, ...[layer(id).props.style].flat(3).filter(Boolean));
+  const layer = (id: string): ReactTestInstance =>
+    renderer.root.find((n) => n.props.testID === id && (n.type as unknown) === 'View');
+  const surface = (id: string): ReactTestInstance =>
+    layer(id).find((n) => (n.type as unknown) === 'KeplerVideoSurfaceView');
+  const style = (id: string): Record<string, unknown> =>
+    Object.assign({}, ...[layer(id).props.style].flat(3).filter(Boolean));
   const update = (next: AdSurfaces): void => {
     act(() => {
       renderer.update(<DualSurfaceView surfaces={next} onContentSurfaceCreated={onContent} />);
@@ -85,13 +88,18 @@ describe('DualSurfaceView', () => {
   it('connects the content surface to the content player in either order', () => {
     const s = surfaces();
     const calls: string[] = [];
-    const player = { setSurfaceHandle: (h: string) => calls.push(`set:${h}`), clearSurfaceHandle: (h: string) => calls.push(`clear:${h}`) };
+    const player = {
+      setSurfaceHandle: (h: string) => calls.push(`set:${h}`),
+      clearSurfaceHandle: (h: string) => calls.push(`clear:${h}`),
+    };
     let renderer!: TestRenderer.ReactTestRenderer;
     act(() => {
       renderer = TestRenderer.create(<DualSurfaceView surfaces={s} contentPlayer={null} />);
     });
     const content = (): ReactTestInstance =>
-      renderer.root.find((n) => n.props.testID === 'vega-ads-content' && (n.type as unknown) === 'View').find((n) => (n.type as unknown) === 'KeplerVideoSurfaceView');
+      renderer.root
+        .find((n) => n.props.testID === 'vega-ads-content' && (n.type as unknown) === 'View')
+        .find((n) => (n.type as unknown) === 'KeplerVideoSurfaceView');
     act(() => content().props.onSurfaceViewCreated('c1'));
     expect(calls).toEqual([]);
     act(() => {
@@ -109,7 +117,9 @@ describe('DualSurfaceView', () => {
     act(() => {
       renderer = TestRenderer.create(<DualSurfaceView surfaces={surfaces()} contentPlayer={player} />);
     });
-    const content = renderer.root.find((n) => n.props.testID === 'vega-ads-content' && (n.type as unknown) === 'View').find((n) => (n.type as unknown) === 'KeplerVideoSurfaceView');
+    const content = renderer.root
+      .find((n) => n.props.testID === 'vega-ads-content' && (n.type as unknown) === 'View')
+      .find((n) => (n.type as unknown) === 'KeplerVideoSurfaceView');
     act(() => content.props.onSurfaceViewCreated('c2'));
     expect(calls).toEqual(['set:c2']);
   });

@@ -28,7 +28,20 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 30; i++) await Promise.resolve();
 }
 
-function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avoidRepeats' | 'maxBreakAds' | 'maxBreakSeconds' | 'pauseAdUrl' | 'onPauseAd' | 'contentLoudness' | 'macros' | 'captionLanguage'> = {}) {
+function setup(
+  routes: Record<string, string>,
+  options: Pick<
+    AdManagerDeps,
+    | 'avoidRepeats'
+    | 'maxBreakAds'
+    | 'maxBreakSeconds'
+    | 'pauseAdUrl'
+    | 'onPauseAd'
+    | 'contentLoudness'
+    | 'macros'
+    | 'captionLanguage'
+  > = {},
+) {
   const http = new FakeHttp();
   Object.entries(routes).forEach(([url, body]) => http.on(url, { body }));
   const clock = new FakeClock(1_000_000);
@@ -269,7 +282,10 @@ describe('AdManager', () => {
   /** Plays a pre-roll of inline.xml, then reaches a mid-roll at 30 s that brings the same creative. */
   async function preThenSameMid(avoidRepeats?: false | { withinMs: number }) {
     const ctx = setup(
-      { 'https://ads.test/pre.xml': fixture('vast/inline.xml'), 'https://ads.test/mid.xml': fixture('vast/inline.xml') },
+      {
+        'https://ads.test/pre.xml': fixture('vast/inline.xml'),
+        'https://ads.test/mid.xml': fixture('vast/inline.xml'),
+      },
       { avoidRepeats },
     );
     const starting = ctx.manager.start(
@@ -367,7 +383,10 @@ describe('AdManager', () => {
       expect(ctx.events).not.toContain('loudness:-8.0');
       await ctx.lastAdPlayer().flush();
       expect(ctx.events.slice(ctx.events.indexOf('impression'))).toContain('loudness:-8.0');
-      expect(ctx.details).toContainEqual(['loudness:-8.0', { breakId: expect.any(String), ad: expect.objectContaining({ id: 'ad-1' }) }]);
+      expect(ctx.details).toContainEqual([
+        'loudness:-8.0',
+        { breakId: expect.any(String), ad: expect.objectContaining({ id: 'ad-1' }) },
+      ]);
     });
 
     it('never turns a quieter ad up', async () => {
@@ -556,7 +575,10 @@ describe('AdManager', () => {
     const ctx = await preThenSameMid();
     expect(ctx.content.paused).toBe(false);
     expect(ctx.events).toContain('skipped:repeat');
-    expect(ctx.details).toContainEqual(['skipped:repeat', { breakId: 'break-2', ad: expect.objectContaining({ id: 'ad-1', creativeId: 'cr-1' }) }]);
+    expect(ctx.details).toContainEqual([
+      'skipped:repeat',
+      { breakId: 'break-2', ad: expect.objectContaining({ id: 'ad-1', creativeId: 'cr-1' }) },
+    ]);
     expect(ctx.events.filter((e) => e === 'impression')).toHaveLength(1);
   });
 
@@ -952,7 +974,10 @@ describe('AdManager', () => {
 
   it('preloadAds fills the macros in the VMAP URL too', async () => {
     const http = new FakeHttp();
-    await preloadAds({ vmapUrl: 'https://ads.test/vmap.xml?ifa=[IFA]' }, { http, clock: new FakeClock(0), macros: { IFA: 'abc' } });
+    await preloadAds(
+      { vmapUrl: 'https://ads.test/vmap.xml?ifa=[IFA]' },
+      { http, clock: new FakeClock(0), macros: { IFA: 'abc' } },
+    );
     expect(http.requests[0]).toBe('https://ads.test/vmap.xml?ifa=abc');
   });
 
@@ -1136,7 +1161,10 @@ describe('AdManager', () => {
     const pixels = new FakeHttp();
     delete g.Image;
     installImagePolyfill(pixels, g);
-    const ctx = setup({ [VMAP]: fixture('vmap/pre-mid-post.xml'), 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const ctx = setup({
+      [VMAP]: fixture('vmap/pre-mid-post.xml'),
+      'https://ads.test/pre.xml': fixture('vast/inline.xml'),
+    });
     const starting = ctx.manager.start({ vmapUrl: VMAP });
     await settle();
     ctx.lastAdPlayer().emitCanPlay();
@@ -1153,7 +1181,10 @@ describe('AdManager', () => {
       const pixels = new FakeHttp();
       delete g.Image;
       installImagePolyfill(pixels, g);
-      const ctx = setup({ [VMAP]: fixture('vmap/context.xml'), 'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml') });
+      const ctx = setup({
+        [VMAP]: fixture('vmap/context.xml'),
+        'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml'),
+      });
       const starting = ctx.manager.start({ vmapUrl: VMAP });
       await settle();
       ctx.lastAdPlayer().emitCanPlay();
@@ -1181,7 +1212,9 @@ describe('AdManager', () => {
       const tag = 'https://ads.test/pod-cat.xml?bcat=[BLOCKEDADCATEGORIES]';
       const asked = 'https://ads.test/pod-cat.xml?bcat=1571%2C1551';
       const ctx = setup({ [asked]: fixture('vast/pod-cat.xml') });
-      const starting = ctx.manager.start({ breaks: [{ offset: 'start', vastUrl: tag, blockedAdCategories: ['1571', '1551'] }] });
+      const starting = ctx.manager.start({
+        breaks: [{ offset: 'start', vastUrl: tag, blockedAdCategories: ['1571', '1551'] }],
+      });
       await settle();
       ctx.lastAdPlayer().emitCanPlay();
       await starting;
@@ -1191,7 +1224,9 @@ describe('AdManager', () => {
     it('sends an empty [BLOCKEDADCATEGORIES] for a break that blocks nothing', async () => {
       const asked = 'https://ads.test/pod-cat.xml?bcat=';
       const ctx = setup({ [asked]: fixture('vast/pod-cat.xml') });
-      const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml?bcat=[BLOCKEDADCATEGORIES]' }]));
+      const starting = ctx.manager.start(
+        manual([{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml?bcat=[BLOCKEDADCATEGORIES]' }]),
+      );
       await settle();
       ctx.lastAdPlayer().emitCanPlay();
       await starting;
@@ -1202,7 +1237,15 @@ describe('AdManager', () => {
       const asked = 'https://ads.test/pod-cat.xml?bcat=1571';
       const ctx = setup({ [asked]: fixture('vast/pod-cat.xml') });
       await preloadAds(
-        { breaks: [{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml?bcat=[BLOCKEDADCATEGORIES]', blockedAdCategories: ['1571'] }] },
+        {
+          breaks: [
+            {
+              offset: 'start',
+              vastUrl: 'https://ads.test/pod-cat.xml?bcat=[BLOCKEDADCATEGORIES]',
+              blockedAdCategories: ['1571'],
+            },
+          ],
+        },
         { http: ctx.http, clock: ctx.clock },
       );
       expect(ctx.http.requests).toEqual([asked]);
@@ -1211,7 +1254,9 @@ describe('AdManager', () => {
     it('plays a stand-by ad of the response (VAST 4 ad buffet) instead of a blocked one', async () => {
       const buffet = fixture('vast/pod-cat.xml').replace(' sequence="1"', '').replace(' sequence="2"', '');
       const ctx = setup({ 'https://ads.test/buffet.xml': buffet });
-      const starting = ctx.manager.start({ breaks: [{ offset: 'start', vastUrl: 'https://ads.test/buffet.xml', blockedAdCategories: ['1571'] }] });
+      const starting = ctx.manager.start({
+        breaks: [{ offset: 'start', vastUrl: 'https://ads.test/buffet.xml', blockedAdCategories: ['1571'] }],
+      });
       await settle();
       ctx.lastAdPlayer().emitCanPlay();
       await starting;
@@ -1222,7 +1267,14 @@ describe('AdManager', () => {
     it('passes the scene signals on, so the break can say why an ad is missing', async () => {
       const ctx = setup({ 'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml') });
       const starting = ctx.manager.start({
-        breaks: [{ offset: 'start', vastUrl: 'https://ads.test/pod-cat.xml', blockedAdCategories: ['1571'], sceneSignals: ['vehicle crash'] }],
+        breaks: [
+          {
+            offset: 'start',
+            vastUrl: 'https://ads.test/pod-cat.xml',
+            blockedAdCategories: ['1571'],
+            sceneSignals: ['vehicle crash'],
+          },
+        ],
       });
       await settle();
       ctx.lastAdPlayer().emitCanPlay();
@@ -1246,7 +1298,10 @@ describe('AdManager', () => {
     const pixels = new FakeHttp();
     delete g.Image;
     installImagePolyfill(pixels, g);
-    const ctx = setup({ [VMAP]: fixture('vmap/pre-mid-post.xml'), 'https://ads.test/pre.xml': fixture('vast/empty.xml') });
+    const ctx = setup({
+      [VMAP]: fixture('vmap/pre-mid-post.xml'),
+      'https://ads.test/pre.xml': fixture('vast/empty.xml'),
+    });
     await ctx.manager.start({ vmapUrl: VMAP });
     await settle();
     expect(pixels.requests).toContain('https://t.test/vmap/pre/error?code=1004');
@@ -1380,7 +1435,10 @@ describe('AdManager', () => {
     });
 
     it('turns a loud preloaded pre-roll down too', async () => {
-      const ctx = setup({ [VMAP]: fixture('vmap/pre-mid-post.xml'), [PRE]: fixture('vast/inline-loud.xml') }, { contentLoudness: -24 });
+      const ctx = setup(
+        { [VMAP]: fixture('vmap/pre-mid-post.xml'), [PRE]: fixture('vast/inline-loud.xml') },
+        { contentLoudness: -24 },
+      );
       const preloaded = preloadAds({ vmapUrl: VMAP }, { http: ctx.http, clock: ctx.clock });
       await preloaded;
       await startWith(ctx, { vmapUrl: VMAP }, preloaded);

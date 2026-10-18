@@ -3,7 +3,12 @@ import { AdSurfaceLayers } from '../src/AdSurfaceLayers';
 import type { AdSurfaces } from '../src/useVegaAds';
 
 function surfaces(shown: string | null = null) {
-  return { shown, onAdSurface: jest.fn(), onStandbySurface: jest.fn(), onContentSurface: jest.fn() } satisfies AdSurfaces;
+  return {
+    shown,
+    onAdSurface: jest.fn(),
+    onStandbySurface: jest.fn(),
+    onContentSurface: jest.fn(),
+  } satisfies AdSurfaces;
 }
 
 describe('AdSurfaceLayers (for apps that render their own content surface)', () => {

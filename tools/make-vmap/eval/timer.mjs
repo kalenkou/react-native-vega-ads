@@ -33,7 +33,9 @@ const films = args.filter((_, i) => i !== at && i !== at + 1);
 
 const run = (command, maxBuffer) => (argv) =>
   new Promise((resolve, reject) => {
-    execFile(command, argv, { maxBuffer }, (error, _stdout, stderr) => (error ? reject(new Error(`${command}: ${error.message}`)) : resolve(stderr)));
+    execFile(command, argv, { maxBuffer }, (error, _stdout, stderr) =>
+      error ? reject(new Error(`${command}: ${error.message}`)) : resolve(stderr),
+    );
   });
 const runFfmpeg = run('ffmpeg', 256 * 1024 * 1024);
 const temp = new TempDirs(tmpdir());
@@ -53,7 +55,11 @@ for (const film of films) {
   const { speech, lines } = await whisperTranscript(film, model, whisper);
   const duration = detection.durationSeconds;
   const edges = detection.segments.flatMap((x) =>
-    x.Type === 'SHOT' ? [x.StartTimestampMillis] : x.TechnicalCueSegment?.Type === 'BlackFrames' ? [x.StartTimestampMillis, x.EndTimestampMillis] : [],
+    x.Type === 'SHOT'
+      ? [x.StartTimestampMillis]
+      : x.TechnicalCueSegment?.Type === 'BlackFrames'
+        ? [x.StartTimestampMillis, x.EndTimestampMillis]
+        : [],
   );
   const blackRuns = detection.segments.filter((x) => x.TechnicalCueSegment?.Type === 'BlackFrames');
   const cutsLine = (s) => speech.some((x) => s * 1000 >= x.startMs - 1000 && s * 1000 <= x.endMs + 1000);
@@ -83,8 +89,12 @@ for (const film of films) {
   for (let s = 300; s <= duration - 60; s += 300) example.push(s);
   for (const s of example) {
     const line = cutsLine(s) ? lineAt(s) : null;
-    console.log(`    e.g. from 5:00: ${clock(s)} ${line ? `cuts "${line.text.trim()}"` : cutsLine(s) ? 'cuts a line' : 'clear of speech'}${cutsShot(s) ? ', mid-shot' : ''}`);
+    console.log(
+      `    e.g. from 5:00: ${clock(s)} ${line ? `cuts "${line.text.trim()}"` : cutsLine(s) ? 'cuts a line' : 'clear of speech'}${cutsShot(s) ? ', mid-shot' : ''}`,
+    );
   }
-  console.log(`  make-vmap: ${ours.length} breaks, ${ours.filter(cutsLine).length} cut a line, ${ours.filter(cutsShot).length} cut a shot`);
+  console.log(
+    `  make-vmap: ${ours.length} breaks, ${ours.filter(cutsLine).length} cut a line, ${ours.filter(cutsShot).length} cut a shot`,
+  );
   for (const s of ours) console.log(`    ${clock(s)}`);
 }

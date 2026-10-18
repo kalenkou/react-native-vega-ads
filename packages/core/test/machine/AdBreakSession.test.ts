@@ -481,7 +481,9 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
   });
 
   it('prebuffers the third ad on the first surface only after the first ad player is released', async () => {
-    const ctx = setup(fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">'), { standby: true });
+    const ctx = setup(fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">'), {
+      standby: true,
+    });
     const first = await playFirst(ctx);
     const second = ctx.adPlayers[1] as FakePlayer;
     second.emitCanPlay();
@@ -499,7 +501,9 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
   });
 
   it('keeps prebuffering when a finished ad player fails to release', async () => {
-    const ctx = setup(fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">'), { standby: true });
+    const ctx = setup(fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">'), {
+      standby: true,
+    });
     const first = await playFirst(ctx);
     first.deinitialize = () => Promise.reject(new Error('already gone'));
     const second = ctx.adPlayers[1] as FakePlayer;
@@ -515,7 +519,9 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
   });
 
   it('when the next ad is on the lower surface, keeps the upper one shown until its ad ends', async () => {
-    const ctx = setup(fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">'), { standby: true });
+    const ctx = setup(fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">'), {
+      standby: true,
+    });
     const first = await playFirst(ctx);
     const second = ctx.adPlayers[1] as FakePlayer;
     second.emitCanPlay();
@@ -772,7 +778,10 @@ describe('AdBreakSession – stuck players never keep the content paused (goal 7
     expect(standby.calls).not.toContain('play');
     first.emitEnded();
     await settle();
-    expect(first.calls.filter((c) => c.startsWith('src:'))).toEqual(['src:https://cdn.test/pod-1.mp4', 'src:https://cdn.test/pod-2.mp4']);
+    expect(first.calls.filter((c) => c.startsWith('src:'))).toEqual([
+      'src:https://cdn.test/pod-1.mp4',
+      'src:https://cdn.test/pod-2.mp4',
+    ]);
     expect(ctx.session.state).toBe('playing');
   });
 });
@@ -894,7 +903,9 @@ describe('AdBreakSession – event order and stuck players', () => {
   });
 
   it('without a valid <Duration> tracks start and quartiles from the length the player reports (C1-7)', async () => {
-    const ctx = setup(fixture('inline.xml').replace('<Duration>00:00:10.000</Duration>', '<Duration>00:00:00</Duration>'));
+    const ctx = setup(
+      fixture('inline.xml').replace('<Duration>00:00:10.000</Duration>', '<Duration>00:00:00</Duration>'),
+    );
     const player = await playFirst(ctx);
     sent();
     player.emitTime(0.5);
@@ -949,7 +960,10 @@ describe('AdBreakSession – event order and stuck players', () => {
 
   it('an error of the finishing ad after the hand-over sends 405 for it, not complete (C1-3)', async () => {
     const imp1 = '<Impression><![CDATA[https://t.test/imp-pod-1]]></Impression>';
-    const body = fixture('pod-optimized.xml').replace(imp1, `${imp1}<Error><![CDATA[https://t.test/error-pod-1?code=[ERRORCODE]]]></Error>`);
+    const body = fixture('pod-optimized.xml').replace(
+      imp1,
+      `${imp1}<Error><![CDATA[https://t.test/error-pod-1?code=[ERRORCODE]]]></Error>`,
+    );
     const ctx = setup(body, { standby: true });
     const first = await playFirst(ctx);
     const second = ctx.adPlayers[1] as FakePlayer;
@@ -1050,10 +1064,9 @@ describe('AdBreakSession loudness', () => {
     await first.flush();
     await settle();
     expect(first.calls.filter((c) => c.startsWith('volume'))).toEqual(['volume:0.398']);
-    expect((ctx.adPlayers[1] as FakePlayer).calls.filter((c) => c.startsWith('volume') || c.startsWith('src'))).toEqual([
-      'volume:0.316',
-      'src:https://cdn.test/pod-2.mp4',
-    ]);
+    expect((ctx.adPlayers[1] as FakePlayer).calls.filter((c) => c.startsWith('volume') || c.startsWith('src'))).toEqual(
+      ['volume:0.316', 'src:https://cdn.test/pod-2.mp4'],
+    );
   });
 
   it('reports how much quieter an ad plays when it starts, not when it is prebuffered', async () => {
@@ -1063,7 +1076,10 @@ describe('AdBreakSession loudness', () => {
     await first.flush();
     await settle();
     // pod-2 is turned down on the standby player already, but nobody has seen it yet.
-    expect(ctx.events.filter((e) => e.startsWith('loudness') || e === 'impression')).toEqual(['impression', 'loudness:-8.0']);
+    expect(ctx.events.filter((e) => e.startsWith('loudness') || e === 'impression')).toEqual([
+      'impression',
+      'loudness:-8.0',
+    ]);
     await ctx.session.cancel();
     expect(ctx.events.filter((e) => e.startsWith('loudness'))).toEqual(['loudness:-8.0']);
   });
@@ -1108,11 +1124,18 @@ describe('AdBreakSession – why the break looks as it does', () => {
   const NO_REASON = { blockedAfterScene: [], sceneSignals: [], repeatsLeftOut: 0, quieter: false };
 
   it('names the advertiser left out after the scene, and what the scene showed', async () => {
-    const pod = fixture('pod-cat.xml').replace('<AdTitle>car</AdTitle>', '<AdTitle>car</AdTitle><Advertiser>Voltaro</Advertiser>');
+    const pod = fixture('pod-cat.xml').replace(
+      '<AdTitle>car</AdTitle>',
+      '<AdTitle>car</AdTitle><Advertiser>Voltaro</Advertiser>',
+    );
     const ctx = setup(pod, { blockedAdCategories: ['1571'], sceneSignals: ['vehicle crash'] });
     await loadReady(ctx);
     await ctx.session.start();
-    expect(last(ctx.states)?.why).toEqual({ ...NO_REASON, blockedAfterScene: ['Voltaro'], sceneSignals: ['vehicle crash'] });
+    expect(last(ctx.states)?.why).toEqual({
+      ...NO_REASON,
+      blockedAfterScene: ['Voltaro'],
+      sceneSignals: ['vehicle crash'],
+    });
   });
 
   it('keeps an ad without an advertiser as null, and the scene signals only when an ad was left out', async () => {
@@ -1166,7 +1189,10 @@ describe('AdBreakSession – a player call that fails', () => {
   };
 
   it.each([
-    ['takes media controls focus', (c: FakePlayer) => (c.takeMediaControlFocus = () => Promise.reject(new Error('focus failed')))],
+    [
+      'takes media controls focus',
+      (c: FakePlayer) => (c.takeMediaControlFocus = () => Promise.reject(new Error('focus failed'))),
+    ],
     ['plays', (c: FakePlayer) => (c.play = () => Promise.reject(new Error('play failed')))],
   ])('ends the break when the content player fails as it %s again', async (_name, breakIt) => {
     const content = new FakePlayer({ duration: 600 });

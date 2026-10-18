@@ -23,7 +23,10 @@ const ad = (id: string, overrides: Partial<VastAdInput> = {}): VastAdInput => ({
 async function load(xml: string) {
   const g = globalThis as Record<string, unknown>;
   delete g.window; // no pixels while parsing
-  const result = await requestVast(VAST_URL, { http: new FakeHttp().on(VAST_URL, { body: xml }), clock: new FakeClock() });
+  const result = await requestVast(VAST_URL, {
+    http: new FakeHttp().on(VAST_URL, { body: xml }),
+    clock: new FakeClock(),
+  });
   if (result.status !== 'ok') throw new Error(result.status);
   return result.ads;
 }
@@ -42,10 +45,22 @@ describe('buildVast', () => {
 
   it('points impression, quartile, skip and error pixels to the collector', async () => {
     const [parsed] = await load(buildVast([ad('tos-a')]));
-    expect((parsed?.ad.impressionURLTemplates as Array<{ url: string }>).map((t) => t.url)).toEqual(['https://px.test/p?ad=tos-a&e=impression']);
+    expect((parsed?.ad.impressionURLTemplates as Array<{ url: string }>).map((t) => t.url)).toEqual([
+      'https://px.test/p?ad=tos-a&e=impression',
+    ]);
     expect(parsed?.ad.errorURLTemplates).toEqual(['https://px.test/p?ad=tos-a&e=error&code=[ERRORCODE]']);
     const tracking = parsed?.creative.trackingEvents ?? {};
-    for (const event of ['start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete', 'pause', 'resume', 'skip', 'notUsed']) {
+    for (const event of [
+      'start',
+      'firstQuartile',
+      'midpoint',
+      'thirdQuartile',
+      'complete',
+      'pause',
+      'resume',
+      'skip',
+      'notUsed',
+    ]) {
       expect(tracking[event]).toEqual([`https://px.test/p?ad=tos-a&e=${event}`]);
     }
   });
@@ -58,7 +73,9 @@ describe('buildVast', () => {
       ]),
     );
     expect(named?.ad.advertiser).toEqual({ id: null, value: 'Leafline & Co' });
-    expect(buildVast([ad('tos-a', { advertiser: 'A <b> & C' })])).toContain('<Advertiser>A &lt;b&gt; &amp; C</Advertiser>');
+    expect(buildVast([ad('tos-a', { advertiser: 'A <b> & C' })])).toContain(
+      '<Advertiser>A &lt;b&gt; &amp; C</Advertiser>',
+    );
     expect(named?.creative.universalAdIds).toEqual([{ idRegistry: 'demo.example', value: 'TOS-A-15' }]);
     expect(unnamed?.ad.advertiser ?? null).toBeNull();
     // VAST 4.1+: UniversalAdId is required; "unknown" when there is none.
@@ -170,10 +187,17 @@ describe('buildPauseVast', () => {
   });
 
   it('takes JPEG images, with or without a query, and a QR code without an image', async () => {
-    const xml = buildPauseVast({ ...pause, imageUrl: 'https://cdn.test/a.JPG?v=2', qr: { scanUrl: 'https://brewnord.example/pause' } });
+    const xml = buildPauseVast({
+      ...pause,
+      imageUrl: 'https://cdn.test/a.JPG?v=2',
+      qr: { scanUrl: 'https://brewnord.example/pause' },
+    });
     expect(xml).toContain('<StaticResource creativeType="image/jpeg">');
     expect(xml).not.toContain('QrCodeImageUrl');
     const result = await loadPause(xml);
-    expect(result.status === 'ok' && result.ad.qr).toEqual({ scanUrl: 'https://brewnord.example/pause', imageUrl: null });
+    expect(result.status === 'ok' && result.ad.qr).toEqual({
+      scanUrl: 'https://brewnord.example/pause',
+      imageUrl: null,
+    });
   });
 });

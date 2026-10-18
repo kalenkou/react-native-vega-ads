@@ -86,7 +86,10 @@ describe('rekognitionSegments', () => {
   });
 
   it('fails with the status message when the job fails', async () => {
-    const port = new FakeRekognition([{ JobStatus: 'IN_PROGRESS' }, { JobStatus: 'FAILED', StatusMessage: 'Unsupported codec' }]);
+    const port = new FakeRekognition([
+      { JobStatus: 'IN_PROGRESS' },
+      { JobStatus: 'FAILED', StatusMessage: 'Unsupported codec' },
+    ]);
     await expect(rekognitionSegments(port, VIDEO, { sleep: recordingSleep().sleep })).rejects.toThrow(
       'Segment detection job job-1 failed: Unsupported codec',
     );

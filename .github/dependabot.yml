@@ -24,7 +24,7 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: react-test-renderer
         update-types: [version-update:semver-major]
-      - dependency-name: "@types/react"
+      - dependency-name: '@types/react'
         update-types: [version-update:semver-major]
 
   # The Vega demo apps follow the Vega SDK project template: security updates only.

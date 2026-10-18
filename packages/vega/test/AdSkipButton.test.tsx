@@ -66,7 +66,11 @@ describe('AdSkipButton', () => {
       skipWaitingText: { color: 'gray' },
     };
     const waitingView = render(<AdSkipButton ui={ui(waiting)} onSkip={jest.fn()} styles={styles} />);
-    expect(StyleSheet.flatten(waitingView.host('vega-ads-skip')?.props.style)).toMatchObject({ backgroundColor: 'teal', right: 96, opacity: 0.3 });
+    expect(StyleSheet.flatten(waitingView.host('vega-ads-skip')?.props.style)).toMatchObject({
+      backgroundColor: 'teal',
+      right: 96,
+      opacity: 0.3,
+    });
     expect(StyleSheet.flatten(waitingView.text()?.props.style)).toMatchObject({ color: 'gray', fontFamily: 'Brand' });
 
     const readyView = render(<AdSkipButton ui={ui(ready)} onSkip={jest.fn()} styles={styles} />);

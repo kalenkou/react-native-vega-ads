@@ -3,10 +3,20 @@ import { watchReport, watchReportLabel } from '../../src/manager/watchReport';
 describe('watchReport: what the viewer was spared, from the onEvent names of one watch', () => {
   it('counts the ads, what was left out and how much quieter the ads played', () => {
     const report = watchReport([
-      'impression', 'start', 'loudness:-8.7', 'complete', 'breakEnd',
-      'skipped:repeat', 'skipped:category', 'skipped:advertiser', 'error:205',
-      'impression', 'loudness:-3.2', 'skip',
-      'pauseAd:impression', 'pauseAd:close',
+      'impression',
+      'start',
+      'loudness:-8.7',
+      'complete',
+      'breakEnd',
+      'skipped:repeat',
+      'skipped:category',
+      'skipped:advertiser',
+      'error:205',
+      'impression',
+      'loudness:-3.2',
+      'skip',
+      'pauseAd:impression',
+      'pauseAd:close',
     ]);
     expect(report).toEqual({
       ads: 2,

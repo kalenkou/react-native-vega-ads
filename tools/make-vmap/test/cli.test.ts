@@ -105,7 +105,10 @@ describe('parseCliArgs', () => {
     [['--bucket', 'b', '--key', 'k', '--vast-url', 'not a url'], /--vast-url/],
     [[...REQUIRED, '--preroll', 'ftp://ads.test/pre.xml'], /--preroll/],
     [[...REQUIRED, '--postroll', 'post.xml'], /--postroll/],
-    [['--local', 'film.mp4', '--vast-url', VAST, '--context-model', 'm.gguf', '--context-mmproj', 'p.gguf'], /--speech-model/],
+    [
+      ['--local', 'film.mp4', '--vast-url', VAST, '--context-model', 'm.gguf', '--context-mmproj', 'p.gguf'],
+      /--speech-model/,
+    ],
   ])('rejects %p', (argv, message) => {
     expect(() => parseCliArgs(argv)).toThrow(UsageError);
     expect(() => parseCliArgs(argv)).toThrow(message);
@@ -178,7 +181,11 @@ describe('local mode (ffmpeg, no AWS)', () => {
   ].join('\n');
 
   it('needs only --local and --vast-url', () => {
-    expect(parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST])).toEqual({ local: 'film.mp4', vastUrl: VAST, breaks: {} });
+    expect(parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST])).toEqual({
+      local: 'film.mp4',
+      vastUrl: VAST,
+      breaks: {},
+    });
   });
 
   it('rejects --local together with --bucket or --key', () => {
@@ -209,7 +216,9 @@ describe('speech (whisper.cpp, no AWS)', () => {
     '[Parsed_showinfo_2 @ 0x3] n:   0 pts: 0 pts_time:500 duration:512',
   ].join('\n');
   const WHISPER_JSON = JSON.stringify({
-    transcription: [{ offsets: { from: 469000, to: 474000 }, tokens: [{ text: ' Hello', offsets: { from: 469000, to: 474000 } }] }],
+    transcription: [
+      { offsets: { from: 469000, to: 474000 }, tokens: [{ text: ' Hello', offsets: { from: 469000, to: 474000 } }] },
+    ],
   });
   const ARGV = ['--local', 'film.mp4', '--vast-url', VAST, '--speech-model', 'models/ggml-base.en.bin'];
 
@@ -228,7 +237,12 @@ describe('speech (whisper.cpp, no AWS)', () => {
   }
 
   it('reads --speech-model with --local', () => {
-    expect(parseCliArgs(ARGV)).toEqual({ local: 'film.mp4', vastUrl: VAST, speechModel: 'models/ggml-base.en.bin', breaks: {} });
+    expect(parseCliArgs(ARGV)).toEqual({
+      local: 'film.mp4',
+      vastUrl: VAST,
+      speechModel: 'models/ggml-base.en.bin',
+      breaks: {},
+    });
   });
 
   it('rejects --speech-model without --local', () => {
@@ -267,7 +281,13 @@ describe('break context (local vision model, no AWS)', () => {
     '[Parsed_showinfo_2 @ 0x3] n:   0 pts: 0 pts_time:500 duration:512',
   ].join('\n');
   const WHISPER_JSON = JSON.stringify({
-    transcription: [{ offsets: { from: 469000, to: 470000 }, text: ' Get down!', tokens: [{ text: ' Get', offsets: { from: 469000, to: 470000 } }] }],
+    transcription: [
+      {
+        offsets: { from: 469000, to: 470000 },
+        text: ' Get down!',
+        tokens: [{ text: ' Get', offsets: { from: 469000, to: 470000 } }],
+      },
+    ],
   });
   const CONTEXT = ['--context-model', 'vl.gguf', '--context-mmproj', 'mmproj.gguf'];
   const ARGV = ['--local', 'film.mp4', '--vast-url', VAST, '--speech-model', 'base.bin', ...CONTEXT];
@@ -293,25 +313,38 @@ describe('break context (local vision model, no AWS)', () => {
   }
 
   it('reads the model flags, only both together and only with --local', () => {
-    expect(parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST, '--speech-model', 'base.bin', ...CONTEXT])).toMatchObject({ context: { model: 'vl.gguf', mmproj: 'mmproj.gguf' } });
-    expect(() => parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST, '--context-model', 'vl.gguf'])).toThrow(/--context-mmproj/);
+    expect(
+      parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST, '--speech-model', 'base.bin', ...CONTEXT]),
+    ).toMatchObject({ context: { model: 'vl.gguf', mmproj: 'mmproj.gguf' } });
+    expect(() => parseCliArgs(['--local', 'film.mp4', '--vast-url', VAST, '--context-model', 'vl.gguf'])).toThrow(
+      /--context-mmproj/,
+    );
     expect(() => parseCliArgs([...REQUIRED, ...CONTEXT])).toThrow(/--local/);
   });
 
   it('asks the model about the frames and lines before each break and writes its answer into the VMAP', async () => {
-    const ctx = contextDeps(async () => 'llama log\n{ "scene": "A car hits a wall.", "mood": "violent", "signals": [{ "signal": "vehicle crash", "evidence": "A red car hits a wall." }] }');
+    const ctx = contextDeps(
+      async () =>
+        'llama log\n{ "scene": "A car hits a wall.", "mood": "violent", "signals": [{ "signal": "vehicle crash", "evidence": "A red car hits a wall." }] }',
+    );
     expect(await runCli(ARGV, ctx.deps)).toBe(0);
     const xml = ctx.out.join('');
     expect(xml).toContain('<Mood>violent</Mood>');
     expect(xml).toContain('>1551 1571</BlockedAdCategories>');
     // three frames before the break at 500 s, written into the temporary folder
-    expect(ctx.runs.filter((args) => args.includes('-frames:v')).map((args) => args[args.indexOf('-ss') + 1])).toEqual(['472', '485', '498']);
+    expect(ctx.runs.filter((args) => args.includes('-frames:v')).map((args) => args[args.indexOf('-ss') + 1])).toEqual([
+      '472',
+      '485',
+      '498',
+    ]);
     const args = ctx.asked[0] as string[];
     expect(args.filter((a) => a.startsWith('/tmp/context-x/'))).toHaveLength(4); // 3 frames + the schema
     expect(args[args.indexOf('-p') + 1]).toContain('Get down!');
     expect(ctx.files.has('/tmp/context-x/schema.json')).toBe(true);
     expect(ctx.removed).toEqual(['/tmp/context-x']);
-    expect(ctx.err.join('\n')).toContain('00:08:20.000 · violent · vehicle crash (A red car hits a wall.) → blocks 1551 1571 · A car hits a wall.');
+    expect(ctx.err.join('\n')).toContain(
+      '00:08:20.000 · violent · vehicle crash (A red car hits a wall.) → blocks 1551 1571 · A car hits a wall.',
+    );
   });
 
   it('writes the break without context when the model fails', async () => {
@@ -329,4 +362,3 @@ describe('break context (local vision model, no AWS)', () => {
     expect(ctx.err.join('\n')).toContain('llama-mtmd-cli');
   });
 });
-

@@ -130,7 +130,14 @@ it('an unmount before the VMAP arrives leaves the player alone', async () => {
   act(() => {
     renderer = TestRenderer.create(
       <Harness
-        options={{ vmapUrl: VMAP_URL, player, streamSeconds: NaN, http, clock: new FakeClock(), onEvent: (n) => events.push(n) }}
+        options={{
+          vmapUrl: VMAP_URL,
+          player,
+          streamSeconds: NaN,
+          http,
+          clock: new FakeClock(),
+          onEvent: (n) => events.push(n),
+        }}
         out={out}
       />,
     );
@@ -150,7 +157,10 @@ it('is ready once the schedule is loaded, so the app can start the stream then',
   let renderer!: TestRenderer.ReactTestRenderer;
   act(() => {
     renderer = TestRenderer.create(
-      <Harness options={{ vmapUrl: VMAP_URL, player: new FakeW3cPlayer(600), http, clock: new FakeClock() }} out={out} />,
+      <Harness
+        options={{ vmapUrl: VMAP_URL, player: new FakeW3cPlayer(600), http, clock: new FakeClock() }}
+        out={out}
+      />,
     );
   });
   expect(out.current?.ready).toBe(false);
@@ -189,4 +199,3 @@ it('the end of the stream completes the ad that ends with it, and clears the lab
   expect(ads().ad).toBeNull();
   act(() => renderer.unmount());
 });
-

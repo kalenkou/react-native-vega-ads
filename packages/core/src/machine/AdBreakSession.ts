@@ -441,48 +441,77 @@ export class AdBreakSession {
         action();
       }
     };
-    player.on('playing', active(() => this.onPlaying()));
-    player.on('pause', active(() => {
-      this.adPaused = true;
-      // A pause (remote, voice or app) is not a stuck player.
-      this.disarmWatchdog();
-      // HTML media at its end sends pause, then ended: that is not a viewer pause.
-      const duration = player.getDuration();
-      if (duration > 0 && player.getCurrentTime() >= duration - 0.25) {
-        return;
-      }
-      this.whilePlaying((c) => c.tracker.paused());
-    }));
-    player.on('waiting', active(() => {
-      this.buffering = true;
-      if (this.framed && !this.adPaused) {
-        this.armStallWatchdog();
-      }
-    }));
-    player.on('timeupdate', active(() => this.onTime()));
-    player.on('timeupdate', finishing(() => this.previous?.tracker.progress(player.getCurrentTime())));
-    player.on('ended', active(() => this.whilePlaying((c) => {
-      // An ended before the ad's first frame belongs to the source before it (late event after Skip).
-      if (!this.framed) {
-        return;
-      }
-      c.tracker.ended();
-      void this.advance(c);
-    })));
-    player.on('ended', finishing(() => void this.releasePrevious()));
-    player.on('error', active(() => {
-      if (this.state === 'ready') {
-        this.brokenWhileReady = true;
-      }
-      this.whilePlaying((c) => {
-        if (this.advancedFrom === c) {
+    player.on(
+      'playing',
+      active(() => this.onPlaying()),
+    );
+    player.on(
+      'pause',
+      active(() => {
+        this.adPaused = true;
+        // A pause (remote, voice or app) is not a stuck player.
+        this.disarmWatchdog();
+        // HTML media at its end sends pause, then ended: that is not a viewer pause.
+        const duration = player.getDuration();
+        if (duration > 0 && player.getCurrentTime() >= duration - 0.25) {
           return;
         }
-        this.fail(c.tracker, PLAYBACK_ERROR);
-        void this.advance(c);
-      });
-    }));
-    player.on('error', finishing(() => void this.releasePrevious(PLAYBACK_ERROR)));
+        this.whilePlaying((c) => c.tracker.paused());
+      }),
+    );
+    player.on(
+      'waiting',
+      active(() => {
+        this.buffering = true;
+        if (this.framed && !this.adPaused) {
+          this.armStallWatchdog();
+        }
+      }),
+    );
+    player.on(
+      'timeupdate',
+      active(() => this.onTime()),
+    );
+    player.on(
+      'timeupdate',
+      finishing(() => this.previous?.tracker.progress(player.getCurrentTime())),
+    );
+    player.on(
+      'ended',
+      active(() =>
+        this.whilePlaying((c) => {
+          // An ended before the ad's first frame belongs to the source before it (late event after Skip).
+          if (!this.framed) {
+            return;
+          }
+          c.tracker.ended();
+          void this.advance(c);
+        }),
+      ),
+    );
+    player.on(
+      'ended',
+      finishing(() => void this.releasePrevious()),
+    );
+    player.on(
+      'error',
+      active(() => {
+        if (this.state === 'ready') {
+          this.brokenWhileReady = true;
+        }
+        this.whilePlaying((c) => {
+          if (this.advancedFrom === c) {
+            return;
+          }
+          this.fail(c.tracker, PLAYBACK_ERROR);
+          void this.advance(c);
+        });
+      }),
+    );
+    player.on(
+      'error',
+      finishing(() => void this.releasePrevious(PLAYBACK_ERROR)),
+    );
     return player;
   }
 
@@ -583,7 +612,9 @@ export class AdBreakSession {
    * short timeout; a silent stop (no event, as during an Alexa request) gets the long one.
    */
   private armStallWatchdog(): void {
-    this.setWatchdog(this.buffering ? (this.deps.stallTimeoutMs ?? 10_000) : (this.deps.silentStallTimeoutMs ?? 30_000));
+    this.setWatchdog(
+      this.buffering ? (this.deps.stallTimeoutMs ?? 10_000) : (this.deps.silentStallTimeoutMs ?? 30_000),
+    );
   }
 
   private setWatchdog(ms: number): void {
@@ -738,12 +769,15 @@ export class AdBreakSession {
     this.releasing = new Promise((resolve) => (this.previousReleased = resolve));
     // A finishing ad that never sends ended must not cover the active one.
     const previous = this.previous;
-    this.previousTimer = this.deps.clock.setTimeout(() => {
-      this.previousTimer = null;
-      if (this.previous === previous) {
-        void this.releasePrevious();
-      }
-    }, Math.max(0, remainingMs) + 1000);
+    this.previousTimer = this.deps.clock.setTimeout(
+      () => {
+        this.previousTimer = null;
+        if (this.previous === previous) {
+          void this.releasePrevious();
+        }
+      },
+      Math.max(0, remainingMs) + 1000,
+    );
     await this.switchTo(standby);
   }
 

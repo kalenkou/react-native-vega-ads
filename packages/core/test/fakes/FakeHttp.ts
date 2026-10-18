@@ -1,9 +1,6 @@
 import type { HttpPort, HttpRequestOptions, HttpResponse } from '../../src/ports';
 
-type Rule =
-  | { kind: 'answer'; status: number; body: string }
-  | { kind: 'hang' }
-  | { kind: 'fail' };
+type Rule = { kind: 'answer'; status: number; body: string } | { kind: 'hang' } | { kind: 'fail' };
 
 function abortError(): Error {
   const error = new Error('The operation was aborted');

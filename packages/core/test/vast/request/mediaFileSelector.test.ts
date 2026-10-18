@@ -18,7 +18,13 @@ function file(overrides: Partial<VastMediaFile>): VastMediaFile {
 }
 
 const mp4 = (height: number, bitrate: number, extra: Partial<VastMediaFile> = {}): VastMediaFile =>
-  file({ fileURL: `https://cdn.test/${height}-${bitrate}.mp4`, height, width: Math.round((height * 16) / 9), bitrate, ...extra });
+  file({
+    fileURL: `https://cdn.test/${height}-${bitrate}.mp4`,
+    height,
+    width: Math.round((height * 16) / 9),
+    bitrate,
+    ...extra,
+  });
 
 describe('selectMediaFile (R6, R25)', () => {
   it('picks the mp4 whose bitrate is closest to the target', () => {
@@ -85,10 +91,19 @@ describe('selectMediaFile (R6, R25)', () => {
   });
 
   it('accepts HLS but prefers a progressive mp4 when both exist', () => {
-    const hls = file({ fileURL: 'https://cdn.test/a.m3u8', mimeType: 'application/x-mpegURL', deliveryType: 'streaming', bitrate: 2500 });
+    const hls = file({
+      fileURL: 'https://cdn.test/a.m3u8',
+      mimeType: 'application/x-mpegURL',
+      deliveryType: 'streaming',
+      bitrate: 2500,
+    });
     expect(selectMediaFile([hls]).file?.fileURL).toBe('https://cdn.test/a.m3u8');
     expect(selectMediaFile([hls, mp4(480, 1200)]).file?.height).toBe(480);
-    const appleHls = file({ fileURL: 'https://cdn.test/b.m3u8', mimeType: 'application/vnd.apple.mpegurl', deliveryType: 'streaming' });
+    const appleHls = file({
+      fileURL: 'https://cdn.test/b.m3u8',
+      mimeType: 'application/vnd.apple.mpegurl',
+      deliveryType: 'streaming',
+    });
     expect(selectMediaFile([appleHls]).file?.fileURL).toBe('https://cdn.test/b.m3u8');
   });
 

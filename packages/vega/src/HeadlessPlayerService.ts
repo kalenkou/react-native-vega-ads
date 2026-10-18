@@ -1,5 +1,5 @@
-import type { HeadlessSessionId } from "./HeadlessPlayerAdapter";
-import type { W3cVideoPlayer } from "./W3cPlayerAdapter";
+import type { HeadlessSessionId } from './HeadlessPlayerAdapter';
+import type { W3cVideoPlayer } from './W3cPlayerAdapter';
 
 /** The w3cmedia headless `VideoPlayer` (`@amazon-devices/react-native-w3cmedia/dist/headless`) as the service uses it. */
 export interface HeadlessServicePlayer extends W3cVideoPlayer {
@@ -20,21 +20,18 @@ export interface HeadlessPlayerServer {
       duration?: number;
     }>,
   ): Promise<void>;
-  sendError(
-    error: { code: number; message: string },
-    sessionId?: HeadlessSessionId,
-  ): Promise<void>;
+  sendError(error: { code: number; message: string }, sessionId?: HeadlessSessionId): Promise<void>;
 }
 
 /** w3cmedia event → IPlayerSessionState. */
 const STATE_OF_EVENT: Record<string, string> = {
-  canplay: "READY",
-  playing: "PLAYING",
-  pause: "PAUSED",
-  waiting: "BUFFERING",
-  seeking: "SEEKING",
-  ended: "ENDED",
-  error: "ERROR",
+  canplay: 'READY',
+  playing: 'PLAYING',
+  pause: 'PAUSED',
+  waiting: 'BUFFERING',
+  seeking: 'SEEKING',
+  ended: 'ENDED',
+  error: 'ERROR',
 };
 
 interface Session {
@@ -81,9 +78,7 @@ export class HeadlessPlayerService {
     command: (player: HeadlessServicePlayer, session: Session) => void,
     open = false,
   ): void {
-    const session = open
-      ? this.open(sessionId)
-      : this.sessions.get(this.key(sessionId));
+    const session = open ? this.open(sessionId) : this.sessions.get(this.key(sessionId));
     if (!session) return;
     session.queue = session.queue.then(() => {
       if (!session.released) command(session.player, session);
@@ -112,9 +107,7 @@ export class HeadlessPlayerService {
     session.queue = player.initialize().then(() => {
       if (session.released) return;
       session.initialized = true;
-      session.listeners.forEach(([event, listener]) =>
-        player.addEventListener(event, listener),
-      );
+      session.listeners.forEach(([event, listener]) => player.addEventListener(event, listener));
       settings.forEach((apply) => apply(player));
     });
     session.queue.catch(() => undefined);
@@ -122,17 +115,10 @@ export class HeadlessPlayerService {
     return session;
   }
 
-  private report(
-    id: number,
-    sessionId: HeadlessSessionId | undefined,
-    session: Session,
-    event: string,
-  ): void {
+  private report(id: number, sessionId: HeadlessSessionId | undefined, session: Session, event: string): void {
     const { player } = session;
     if (this.statusUpdates.has(id)) {
-      const duration = Number.isFinite(player.duration)
-        ? player.duration
-        : undefined;
+      const duration = Number.isFinite(player.duration) ? player.duration : undefined;
       void this.server
         .updateStatus([
           {
@@ -147,14 +133,9 @@ export class HeadlessPlayerService {
         ])
         .catch(() => undefined);
     }
-    if (event === "error" && this.errorUpdates.has(id)) {
+    if (event === 'error' && this.errorUpdates.has(id)) {
       const error = player.error ?? { code: 0 };
-      void this.server
-        .sendError(
-          { code: error.code, message: error.message ?? "" },
-          sessionId,
-        )
-        .catch(() => undefined);
+      void this.server.sendError({ code: error.code, message: error.message ?? '' }, sessionId).catch(() => undefined);
     }
   }
 
@@ -168,8 +149,7 @@ export class HeadlessPlayerService {
       (player) => {
         player.autoplay = loadParams?.autoPlay ?? true;
         player.src = mediaInfo.mediaUrl.url;
-        if (loadParams && loadParams.startPosition > 0)
-          player.currentTime = loadParams.startPosition;
+        if (loadParams && loadParams.startPosition > 0) player.currentTime = loadParams.startPosition;
       },
       true,
     );
@@ -188,11 +168,8 @@ export class HeadlessPlayerService {
     session.queue.then(
       () => {
         session.released = true;
-        session.listeners.forEach(([event, listener]) =>
-          player.removeEventListener(event, listener),
-        );
-        if (session.surface !== null)
-          player.clearSurfaceHandle(session.surface);
+        session.listeners.forEach(([event, listener]) => player.removeEventListener(event, listener));
+        if (session.surface !== null) player.clearSurfaceHandle(session.surface);
         player.pause();
         void player.deinitialize().catch(() => undefined);
       },
@@ -200,10 +177,7 @@ export class HeadlessPlayerService {
     );
   }
 
-  handleSetVideoView(
-    view: { handle: string },
-    sessionId?: HeadlessSessionId,
-  ): void {
+  handleSetVideoView(view: { handle: string }, sessionId?: HeadlessSessionId): void {
     this.run(
       sessionId,
       (player, session) => {
@@ -230,15 +204,9 @@ export class HeadlessPlayerService {
     this.run(sessionId, (player) => player.pause());
   }
 
-  handleSeek(
-    position: number,
-    isRelative?: boolean,
-    sessionId?: HeadlessSessionId,
-  ): void {
+  handleSeek(position: number, isRelative?: boolean, sessionId?: HeadlessSessionId): void {
     this.run(sessionId, (player) => {
-      player.currentTime = isRelative
-        ? player.currentTime + position
-        : position;
+      player.currentTime = isRelative ? player.currentTime + position : position;
     });
   }
 
@@ -247,10 +215,7 @@ export class HeadlessPlayerService {
    * for the session instead of starting a player: a call without a known session (for example
    * from the SDK's own media controls) must not leave a stray decoder behind.
    */
-  private setting(
-    sessionId: HeadlessSessionId | undefined,
-    apply: (player: HeadlessServicePlayer) => void,
-  ): void {
+  private setting(sessionId: HeadlessSessionId | undefined, apply: (player: HeadlessServicePlayer) => void): void {
     const id = this.key(sessionId);
     if (this.sessions.has(id)) {
       this.run(sessionId, (player) => apply(player));
@@ -271,10 +236,7 @@ export class HeadlessPlayerService {
     });
   }
 
-  handleSetPlaybackRate(
-    playbackRate: number,
-    sessionId?: HeadlessSessionId,
-  ): void {
+  handleSetPlaybackRate(playbackRate: number, sessionId?: HeadlessSessionId): void {
     this.setting(sessionId, (player) => {
       player.playbackRate = playbackRate;
     });

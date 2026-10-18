@@ -54,7 +54,14 @@ export function useAdAnnouncements(ui: AdUiState): void {
 }
 
 /** Ad label ("Ad 1 of 3 · 0:12") and a Skip button that takes D-pad focus, with VoiceView announcements. */
-export function AdOverlay({ ui, onSkip, showWhy = false, captions = false, style, styles: app = {} }: AdOverlayProps): ReactElement | null {
+export function AdOverlay({
+  ui,
+  onSkip,
+  showWhy = false,
+  captions = false,
+  style,
+  styles: app = {},
+}: AdOverlayProps): ReactElement | null {
   useAdAnnouncements(ui);
 
   if (!ui.visible) {

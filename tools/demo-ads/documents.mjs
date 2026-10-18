@@ -23,7 +23,16 @@ const ads = {
 function captionFile(id) {
   const { title, seconds, line } = ads[id];
   const stamp = (s) => `00:${String(Math.floor(s)).padStart(2, '0')}.000`;
-  return ['WEBVTT', '', `${stamp(0)} --> ${stamp(2)}`, '[calm music]', '', `${stamp(2)} --> ${stamp(seconds)}`, `${title}: ${line}`, ''].join('\n');
+  return [
+    'WEBVTT',
+    '',
+    `${stamp(0)} --> ${stamp(2)}`,
+    '[calm music]',
+    '',
+    `${stamp(2)} --> ${stamp(seconds)}`,
+    `${title}: ${line}`,
+    '',
+  ].join('\n');
 }
 
 /**
@@ -31,7 +40,15 @@ function captionFile(id) {
  * served, ending with "/". `pixelBase`: the pixel collector, ending with "/" (the same server
  * locally, the Lambda function URL on AWS). `root`: the media folder (make_ads.py, get_media.sh).
  */
-export function buildDocuments({ root, mediaBase, pixelBase, midrolls, sintelMidrolls, contexts = [], sintelContexts = [] }) {
+export function buildDocuments({
+  root,
+  mediaBase,
+  pixelBase,
+  midrolls,
+  sintelMidrolls,
+  contexts = [],
+  sintelContexts = [],
+}) {
   // Measured by get_media.sh (EBU R128). Without the file the ads carry no loudness and play as they are.
   const loudnessFile = join(root, 'loudness.json');
   const loudness = existsSync(loudnessFile) ? JSON.parse(readFileSync(loudnessFile, 'utf8')) : {};
@@ -103,6 +120,7 @@ export function buildDocuments({ root, mediaBase, pixelBase, midrolls, sintelMid
   };
   const documents = {};
   for (const [path, body] of Object.entries(xml)) documents[path] = { type: 'application/xml', body };
-  for (const id of Object.keys(ads)) documents['captions/' + id + '.en.vtt'] = { type: 'text/vtt', body: captionFile(id) };
+  for (const id of Object.keys(ads))
+    documents['captions/' + id + '.en.vtt'] = { type: 'text/vtt', body: captionFile(id) };
   return documents;
 }

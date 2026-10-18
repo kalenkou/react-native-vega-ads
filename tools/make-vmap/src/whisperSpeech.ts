@@ -21,7 +21,23 @@ const MERGE_GAP_MS = 400;
 
 /** whisper.cpp reads 16 kHz mono 16-bit WAV. */
 export function audioArgs(file: string, wav: string): string[] {
-  return ['-hide_banner', '-nostats', '-loglevel', 'error', '-y', '-i', file, '-vn', '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le', wav];
+  return [
+    '-hide_banner',
+    '-nostats',
+    '-loglevel',
+    'error',
+    '-y',
+    '-i',
+    file,
+    '-vn',
+    '-ar',
+    '16000',
+    '-ac',
+    '1',
+    '-c:a',
+    'pcm_s16le',
+    wav,
+  ];
 }
 
 /**
@@ -52,7 +68,11 @@ export interface TimedLine {
 export function parseWhisperLines(json: string): TimedLine[] {
   const data = JSON.parse(json) as WhisperJson;
   return (data.transcription ?? [])
-    .map((segment) => ({ startMs: segment.offsets?.from ?? 0, endMs: segment.offsets?.to ?? 0, text: (segment.text ?? '').trim() }))
+    .map((segment) => ({
+      startMs: segment.offsets?.from ?? 0,
+      endMs: segment.offsets?.to ?? 0,
+      text: (segment.text ?? '').trim(),
+    }))
     .filter((line) => line.text !== '');
 }
 

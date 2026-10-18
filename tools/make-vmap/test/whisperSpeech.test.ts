@@ -1,4 +1,11 @@
-import { audioArgs, parseWhisperJson, parseWhisperLines, whisperArgs, whisperSpeech, WhisperTools } from '../src/whisperSpeech';
+import {
+  audioArgs,
+  parseWhisperJson,
+  parseWhisperLines,
+  whisperArgs,
+  whisperSpeech,
+  WhisperTools,
+} from '../src/whisperSpeech';
 
 // Real whisper.cpp 1.9.5 output (`-ojf`, ggml-base.en, Tears of Steel), trimmed to six segments
 // and to the token fields this tool reads.
@@ -24,7 +31,9 @@ describe('parseWhisperLines', () => {
   });
 
   it('skips empty segments', () => {
-    expect(parseWhisperLines(JSON.stringify({ transcription: [{ offsets: { from: 0, to: 1 }, text: '  ' }] }))).toEqual([]);
+    expect(parseWhisperLines(JSON.stringify({ transcription: [{ offsets: { from: 0, to: 1 }, text: '  ' }] }))).toEqual(
+      [],
+    );
   });
 });
 
@@ -48,7 +57,9 @@ describe('parseWhisperJson', () => {
       offsets: { from, to },
       tokens: [{ text: word, offsets: { from, to } }],
     });
-    const json = JSON.stringify({ transcription: [segment(5000, 6000, ' Two'), segment(1000, 2000, ' One'), segment(2300, 2500, ' more')] });
+    const json = JSON.stringify({
+      transcription: [segment(5000, 6000, ' Two'), segment(1000, 2000, ' One'), segment(2300, 2500, ' more')],
+    });
     expect(parseWhisperJson(json)).toEqual([
       { startMs: 1000, endMs: 2500 },
       { startMs: 5000, endMs: 6000 },

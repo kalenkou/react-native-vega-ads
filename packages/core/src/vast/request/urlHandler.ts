@@ -12,11 +12,7 @@ export interface UrlHandler {
 }
 
 export type LoadFailure =
-  | { kind: 'timeout' }
-  | { kind: 'http'; status: number }
-  | { kind: 'xml' }
-  | { kind: 'network' }
-  | { kind: 'unknown' };
+  { kind: 'timeout' } | { kind: 'http'; status: number } | { kind: 'xml' } | { kind: 'network' } | { kind: 'unknown' };
 
 // vast-client re-throws our error as `new Error(error)`, so the only thing
 // that survives is the message text. The failure kind is encoded in it.

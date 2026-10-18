@@ -147,7 +147,8 @@ export interface VegaAds {
 
 const NO_TIMELINE: AdTimeline = Object.freeze({ marks: [], nextBreakIn: null });
 
-export const isPlayerPort = (player: W3cVideoPlayer | PlayerPort): player is PlayerPort => 'takeMediaControlFocus' in player;
+export const isPlayerPort = (player: W3cVideoPlayer | PlayerPort): player is PlayerPort =>
+  'takeMediaControlFocus' in player;
 
 /**
  * Client-side ads for one piece of content on Vega:
@@ -180,7 +181,8 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   const sourceKey = options.source ? JSON.stringify(options.source) : null;
   // A w3cmedia player is identified by the object; a PlayerPort may be a new wrapper on every
   // render, so a port change alone does not restart the ads (change `source` to start over).
-  const contentKey = options.contentPlayer === null ? null : isPlayerPort(options.contentPlayer) ? 'port' : options.contentPlayer;
+  const contentKey =
+    options.contentPlayer === null ? null : isPlayerPort(options.contentPlayer) ? 'port' : options.contentPlayer;
 
   useEffect(() => {
     const source = latest.current.source;
@@ -247,7 +249,10 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     const resumed = previous?.key === sourceKey && previous.player === contentKey && previous.manager.viewingStarted;
     startedFor.current = { key: sourceKey, player: contentKey as W3cVideoPlayer | 'port', manager: created };
     // A preloadVegaAds() of this schedule (from the title's page) saves the first ad requests.
-    void created.start(source, resumed ? { resumeAt: content.getCurrentTime() } : { preloaded: takePreload(sourceKey) });
+    void created.start(
+      source,
+      resumed ? { resumeAt: content.getCurrentTime() } : { preloaded: takePreload(sourceKey) },
+    );
     return () => {
       manager.current = null;
       setSnapshot(IDLE_SNAPSHOT);
@@ -290,7 +295,10 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     if (!pauseAdShown) {
       return undefined;
     }
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => manager.current?.closePauseAd() ?? false);
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => manager.current?.closePauseAd() ?? false,
+    );
     return () => subscription.remove();
   }, [pauseAdShown]);
   const closePauseAd = useCallback(() => manager.current?.closePauseAd() ?? false, []);
@@ -316,5 +324,18 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     [inAd, snapshot.adSurface],
   );
 
-  return { playing: inAd, ended, snapshot, ad: snapshot.ad, ui, timeline, surfaces, pauseAd, closePauseAd, skip, togglePause, back };
+  return {
+    playing: inAd,
+    ended,
+    snapshot,
+    ad: snapshot.ad,
+    ui,
+    timeline,
+    surfaces,
+    pauseAd,
+    closePauseAd,
+    skip,
+    togglePause,
+    back,
+  };
 }

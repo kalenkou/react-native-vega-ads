@@ -92,7 +92,12 @@ export function parseFfmpegLog(log: string): FfmpegDetection {
   shots.sort((x, y) => x - y);
   shots.forEach((start, index) => {
     const next = shots[index + 1] ?? end ?? start;
-    segments.push({ Type: 'SHOT', StartTimestampMillis: start, EndTimestampMillis: next, ShotSegment: { Confidence: 100 } });
+    segments.push({
+      Type: 'SHOT',
+      StartTimestampMillis: start,
+      EndTimestampMillis: next,
+      ShotSegment: { Confidence: 100 },
+    });
   });
 
   // Without an audio track every black run is quiet; with one, only the silent runs are.

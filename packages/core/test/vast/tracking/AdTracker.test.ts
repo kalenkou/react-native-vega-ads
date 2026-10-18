@@ -77,7 +77,9 @@ describe('AdTracker (R1, R2, R8, R20)', () => {
   });
 
   it('without a valid <Duration>, tracks start and quartiles from the duration set later (C1-7)', async () => {
-    const tracker = new AdTracker(await loadAd(INLINE.replace('<Duration>00:00:10.000</Duration>', '<Duration>00:00:00</Duration>')));
+    const tracker = new AdTracker(
+      await loadAd(INLINE.replace('<Duration>00:00:10.000</Duration>', '<Duration>00:00:00</Duration>')),
+    );
     tracker.firstFrame();
     sent();
     tracker.setDuration(10);
@@ -111,7 +113,14 @@ describe('AdTracker (R1, R2, R8, R20)', () => {
   });
 
   it('allows skip only after skipAfter (R8)', async () => {
-    const tracker = new AdTracker(await loadAd(INLINE.replace('<Linear>', '<Linear skipoffset="00:00:05"><TrackingEvents><Tracking event="skip"><![CDATA[https://t.test/skip]]></Tracking></TrackingEvents>')));
+    const tracker = new AdTracker(
+      await loadAd(
+        INLINE.replace(
+          '<Linear>',
+          '<Linear skipoffset="00:00:05"><TrackingEvents><Tracking event="skip"><![CDATA[https://t.test/skip]]></Tracking></TrackingEvents>',
+        ),
+      ),
+    );
     tracker.firstFrame();
     tracker.progress(4.9);
     expect(tracker.canSkip()).toBe(false);
@@ -184,8 +193,13 @@ describe('AdTracker (R1, R2, R8, R20)', () => {
   });
 
   it('fills ad id macros in every URL (R15)', async () => {
-    const body = INLINE.replace('https://t.test/impression2?ad=1', 'https://t.test/imp?lmt=[LIMITADTRACKING]&ifa=[IFA]&type=[IFATYPE]');
-    const tracker = new AdTracker(await loadAd(body), { macros: { LIMITADTRACKING: '0', IFA: 'abc-123', IFATYPE: 'afai' } });
+    const body = INLINE.replace(
+      'https://t.test/impression2?ad=1',
+      'https://t.test/imp?lmt=[LIMITADTRACKING]&ifa=[IFA]&type=[IFATYPE]',
+    );
+    const tracker = new AdTracker(await loadAd(body), {
+      macros: { LIMITADTRACKING: '0', IFA: 'abc-123', IFATYPE: 'afai' },
+    });
     tracker.firstFrame();
     expect(sent()).toContain('https://t.test/imp?lmt=0&ifa=abc-123&type=afai');
   });
@@ -203,12 +217,20 @@ describe('AdTracker (R1, R2, R8, R20)', () => {
 
 describe('adIdMacros (R15)', () => {
   it('sends the id with LIMITADTRACKING=0 when tracking is allowed', () => {
-    expect(adIdMacros({ isTrackingEnabled: () => true, fetchId: () => 'id-1' })).toEqual({ LIMITADTRACKING: '0', IFA: 'id-1', IFATYPE: 'afai' });
+    expect(adIdMacros({ isTrackingEnabled: () => true, fetchId: () => 'id-1' })).toEqual({
+      LIMITADTRACKING: '0',
+      IFA: 'id-1',
+      IFATYPE: 'afai',
+    });
   });
 
   it('checks tracking before reading the id and sends no id after opt-out', () => {
     const fetchId = jest.fn(() => 'id-1');
-    expect(adIdMacros({ isTrackingEnabled: () => false, fetchId })).toEqual({ LIMITADTRACKING: '1', IFA: '', IFATYPE: '' });
+    expect(adIdMacros({ isTrackingEnabled: () => false, fetchId })).toEqual({
+      LIMITADTRACKING: '1',
+      IFA: '',
+      IFATYPE: '',
+    });
     expect(fetchId).not.toHaveBeenCalled();
   });
 

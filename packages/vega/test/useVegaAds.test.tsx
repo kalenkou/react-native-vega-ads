@@ -2,7 +2,10 @@ import { readFileSync } from 'fs';
 import TestRenderer, { act } from 'react-test-renderer';
 import { BackHandler } from 'react-native';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const kepler = require('@amazon-devices/react-native-kepler') as { emitAppState(state: string): void; appStateListenerCount(): number };
+const kepler = require('@amazon-devices/react-native-kepler') as {
+  emitAppState(state: string): void;
+  appStateListenerCount(): number;
+};
 import { FakeClock } from '../../core/test/fakes/FakeClock';
 import { FakeHttp } from '../../core/test/fakes/FakeHttp';
 import type { AdEventInfo } from '../src';
@@ -373,7 +376,12 @@ describe('useVegaAds', () => {
     const MID = 'https://ads.test/mid.xml';
     const run = async (avoidRepeats?: false) => {
       const ctx = setup({
-        source: { breaks: [{ offset: 'start', vastUrl: PRE }, { offset: 30, vastUrl: MID }] },
+        source: {
+          breaks: [
+            { offset: 'start', vastUrl: PRE },
+            { offset: 30, vastUrl: MID },
+          ],
+        },
         avoidRepeats,
       });
       ctx.http.on(MID, { body: inline });
@@ -404,7 +412,10 @@ describe('useVegaAds', () => {
 
   it('turns ads louder than the content down to its loudness', async () => {
     const loud = readFileSync(`${__dirname}/../../core/fixtures/vast/inline-loud.xml`, 'utf8');
-    const ctx = setup({ source: { breaks: [{ offset: 'start', vastUrl: 'https://ads.test/loud.xml' }] }, contentLoudness: -24 });
+    const ctx = setup({
+      source: { breaks: [{ offset: 'start', vastUrl: 'https://ads.test/loud.xml' }] },
+      contentLoudness: -24,
+    });
     ctx.http.on('https://ads.test/loud.xml', { body: loud });
     await ctx.surfacesReady();
     expect(ctx.lastAd().volume).toBe(0.398);

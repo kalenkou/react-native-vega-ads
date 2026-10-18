@@ -20,7 +20,9 @@ describe('parseFfmpegLog', () => {
   it('reads the duration, shot changes and black frames that are silent', () => {
     const result = parseFfmpegLog(LOG);
     expect(result.durationSeconds).toBeCloseTo(734.17, 2);
-    expect(result.segments.filter((s) => s.Type === 'SHOT').map((s) => s.StartTimestampMillis)).toEqual([8917, 13458, 200250]);
+    expect(result.segments.filter((s) => s.Type === 'SHOT').map((s) => s.StartTimestampMillis)).toEqual([
+      8917, 13458, 200250,
+    ]);
     const black = result.segments.filter((s) => s.TechnicalCueSegment?.Type === 'BlackFrames');
     // 0–8.9 s overlaps silence, 300–301.2 s overlaps silence, 420 s has sound: not a quiet place for an ad.
     expect(black.map((s) => [s.StartTimestampMillis, s.EndTimestampMillis])).toEqual([
@@ -44,7 +46,9 @@ describe('parseFfmpegLog', () => {
 
   it('feeds pickBreaks: the silent black run wins over a nearby cut', () => {
     const { segments, durationSeconds } = parseFfmpegLog(LOG);
-    expect(pickBreaks(segments, { durationSeconds, firstBreakAfterSeconds: 120, minGapSeconds: 300 })).toEqual([200.25]);
+    expect(pickBreaks(segments, { durationSeconds, firstBreakAfterSeconds: 120, minGapSeconds: 300 })).toEqual([
+      200.25,
+    ]);
     expect(pickBreaks(segments, { durationSeconds, firstBreakAfterSeconds: 250 })).toEqual([300.6]);
   });
 });

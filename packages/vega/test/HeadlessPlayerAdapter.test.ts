@@ -1,8 +1,4 @@
-import {
-  HeadlessPlayerAdapter,
-  HeadlessPlayerClient,
-  HeadlessSessionStatus,
-} from '../src/HeadlessPlayerAdapter';
+import { HeadlessPlayerAdapter, HeadlessPlayerClient, HeadlessSessionStatus } from '../src/HeadlessPlayerAdapter';
 
 type Listener = { [name: string]: (...args: never[]) => void };
 
@@ -33,7 +29,11 @@ class RecordingClient implements HeadlessPlayerClient {
   registerErrorListener(listener: never, session?: { id: number }) {
     return this.subscribe(this.error, listener, 'error', session);
   }
-  async load(media: { mediaUrl: { url: string } }, params?: { startPosition: number; autoPlay: boolean }, session?: { id: number }) {
+  async load(
+    media: { mediaUrl: { url: string } },
+    params?: { startPosition: number; autoPlay: boolean },
+    session?: { id: number },
+  ) {
     this.calls.push(`load:${media.mediaUrl.url}:${params?.startPosition}:${String(params?.autoPlay)}:${session?.id}`);
   }
   async unload(session?: { id: number }) {

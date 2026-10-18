@@ -258,7 +258,10 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
       if (options.speechModel !== undefined) {
         if (!deps.whisper) throw new Error('whisper-cli is not available');
         deps.stderr(`Finding speech in ${options.local} with whisper.cpp`);
-        ({ speech, lines } = await whisperTranscript(options.local, options.speechModel, { ...deps.whisper, runFfmpeg: deps.runFfmpeg }));
+        ({ speech, lines } = await whisperTranscript(options.local, options.speechModel, {
+          ...deps.whisper,
+          runFfmpeg: deps.runFfmpeg,
+        }));
         deps.stderr(`${speech.length} ${speech.length === 1 ? 'stretch' : 'stretches'} of speech`);
       }
     } else {
@@ -272,7 +275,11 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
       detection = job;
     }
 
-    const times = pickBreaks(detection.segments, { ...options.breaks, durationSeconds: detection.durationSeconds, speech });
+    const times = pickBreaks(detection.segments, {
+      ...options.breaks,
+      durationSeconds: detection.durationSeconds,
+      speech,
+    });
     deps.stderr(`${times.length} mid-rolls: ${times.map(formatTimeOffset).join(', ') || 'none'}`);
 
     const contexts = options.context ? await contextOf(times, options, lines, deps) : [];
@@ -340,4 +347,3 @@ async function contextOf(
     await vision.removeDir(dir);
   }
 }
-

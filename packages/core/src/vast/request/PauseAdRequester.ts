@@ -36,9 +36,7 @@ export interface PauseAd {
 }
 
 export type PauseAdResult =
-  | { status: 'ok'; ad: PauseAd }
-  | { status: 'empty'; errorCodes: number[] }
-  | Extract<VastResult, { status: 'failed' }>;
+  { status: 'ok'; ad: PauseAd } | { status: 'empty'; errorCodes: number[] } | Extract<VastResult, { status: 'failed' }>;
 
 const childText = (ext: Extension, name: string): string | null =>
   ext.children.find((child) => child.name === name)?.value?.trim() || null;

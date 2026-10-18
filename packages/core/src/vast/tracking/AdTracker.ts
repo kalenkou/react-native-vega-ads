@@ -10,7 +10,16 @@ export interface AdTrackerOptions {
   onEvent?: (name: string) => void;
 }
 
-const REPORTED = new Set(['start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete', 'pause', 'resume', 'skip']);
+const REPORTED = new Set([
+  'start',
+  'firstQuartile',
+  'midpoint',
+  'thirdQuartile',
+  'complete',
+  'pause',
+  'resume',
+  'skip',
+]);
 
 /**
  * IAB tracking for one linear ad, on top of vast-client's VASTTracker.

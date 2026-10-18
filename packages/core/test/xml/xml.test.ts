@@ -2,7 +2,9 @@ import { installDOMParser, parseXml } from '../../src/xml';
 
 describe('parseXml', () => {
   it('parses a document with namespaces and CDATA', () => {
-    const doc = parseXml('<vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap"><Ad id="1"><![CDATA[https://a.test/x?a=1&b=2]]></Ad></vmap:VMAP>');
+    const doc = parseXml(
+      '<vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap"><Ad id="1"><![CDATA[https://a.test/x?a=1&b=2]]></Ad></vmap:VMAP>',
+    );
     expect(doc?.documentElement.localName).toBe('VMAP');
     expect(doc?.getElementsByTagName('Ad')[0]?.getAttribute('id')).toBe('1');
     expect(doc?.getElementsByTagName('Ad')[0]?.textContent).toBe('https://a.test/x?a=1&b=2');

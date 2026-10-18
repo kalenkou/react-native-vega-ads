@@ -146,14 +146,23 @@ describe('W3cPlayerAdapter', () => {
 
   it('passes a media controls handler when one is given', async () => {
     const native = new RecordingPlayer();
-    const port = new W3cPlayerAdapter(native, () => instance, () => ({ id: 'app-handler' }));
+    const port = new W3cPlayerAdapter(
+      native,
+      () => instance,
+      () => ({ id: 'app-handler' }),
+    );
     await port.takeMediaControlFocus();
     expect(native.calls).toEqual(['focus:main-component:app-handler']);
   });
 
   it('takes no media controls focus when media controls are off', async () => {
     const native = new RecordingPlayer();
-    const port = new W3cPlayerAdapter(native, () => instance, () => undefined, false);
+    const port = new W3cPlayerAdapter(
+      native,
+      () => instance,
+      () => undefined,
+      false,
+    );
     await port.takeMediaControlFocus();
     expect(native.calls).toEqual([]);
   });

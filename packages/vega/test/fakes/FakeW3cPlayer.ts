@@ -35,7 +35,8 @@ export class FakeW3cPlayer implements W3cVideoPlayer {
   mediaControlHandler: unknown = undefined;
   async setMediaControlFocus(_instance?: unknown, handler?: unknown): Promise<void> {
     this.mediaControlHandler = handler;
-    const name = (handler as { constructor?: { name?: string }; id?: string } | undefined)?.id ?? handler?.constructor?.name;
+    const name =
+      (handler as { constructor?: { name?: string }; id?: string } | undefined)?.id ?? handler?.constructor?.name;
     this.calls.push(handler ? `focus:${name}` : 'focus');
   }
   addEventListener(type: string, listener: () => void): void {

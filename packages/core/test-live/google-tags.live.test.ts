@@ -5,7 +5,8 @@ import { requestVmap } from '../src/vast/request/VmapRequester';
 import { selectMediaFile } from '../src/vast/request/mediaFileSelector';
 
 // Public samples from the Google IMA docs. Responses are not stored anywhere.
-const BASE = 'https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&ciu_szs=300x250%2C728x90&gdfp_req=1&unviewed_position_start=1&env=vp&impl=s&correlator=[CACHEBUSTING]';
+const BASE =
+  'https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&ciu_szs=300x250%2C728x90&gdfp_req=1&unviewed_position_start=1&env=vp&impl=s&correlator=[CACHEBUSTING]';
 const single = (sampleCt: string): string =>
   `${BASE}&iu=${encodeURIComponent('/21775744923/external/single_ad_samples')}&cust_params=sample_ct%3D${sampleCt}&output=vast`;
 const SKIPPABLE = `${BASE}&iu=${encodeURIComponent('/21775744923/external/single_preroll_skippable')}&output=vast`;
@@ -18,14 +19,26 @@ const http: HttpPort = {
     return { status: response.status, ok: response.ok, text: () => response.text() };
   },
 };
-const clock: ClockPort = { now: () => Date.now(), setTimeout: (cb, ms) => setTimeout(cb, ms), clearTimeout: (h) => clearTimeout(h as NodeJS.Timeout) };
+const clock: ClockPort = {
+  now: () => Date.now(),
+  setTimeout: (cb, ms) => setTimeout(cb, ms),
+  clearTimeout: (h) => clearTimeout(h as NodeJS.Timeout),
+};
 
 const pixels: string[] = [];
 const g = globalThis as Record<string, unknown>;
 beforeAll(() => {
   g.window = g;
   delete g.Image;
-  installImagePolyfill({ get: async (url) => { pixels.push(url); return { status: 204, ok: true, text: async () => '' }; } }, g);
+  installImagePolyfill(
+    {
+      get: async (url) => {
+        pixels.push(url);
+        return { status: 204, ok: true, text: async () => '' };
+      },
+    },
+    g,
+  );
 });
 afterAll(() => {
   delete g.window;
@@ -65,19 +78,24 @@ describe('live Google IMA sample tags', () => {
     expect(result.ads[0]?.skipAfter).toBeGreaterThan(0);
   });
 
-  it.each([['premidpost'], ['premidpostpod'], ['premidpostoptimizedpod'], ['premidpostlongpod']])('VMAP %s', async (sampleAr) => {
-    const result = await requestVmap(vmap(sampleAr).replace('[CACHEBUSTING]', String(Date.now())), { http, clock });
-    if (result.status !== 'ok') throw new Error(JSON.stringify(result));
-    const lines: string[] = [];
-    for (const adBreak of result.breaks) {
-      for (const source of adBreak.sources) {
-        const vast = await requestVast(source.source, { http, clock });
-        lines.push(`  ${adBreak.id} ${JSON.stringify(adBreak.offset)} src=${source.source.kind} → ${summary(vast)}`);
-        expect(vast.status).toBe('ok');
+  it.each([['premidpost'], ['premidpostpod'], ['premidpostoptimizedpod'], ['premidpostlongpod']])(
+    'VMAP %s',
+    async (sampleAr) => {
+      const result = await requestVmap(vmap(sampleAr).replace('[CACHEBUSTING]', String(Date.now())), { http, clock });
+      if (result.status !== 'ok') throw new Error(JSON.stringify(result));
+      const lines: string[] = [];
+      for (const adBreak of result.breaks) {
+        for (const source of adBreak.sources) {
+          const vast = await requestVast(source.source, { http, clock });
+          lines.push(`  ${adBreak.id} ${JSON.stringify(adBreak.offset)} src=${source.source.kind} → ${summary(vast)}`);
+          expect(vast.status).toBe('ok');
+        }
       }
-    }
-    console.log(`VMAP ${sampleAr}: ${result.breaks.length} breaks\n${lines.join('\n')}`);
-  });
+      console.log(`VMAP ${sampleAr}: ${result.breaks.length} breaks\n${lines.join('\n')}`);
+    },
+  );
 
-  afterAll(() => console.log(`error pixels sent: ${pixels.filter((p) => /error|ERRORCODE|errorcode/i.test(p)).length}`));
+  afterAll(() =>
+    console.log(`error pixels sent: ${pixels.filter((p) => /error|ERRORCODE|errorcode/i.test(p)).length}`),
+  );
 });

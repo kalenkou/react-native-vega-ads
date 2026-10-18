@@ -118,17 +118,19 @@ async function report(day: string, deps: CollectorDeps): Promise<HttpResult> {
     events.set(event, count);
     ads.set(ad, events);
   }
-  const rows = [...ads].sort(([a], [b]) => a.localeCompare(b)).map(([ad, events]) => {
-    const cells = REPORT_COLUMNS.map((name) => `<td>${events.get(name) ?? 0}</td>`).join('');
-    const impressions = events.get('impression') ?? 0;
-    const completion = impressions > 0 ? `${Math.round(((events.get('complete') ?? 0) / impressions) * 100)}%` : '–';
-    const errors = [...events]
-      .filter(([name]) => name.startsWith('error:'))
-      .map(([name, count]) => `${name.slice('error:'.length)} × ${count}`)
-      .join(', ');
-    // Ad ids are checked against AD_ID before they are stored, so they need no escaping.
-    return `<tr><td>${ad}</td>${cells}<td>${completion}</td><td>${errors}</td></tr>`;
-  });
+  const rows = [...ads]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([ad, events]) => {
+      const cells = REPORT_COLUMNS.map((name) => `<td>${events.get(name) ?? 0}</td>`).join('');
+      const impressions = events.get('impression') ?? 0;
+      const completion = impressions > 0 ? `${Math.round(((events.get('complete') ?? 0) / impressions) * 100)}%` : '–';
+      const errors = [...events]
+        .filter(([name]) => name.startsWith('error:'))
+        .map(([name, count]) => `${name.slice('error:'.length)} × ${count}`)
+        .join(', ');
+      // Ad ids are checked against AD_ID before they are stored, so they need no escaping.
+      return `<tr><td>${ad}</td>${cells}<td>${completion}</td><td>${errors}</td></tr>`;
+    });
   const head = ['ad', ...REPORT_COLUMNS, 'completion', 'errors'].map((name) => `<th>${name}</th>`).join('');
   const body = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>vega-ads pixels ${day}</title>
@@ -139,5 +141,9 @@ th{background:#121722;color:#ff9a4d}td:first-child,th:first-child{text-align:lef
 <table><tr>${head}</tr>
 ${rows.join('\n')}
 </table></body></html>`;
-  return { statusCode: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' }, body };
+  return {
+    statusCode: 200,
+    headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
+    body,
+  };
 }

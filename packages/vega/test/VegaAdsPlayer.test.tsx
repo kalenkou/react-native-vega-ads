@@ -30,7 +30,9 @@ async function settle(): Promise<void> {
 }
 
 function setup(props: Partial<VegaAdsPlayerProps> = {}) {
-  const http = new FakeHttp().on('https://ads.test/pre.xml?lat=1', { body: inline }).on('https://ads.test/pre.xml?lat=0', { body: inline });
+  const http = new FakeHttp()
+    .on('https://ads.test/pre.xml?lat=1', { body: inline })
+    .on('https://ads.test/pre.xml?lat=0', { body: inline });
   const players: FakeW3cPlayer[] = [];
   const base: VegaAdsPlayerProps = {
     source: { uri: 'https://cdn.test/movie.mp4' },
@@ -109,7 +111,7 @@ describe('VegaAdsPlayer', () => {
 });
 
 describe('VegaAdsPlayer – customising', () => {
-  it('plays through the app\'s own player and leaves it to the app', async () => {
+  it("plays through the app's own player and leaves it to the app", async () => {
     const own = new FakeW3cPlayer(600);
     await own.initialize();
     own.autoplay = false;
@@ -126,7 +128,7 @@ describe('VegaAdsPlayer – customising', () => {
     expect(own.deinitialized).toBe(false);
   });
 
-  it('draws the app\'s own controls with the player and the ad state', async () => {
+  it("draws the app's own controls with the player and the ad state", async () => {
     const seen: Array<{ hasPlayer: boolean; playing: boolean }> = [];
     const ctx = setup({
       children: ({ player, ads }) => {
@@ -171,7 +173,7 @@ describe('VegaAdsPlayer – customising', () => {
     expect(ctx.http.requests.some((url) => url.startsWith('https://ads.test/pre.xml'))).toBe(true);
   });
 
-  it('draws the app\'s own ad overlay instead of the default one', async () => {
+  it("draws the app's own ad overlay instead of the default one", async () => {
     const ctx = setup({ renderOverlay: (ads) => <Text testID="my-overlay">{ads.ui.label}</Text> });
     await settle();
     expect(ctx.renderer.root.findAllByProps({ testID: 'my-overlay' }).length).toBeGreaterThan(0);
@@ -263,6 +265,8 @@ describe('VegaAdsPlayer – customising', () => {
     });
     await settle();
     const card = ctx.renderer.root.findAll((n) => (n.type as unknown) === 'View' && n.props.pointerEvents === 'none');
-    expect(card.map((n) => StyleSheet.flatten(n.props.style))).toContainEqual(expect.objectContaining({ position: 'absolute', bottom: 200 }));
+    expect(card.map((n) => StyleSheet.flatten(n.props.style))).toContainEqual(
+      expect.objectContaining({ position: 'absolute', bottom: 200 }),
+    );
   });
 });

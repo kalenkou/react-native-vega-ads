@@ -94,7 +94,9 @@ describe('RepeatGuard', () => {
   it('knows one creative by its Universal Ad ID even when it comes with other media URLs', () => {
     const guard = new RepeatGuard(new FakeClock(0));
     guard.shown(ad('a', { uaid: ['ad-id.org', 'CNPA0484000H'], media: ['https://one.test/a.mp4'] }));
-    const result = guard.filter([[ad('b', { uaid: ['ad-id.org', 'CNPA0484000H'], media: ['https://two.test/b.mp4'] })]]);
+    const result = guard.filter([
+      [ad('b', { uaid: ['ad-id.org', 'CNPA0484000H'], media: ['https://two.test/b.mp4'] })],
+    ]);
     expect(result.dropped.map((d) => d.ad.ad.id)).toEqual(['b']);
   });
 
@@ -119,7 +121,10 @@ describe('RepeatGuard', () => {
   it('keeps one copy of a creative in a break: the first one to play', () => {
     const guard = new RepeatGuard(new FakeClock(0));
     const result = guard.filter([
-      [ad('second', { sequence: 2, media: ['https://cdn.test/k.mp4'] }), ad('first', { sequence: 1, media: ['https://cdn.test/k.mp4'] })],
+      [
+        ad('second', { sequence: 2, media: ['https://cdn.test/k.mp4'] }),
+        ad('first', { sequence: 1, media: ['https://cdn.test/k.mp4'] }),
+      ],
       [ad('other-source', { media: ['https://cdn.test/k.mp4'] })],
     ]);
     expect(ids(result.responses)).toEqual([['first'], []]);
@@ -216,7 +221,9 @@ describe('RepeatGuard', () => {
       clock.advance(1000);
       guard.shown(ad('new'));
       await settle();
-      expect(Object.keys((JSON.parse(store.value as string) as { seen: object }).seen)).toEqual(['media:https://cdn.test/new.mp4']);
+      expect(Object.keys((JSON.parse(store.value as string) as { seen: object }).seen)).toEqual([
+        'media:https://cdn.test/new.mp4',
+      ]);
     });
 
     it('keeps a creative shown again among the newest, even when it was first seen long ago', async () => {
@@ -249,8 +256,14 @@ describe('RepeatGuard', () => {
       for (const memory of [
         { read: () => Promise.reject(new Error('disk')), write: async () => undefined },
         { read: async () => 'not json', write: async () => undefined },
-        { read: async () => JSON.stringify({ v: 2, seen: { 'media:https://cdn.test/kettlo.mp4': 0 } }), write: async () => undefined },
-        { read: async () => JSON.stringify({ v: 1, seen: { 'media:https://cdn.test/kettlo.mp4': '0' } }), write: async () => undefined },
+        {
+          read: async () => JSON.stringify({ v: 2, seen: { 'media:https://cdn.test/kettlo.mp4': 0 } }),
+          write: async () => undefined,
+        },
+        {
+          read: async () => JSON.stringify({ v: 1, seen: { 'media:https://cdn.test/kettlo.mp4': '0' } }),
+          write: async () => undefined,
+        },
       ]) {
         const guard = new RepeatGuard(new FakeClock(1), { memory });
         await guard.ready();
@@ -259,7 +272,9 @@ describe('RepeatGuard', () => {
     });
 
     it('goes on when the memory cannot be written', async () => {
-      const guard = new RepeatGuard(new FakeClock(0), { memory: { read: async () => null, write: () => Promise.reject(new Error('full')) } });
+      const guard = new RepeatGuard(new FakeClock(0), {
+        memory: { read: async () => null, write: () => Promise.reject(new Error('full')) },
+      });
       guard.shown(ad('kettlo'));
       await settle();
       expect(guard.filter([[ad('kettlo')]]).dropped).toHaveLength(1);

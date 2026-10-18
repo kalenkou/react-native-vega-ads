@@ -16,7 +16,10 @@ function play(scheduler: BreakScheduler, from: number, to: number, step = 0.5): 
 
 describe('BreakScheduler (R10, R24)', () => {
   it('starts the pre-roll at once, with its prefetch first', () => {
-    const scheduler = new BreakScheduler([{ id: 'pre', offset: start }, { id: 'mid', offset: at(60) }]);
+    const scheduler = new BreakScheduler([
+      { id: 'pre', offset: start },
+      { id: 'mid', offset: at(60) },
+    ]);
     expect(scheduler.begin()).toEqual([
       { type: 'prefetch', breakId: 'pre' },
       { type: 'start', breakId: 'pre' },
@@ -25,7 +28,10 @@ describe('BreakScheduler (R10, R24)', () => {
   });
 
   it('tells whether a break is used up', () => {
-    const scheduler = new BreakScheduler([{ id: 'a', offset: at(30) }, { id: 'b', offset: at(200) }]);
+    const scheduler = new BreakScheduler([
+      { id: 'a', offset: at(30) },
+      { id: 'b', offset: at(200) },
+    ]);
     scheduler.begin();
     scheduler.onTime(20);
     expect(scheduler.isDone('a')).toBe(false);
@@ -220,7 +226,10 @@ describe('BreakScheduler (R10, R24)', () => {
   });
 
   it('nextIn() gives the seconds to the next mid-roll that is still to play', () => {
-    const scheduler = new BreakScheduler([{ id: 'a', offset: at(30) }, { id: 'b', offset: at(200) }]);
+    const scheduler = new BreakScheduler([
+      { id: 'a', offset: at(30) },
+      { id: 'b', offset: at(200) },
+    ]);
     scheduler.begin();
     expect(scheduler.nextIn(26)).toEqual({ breakId: 'a', seconds: 4 });
     play(scheduler, 0, 31);

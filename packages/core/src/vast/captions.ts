@@ -57,7 +57,11 @@ export function captionAt(cues: readonly CaptionCue[], time: number): string {
  */
 export function captionFileUrl(linear: LinearAd, language?: string): string | null {
   const vtt = (linear.creative.closedCaptionFiles ?? [])
-    .map((f) => ({ url: f.fileURL?.trim() ?? '', type: f.type?.toLowerCase() ?? '', language: f.language?.toLowerCase() ?? '' }))
+    .map((f) => ({
+      url: f.fileURL?.trim() ?? '',
+      type: f.type?.toLowerCase() ?? '',
+      language: f.language?.toLowerCase() ?? '',
+    }))
     .filter((f) => f.url !== '' && (f.type === 'text/vtt' || (f.type === '' && /\.vtt(\?|$)/i.test(f.url))));
   const wanted = language?.toLowerCase().split('-')[0];
   return (vtt.find((f) => wanted && f.language.split('-')[0] === wanted) ?? vtt[0])?.url ?? null;

@@ -54,7 +54,9 @@ function kind(xml) {
   if (!/<Linear[\s>]/.test(xml)) return 'no linear ad (non-linear or companion only)';
   const videos = [...xml.matchAll(/<MediaFile\b[^>]*>/g)].map((m) => m[0]);
   const h264 = (tag) => !/codec="/i.test(tag) || /codec="\s*(avc[13]?[^"]*|h\.?264|0)\s*"/i.test(tag);
-  const plainMp4 = videos.some((tag) => /type="video\/mp4"/i.test(tag) && !/apiFramework="(?!VAST")/i.test(tag) && h264(tag));
+  const plainMp4 = videos.some(
+    (tag) => /type="video\/mp4"/i.test(tag) && !/apiFramework="(?!VAST")/i.test(tag) && h264(tag),
+  );
   return plainMp4 ? 'linear video, H.264 mp4' : 'linear, no H.264 mp4 (VPAID, Flash or audio)';
 }
 
@@ -62,7 +64,10 @@ const rows = [];
 for (const file of files.sort()) {
   const name = relative(root, file);
   const what = kind(readFileSync(file, 'utf8'));
-  const result = await core.requestVast({ kind: 'url', url: BASE + encodeURIComponent(name) }, { http, clock, timeoutMs: 8000 });
+  const result = await core.requestVast(
+    { kind: 'url', url: BASE + encodeURIComponent(name) },
+    { http, clock, timeoutMs: 8000 },
+  );
   let outcome;
   if (result.status === 'ok') {
     const choice = core.selectMediaFile(result.ads[0].creative.mediaFiles);

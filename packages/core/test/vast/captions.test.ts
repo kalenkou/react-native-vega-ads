@@ -5,7 +5,11 @@ function withCaptions(closedCaptionFiles: unknown): LinearAd {
   return { creative: { closedCaptionFiles } } as unknown as LinearAd;
 }
 
-const file = (fileURL: string | null, type: string | null, language: string | null = null) => ({ fileURL, type, language });
+const file = (fileURL: string | null, type: string | null, language: string | null = null) => ({
+  fileURL,
+  type,
+  language,
+});
 
 describe('parseWebVtt', () => {
   it('reads cue times and text, with or without hours and cue ids', () => {
@@ -92,7 +96,9 @@ describe('captionFileUrl', () => {
   });
 
   it('accepts a .vtt URL without a type, and trims the URL', () => {
-    expect(captionFileUrl(withCaptions([file('  https://cdn.test/b.vtt?x=1 ', null)]))).toBe('https://cdn.test/b.vtt?x=1');
+    expect(captionFileUrl(withCaptions([file('  https://cdn.test/b.vtt?x=1 ', null)]))).toBe(
+      'https://cdn.test/b.vtt?x=1',
+    );
   });
 
   it('is null without a WebVTT file', () => {

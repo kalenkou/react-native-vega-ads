@@ -21,4 +21,3 @@ export interface HttpRequestOptions {
 export interface HttpPort {
   get(url: string, options?: HttpRequestOptions): Promise<HttpResponse>;
 }
-

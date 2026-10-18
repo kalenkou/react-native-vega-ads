@@ -45,7 +45,8 @@ export function AdSkipButton({ ui, onSkip, styles: app = {} }: AdSkipButtonProps
         if (ui.skip.enabled) {
           onSkip();
         }
-      }}>
+      }}
+    >
       <Text style={[styles.skipText, app.skipText, waiting && app.skipWaitingText]}>{ui.skip.label}</Text>
     </TouchableOpacity>
   );

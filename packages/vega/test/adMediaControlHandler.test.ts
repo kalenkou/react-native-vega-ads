@@ -5,14 +5,21 @@ type Handler = Record<string, (...args: unknown[]) => Promise<void>> & { handled
 const make = (allowPause: boolean): Handler => createAdMediaControlHandler({ allowPause }) as unknown as Handler;
 
 describe('ad media controls handler (R21)', () => {
-  it.each(['handleSeek', 'handleFastForward', 'handleRewind', 'handleSkipForward', 'handleSkipBackward', 'handleStartOver', 'handleNext', 'handlePrevious', 'handleSetPlaybackSpeed'])(
-    'ignores %s: an ad cannot be moved through',
-    async (method) => {
-      const handler = make(true);
-      await handler[method]?.();
-      expect(handler.handled).toEqual([]);
-    },
-  );
+  it.each([
+    'handleSeek',
+    'handleFastForward',
+    'handleRewind',
+    'handleSkipForward',
+    'handleSkipBackward',
+    'handleStartOver',
+    'handleNext',
+    'handlePrevious',
+    'handleSetPlaybackSpeed',
+  ])('ignores %s: an ad cannot be moved through', async (method) => {
+    const handler = make(true);
+    await handler[method]?.();
+    expect(handler.handled).toEqual([]);
+  });
 
   it('lets play and pause through by default', async () => {
     const handler = make(true);

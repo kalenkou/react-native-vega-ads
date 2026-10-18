@@ -22,7 +22,10 @@ describe('urlHandler (R4, R16)', () => {
   });
 
   it('returns an error with the status for a non-2xx answer', async () => {
-    const handler = createUrlHandler({ http: new FakeHttp().on(URL, { status: 500, body: 'oops' }), clock: new FakeClock() });
+    const handler = createUrlHandler({
+      http: new FakeHttp().on(URL, { status: 500, body: 'oops' }),
+      clock: new FakeClock(),
+    });
     const result = await handler.get(URL, {});
     expect(result).toMatchObject({ statusCode: 500 });
     expect(describeFailure((result as { error: Error }).error)).toEqual<LoadFailure>({ kind: 'http', status: 500 });
@@ -94,14 +97,22 @@ describe('urlHandler (R4, R16)', () => {
 
   it('uses a custom XML parser when one is given', async () => {
     const parseXml = jest.fn(() => ({ documentElement: { nodeName: 'VAST' } }) as unknown as Document);
-    const handler = createUrlHandler({ http: new FakeHttp().on(URL, { body: VAST }), clock: new FakeClock(), parseXml });
+    const handler = createUrlHandler({
+      http: new FakeHttp().on(URL, { body: VAST }),
+      clock: new FakeClock(),
+      parseXml,
+    });
     const result = await handler.get(URL, {});
     expect(parseXml).toHaveBeenCalledWith(VAST);
     expect('xml' in result && result.xml.documentElement.nodeName).toBe('VAST');
   });
 
   it('treats null from a custom parser as malformed XML', async () => {
-    const handler = createUrlHandler({ http: new FakeHttp().on(URL, { body: VAST }), clock: new FakeClock(), parseXml: () => null });
+    const handler = createUrlHandler({
+      http: new FakeHttp().on(URL, { body: VAST }),
+      clock: new FakeClock(),
+      parseXml: () => null,
+    });
     const result = await handler.get(URL, {});
     expect(describeFailure((result as { error: Error }).error)).toEqual({ kind: 'xml' });
   });

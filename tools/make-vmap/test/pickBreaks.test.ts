@@ -125,7 +125,10 @@ describe('pickBreaks', () => {
   });
 
   describe('with speech', () => {
-    const at = (startSeconds: number, endSeconds: number) => ({ startMs: startSeconds * 1000, endMs: endSeconds * 1000 });
+    const at = (startSeconds: number, endSeconds: number) => ({
+      startMs: startSeconds * 1000,
+      endMs: endSeconds * 1000,
+    });
 
     it('never places a break inside speech', () => {
       // The cut at 150 s is in the middle of a sentence; the next cut, 200 s, is clear.

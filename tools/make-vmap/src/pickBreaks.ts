@@ -120,7 +120,9 @@ export function pickBreaks(segments: readonly Segment[], options: PickBreaksOpti
     ...blackRuns.map((run) => ({ ms: Math.round((run.start + run.end) / 2), black: true })),
     ...cuts.filter((ms) => !inside(ms, blackRuns)).map((ms) => ({ ms, black: false })),
   ]
-    .filter((candidate) => candidate.ms <= lastAllowed && !inside(candidate.ms, blocked) && !inside(candidate.ms, speech))
+    .filter(
+      (candidate) => candidate.ms <= lastAllowed && !inside(candidate.ms, blocked) && !inside(candidate.ms, speech),
+    )
     // Time first, black frames first on a tie: the order is stable whatever the input order.
     .sort((a, b) => a.ms - b.ms || Number(b.black) - Number(a.black));
 

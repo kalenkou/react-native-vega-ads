@@ -11,10 +11,7 @@ import { fillMacros } from './VastRequester';
 export type { AdSourceRef };
 
 export type BreakOffset =
-  | { kind: 'start' }
-  | { kind: 'end' }
-  | { kind: 'time'; seconds: number }
-  | { kind: 'percent'; percent: number };
+  { kind: 'start' } | { kind: 'end' } | { kind: 'time'; seconds: number } | { kind: 'percent'; percent: number };
 
 export type VmapTrackingEvent = 'breakStart' | 'breakEnd' | 'error';
 
@@ -67,9 +64,7 @@ function merged(existing: string[] | undefined, values: string[]): string[] | un
 }
 
 export type VmapResult =
-  | { status: 'ok'; breaks: ScheduledBreak[] }
-  | { status: 'empty' }
-  | { status: 'failed'; errorCode: number };
+  { status: 'ok'; breaks: ScheduledBreak[] } | { status: 'empty' } | { status: 'failed'; errorCode: number };
 
 export const VMAP_SCHEMA_ERROR = 1000;
 export const VMAP_PARSING_ERROR = 1002;
@@ -148,7 +143,8 @@ function track(adBreak: VMAPAdBreak, deps: VmapRequestDeps, event: VmapTrackingE
       continue;
     }
     const code = String(errorCode ?? '');
-    const uri = event === 'error' ? tracker.uri.split('[ERRORCODE]').join(code).split('[ERROR_CODE]').join(code) : tracker.uri;
+    const uri =
+      event === 'error' ? tracker.uri.split('[ERRORCODE]').join(code).split('[ERROR_CODE]').join(code) : tracker.uri;
     adBreak.tracker(fillMacros(uri, deps));
   }
 }

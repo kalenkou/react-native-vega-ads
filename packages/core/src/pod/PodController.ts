@@ -45,7 +45,9 @@ export class PodController {
     this.onSkipped = options.onSkipped ?? (() => undefined);
     const slots: Slot[] = [];
     this.buffets = responses.map((ads, source) => {
-      const pod = ads.filter((a) => a.sequence !== null).sort((a, b) => (a.sequence as number) - (b.sequence as number));
+      const pod = ads
+        .filter((a) => a.sequence !== null)
+        .sort((a, b) => (a.sequence as number) - (b.sequence as number));
       const standalone = ads.filter((a) => a.sequence === null);
       if (pod.length > 0) {
         pod.forEach((a) => slots.push({ ad: a, source }));

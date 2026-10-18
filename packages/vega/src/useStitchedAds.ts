@@ -84,10 +84,11 @@ export function useStitchedAds(options: UseStitchedAdsOptions): StitchedAds {
       breaks.current = loaded;
       tracker.current = created;
       setReady(true);
-      const show = (): void => setAd((before) => {
-        const now = created.current();
-        return same(before, now) ? before : now;
-      });
+      const show = (): void =>
+        setAd((before) => {
+          const now = created.current();
+          return same(before, now) ? before : now;
+        });
       offs.push(
         port.on('timeupdate', () => {
           created.update(port.getCurrentTime());

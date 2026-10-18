@@ -1,4 +1,8 @@
-import { GetSegmentDetectionCommand, RekognitionClient, StartSegmentDetectionCommand } from '@aws-sdk/client-rekognition';
+import {
+  GetSegmentDetectionCommand,
+  RekognitionClient,
+  StartSegmentDetectionCommand,
+} from '@aws-sdk/client-rekognition';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { StoragePort } from './cli';
 import type { RekognitionPort } from './rekognition';

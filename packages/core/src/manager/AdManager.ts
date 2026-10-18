@@ -11,7 +11,12 @@ import { positive, PreloadedAds, resolveSchedule, scheduleKey, withBreakLimits }
 export type AdSchedule =
   | { vmapUrl: string }
   | {
-      breaks: Array<{ offset: 'start' | 'end' | number; vastUrl: string; blockedAdCategories?: string[]; sceneSignals?: string[] }>;
+      breaks: Array<{
+        offset: 'start' | 'end' | number;
+        vastUrl: string;
+        blockedAdCategories?: string[];
+        sceneSignals?: string[];
+      }>;
     };
 
 export interface AdManagerDeps {
@@ -343,7 +348,11 @@ export class AdManager {
   }
 
   private async resolve(schedule: AdSchedule): Promise<ScheduledBreak[]> {
-    const { breaks, errorCode } = await resolveSchedule(schedule, { http: this.deps.http, clock: this.deps.clock, macros: this.macros });
+    const { breaks, errorCode } = await resolveSchedule(schedule, {
+      http: this.deps.http,
+      clock: this.deps.clock,
+      macros: this.macros,
+    });
     if (errorCode !== undefined) {
       this.emit(`vmap:error:${errorCode}`);
     }

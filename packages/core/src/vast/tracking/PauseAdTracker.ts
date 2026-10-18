@@ -22,7 +22,12 @@ export class PauseAdTracker {
   constructor(pauseAd: PauseAd, options: AdTrackerOptions = {}) {
     this.macros = options.macros ?? {};
     this.onEvent = options.onEvent ?? (() => undefined);
-    this.tracker = new VASTTracker(pauseAd.client, pauseAd.ad as never, pauseAd.creative as never, pauseAd.variation as never);
+    this.tracker = new VASTTracker(
+      pauseAd.client,
+      pauseAd.ad as never,
+      pauseAd.creative as never,
+      pauseAd.variation as never,
+    );
   }
 
   shown(): void {

@@ -35,7 +35,10 @@ async function loadAd(body = INLINE): Promise<LinearAd> {
 /** Two 10 s ads stitched at 100 s (100–110, 110–120) and one at 300 s. */
 async function setup(body = INLINE) {
   const events: string[] = [];
-  const ads = [...stitchedBreak(100, [await loadAd(body), await loadAd(body)]), ...stitchedBreak(300, [await loadAd(body)])];
+  const ads = [
+    ...stitchedBreak(100, [await loadAd(body), await loadAd(body)]),
+    ...stitchedBreak(300, [await loadAd(body)]),
+  ];
   const tracker = new StitchedAdTracker(ads, { onEvent: (name) => events.push(name) });
   const play = (from: number, to: number) => {
     for (let t = from; t <= to + 1e-9; t += 0.25) tracker.update(Number(t.toFixed(2)));
@@ -235,7 +238,9 @@ describe('loadStitchedAds', () => {
 
   it('a break gets the ads the client player would play: one where the VMAP allows one, a pod in sequence order, one ad of a response without sequence numbers', async () => {
     const POD = readFileSync(`${__dirname}/../../fixtures/vast/pod-cat.xml`, 'utf8');
-    const reversed = POD.replace('sequence="1"', 'sequence="X"').replace('sequence="2"', 'sequence="1"').replace('sequence="X"', 'sequence="2"');
+    const reversed = POD.replace('sequence="1"', 'sequence="X"')
+      .replace('sequence="2"', 'sequence="1"')
+      .replace('sequence="X"', 'sequence="2"');
     const unsequenced = POD.replace(/ sequence="\d"/g, '');
     const http = new FakeHttp()
       .on(VMAP, { body: vmap('pre-mid-post.xml') }) // pre and post: allowMultipleAds="false"

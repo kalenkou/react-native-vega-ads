@@ -14,13 +14,19 @@ const ext = (type: string, children: Array<{ name: string; value: string | null 
 
 describe('adLoudness', () => {
   it('reads IntegratedLoudness from the loudness creative extension', () => {
-    expect(adLoudness(withExtensions([ext('tl_qrcode', []), ext('loudness', [{ name: 'IntegratedLoudness', value: ' -16.5 ' }])]))).toBe(-16.5);
+    expect(
+      adLoudness(
+        withExtensions([ext('tl_qrcode', []), ext('loudness', [{ name: 'IntegratedLoudness', value: ' -16.5 ' }])]),
+      ),
+    ).toBe(-16.5);
   });
 
   it('is null without the extension, without a number, or for another extension', () => {
     expect(adLoudness(withExtensions(undefined))).toBeNull();
     expect(adLoudness(withExtensions([ext('loudness', [{ name: 'IntegratedLoudness', value: 'loud' }])]))).toBeNull();
-    expect(adLoudness(withExtensions([ext('loudness', [{ name: 'IntegratedLoudness', value: 'Infinity' }])]))).toBeNull();
+    expect(
+      adLoudness(withExtensions([ext('loudness', [{ name: 'IntegratedLoudness', value: 'Infinity' }])])),
+    ).toBeNull();
     expect(adLoudness(withExtensions([ext('other', [{ name: 'IntegratedLoudness', value: '-16' }])]))).toBeNull();
   });
 });

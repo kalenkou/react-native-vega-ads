@@ -161,7 +161,17 @@ describe('preloadVegaAds', () => {
 });
 
 describe('useAdPlan', () => {
-  function PlanHarness({ schedule, http, clock, out }: { schedule: AdSchedule; http: FakeHttp; clock: FakeClock; out: { current: AdPlan | null } }): null {
+  function PlanHarness({
+    schedule,
+    http,
+    clock,
+    out,
+  }: {
+    schedule: AdSchedule;
+    http: FakeHttp;
+    clock: FakeClock;
+    out: { current: AdPlan | null };
+  }): null {
     out.current = useAdPlan(schedule, { http, clock });
     return null;
   }

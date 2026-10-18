@@ -85,7 +85,8 @@ export const defaultAdUiStrings: AdUiStrings = {
   scanQr: 'Scan to learn more',
   announcePauseAd: 'Ad while paused. Press Back to close it.',
   whyLeftOut,
-  whyRepeats: (count) => (count === 1 ? 'An ad you saw recently was left out' : `${count} ads you saw recently were left out`),
+  whyRepeats: (count) =>
+    count === 1 ? 'An ad you saw recently was left out' : `${count} ads you saw recently were left out`,
   whyQuieter: 'Volume matched to the movie',
   adPlan,
   watchReport,

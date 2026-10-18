@@ -65,8 +65,11 @@ describe('adPlan: the ads of a title, before Play', () => {
     expect(adPlanLabel({ breaks: 1, preroll: null, marks: [] })).toBe('1 ad break');
   });
 
-  it('takes the app\'s own words', () => {
-    const label = adPlanLabel({ breaks: 2, preroll: null, marks: [] }, { adPlan: (plan) => `${plan.breaks} Werbepausen` });
+  it("takes the app's own words", () => {
+    const label = adPlanLabel(
+      { breaks: 2, preroll: null, marks: [] },
+      { adPlan: (plan) => `${plan.breaks} Werbepausen` },
+    );
     expect(label).toBe('2 Werbepausen');
   });
 });

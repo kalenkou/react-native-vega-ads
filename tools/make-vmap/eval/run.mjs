@@ -16,7 +16,14 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { breakContexts, contextSchema, frameArgs, frameTimes, llamaServerRequest, llamaVisionArgs } from '../dist/breakContext.js';
+import {
+  breakContexts,
+  contextSchema,
+  frameArgs,
+  frameTimes,
+  llamaServerRequest,
+  llamaVisionArgs,
+} from '../dist/breakContext.js';
 import { whisperTranscript } from '../dist/whisperSpeech.js';
 
 const { values: flags } = parseArgs({
@@ -55,7 +62,9 @@ const vision = { model: flags['context-model'], mmproj: flags['context-mmproj'] 
 const offsets = flags.frames?.split(',').map(Number);
 const frameWidth = flags['frame-width'] ? Number(flags['frame-width']) : undefined;
 const only = flags.films?.split(',');
-const films = JSON.parse(await readFile(flags.labels, 'utf8')).films.filter((film) => !only || only.includes(film.file));
+const films = JSON.parse(await readFile(flags.labels, 'utf8')).films.filter(
+  (film) => !only || only.includes(film.file),
+);
 const dir = await mkdtemp(join(tmpdir(), 'make-vmap-eval-'));
 const rows = [];
 
@@ -114,7 +123,8 @@ async function modelRows() {
         },
         ask: flags['context-server']
           ? askServer
-          : (prompt, images) => run('llama-mtmd-cli', llamaVisionArgs(vision, prompt, images, schema)).then((r) => r.stdout),
+          : (prompt, images) =>
+              run('llama-mtmd-cli', llamaVisionArgs(vision, prompt, images, schema)).then((r) => r.stdout),
       },
     );
     film.breaks.forEach((label, index) => {
@@ -151,10 +161,18 @@ const cell = (text) => String(text).replace(/\|/g, '\\|');
 console.log('| Film | Break | Labelled | Model | Evidence | Match |');
 console.log('|---|---|---|---|---|---|');
 for (const { film, label, context, said } of rows) {
-  const match = !context ? 'no answer' : same(label.signals, said) ? 'yes' : label.signals.length > 0 === said.length > 0 ? 'partly' : 'no';
+  const match = !context
+    ? 'no answer'
+    : same(label.signals, said)
+      ? 'yes'
+      : label.signals.length > 0 === said.length > 0
+        ? 'partly'
+        : 'no';
   const evidence = context?.signals?.map((s) => `${s.name}: ${s.evidence}`).join('; ') || '';
   const labelled = (label.signals.join(', ') || 'none') + (label.unsure ? ' (unsure)' : '');
-  console.log(`| ${film.split('_')[0]} | ${mmss(label.at)} | ${labelled} | ${said.join(', ') || 'none'} | ${cell(evidence)} | ${match} |`);
+  console.log(
+    `| ${film.split('_')[0]} | ${mmss(label.at)} | ${labelled} | ${said.join(', ') || 'none'} | ${cell(evidence)} | ${match} |`,
+  );
 }
 
 const answered = rows.filter((r) => r.context);

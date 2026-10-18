@@ -56,10 +56,31 @@ for (const film of films) {
     const clip = `clips/${basename(film.file, '.mp4')}-${Math.round(at)}.mp4`;
     process.stderr.write(`${clip}\n`);
     await run('ffmpeg', [
-      '-hide_banner', '-loglevel', 'error', '-y',
-      '-ss', String(start), '-i', join(flags.media, film.file), '-t', String(at - start),
-      '-vf', 'scale=854:-2', '-c:v', 'libx264', '-crf', '26', '-preset', 'veryfast',
-      '-c:a', 'aac', '-ac', '2', '-b:a', '96k', join(flags.out, clip),
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-y',
+      '-ss',
+      String(start),
+      '-i',
+      join(flags.media, film.file),
+      '-t',
+      String(at - start),
+      '-vf',
+      'scale=854:-2',
+      '-c:v',
+      'libx264',
+      '-crf',
+      '26',
+      '-preset',
+      'veryfast',
+      '-c:a',
+      'aac',
+      '-ac',
+      '2',
+      '-b:a',
+      '96k',
+      join(flags.out, clip),
     ]);
     breaks.push({ file: film.file, at, clip, label: `${basename(film.file, '.mp4')} · break at ${clock(at)}` });
   }

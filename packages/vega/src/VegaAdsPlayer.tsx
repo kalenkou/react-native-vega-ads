@@ -113,7 +113,9 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
     ...options
   } = props;
   const ownsPlayer = appPlayer === undefined;
-  const created = useVideoPlayer(ownsPlayer ? (source?.uri ?? null) : null, { createVideoPlayer: options.createVideoPlayer });
+  const created = useVideoPlayer(ownsPlayer ? (source?.uri ?? null) : null, {
+    createVideoPlayer: options.createVideoPlayer,
+  });
   const contentPlayer = ownsPlayer ? created : appPlayer;
   // A PlayerPort has no w3cmedia surface to draw: the app shows the content itself.
   const port = contentPlayer !== null && isPlayerPort(contentPlayer);
@@ -151,9 +153,15 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
           <AdSurfaceLayers surfaces={ads.surfaces} scalingMode={scalingMode} />
         </>
       )}
-      {countdown && !ads.playing && <AdCountdown nextBreakIn={ads.timeline.nextBreakIn} strings={options.strings} styles={adStyles} />}
+      {countdown && !ads.playing && (
+        <AdCountdown nextBreakIn={ads.timeline.nextBreakIn} strings={options.strings} styles={adStyles} />
+      )}
       <PauseAd view={ads.pauseAd} strings={options.strings} style={pauseAdStyle} styles={adStyles} />
-      {renderOverlay ? renderOverlay(ads) : <AdOverlay ui={ads.ui} onSkip={ads.skip} showWhy={showWhy} captions={adCaptions} styles={adStyles} />}
+      {renderOverlay ? (
+        renderOverlay(ads)
+      ) : (
+        <AdOverlay ui={ads.ui} onSkip={ads.skip} showWhy={showWhy} captions={adCaptions} styles={adStyles} />
+      )}
     </View>
   );
 }

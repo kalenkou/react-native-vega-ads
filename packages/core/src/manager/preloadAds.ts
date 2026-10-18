@@ -50,8 +50,15 @@ export async function resolveSchedule(
       breaks: schedule.breaks.map((b, i) => ({
         id: `break-${i + 1}`,
         // 0 s is the pre-roll: as a timed break it would come after the content started.
-        offset: b.offset === 'start' || b.offset === 'end' ? { kind: b.offset } : b.offset <= 0 ? { kind: 'start' } : { kind: 'time', seconds: b.offset },
-        sources: [{ id: null, source: { kind: 'url', url: b.vastUrl }, allowMultipleAds: true, track: () => undefined }],
+        offset:
+          b.offset === 'start' || b.offset === 'end'
+            ? { kind: b.offset }
+            : b.offset <= 0
+              ? { kind: 'start' }
+              : { kind: 'time', seconds: b.offset },
+        sources: [
+          { id: null, source: { kind: 'url', url: b.vastUrl }, allowMultipleAds: true, track: () => undefined },
+        ],
         blockedAdCategories: b.blockedAdCategories,
         sceneSignals: b.sceneSignals,
       })),
@@ -83,7 +90,11 @@ export async function preloadAds(schedule: AdSchedule, deps: PreloadDeps): Promi
     const results = pre
       ? await Promise.all(
           pre.sources.map((s) =>
-            requestVast(s.source, { http: deps.http, clock: deps.clock, macros: withBlockedCategories(macros, pre.blockedAdCategories) }),
+            requestVast(s.source, {
+              http: deps.http,
+              clock: deps.clock,
+              macros: withBlockedCategories(macros, pre.blockedAdCategories),
+            }),
           ),
         )
       : null;

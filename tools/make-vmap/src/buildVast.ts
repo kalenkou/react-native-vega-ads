@@ -33,7 +33,17 @@ export interface VastAdInput {
 }
 
 const AD_ID = /^[A-Za-z0-9_.-]{1,64}$/;
-const TRACKING_EVENTS = ['start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete', 'pause', 'resume', 'skip', 'notUsed'];
+const TRACKING_EVENTS = [
+  'start',
+  'firstQuartile',
+  'midpoint',
+  'thirdQuartile',
+  'complete',
+  'pause',
+  'resume',
+  'skip',
+  'notUsed',
+];
 
 function escapeXml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -112,7 +122,8 @@ function inlineAd(input: VastAdInput, sequence: number | null): string {
       : [
           '              <ClosedCaptionFiles>',
           ...input.captions.map(
-            (caption) => `                <ClosedCaptionFile type="text/vtt" language="${caption.language}">${cdata(caption.url)}</ClosedCaptionFile>`,
+            (caption) =>
+              `                <ClosedCaptionFile type="text/vtt" language="${caption.language}">${cdata(caption.url)}</ClosedCaptionFile>`,
           ),
           '              </ClosedCaptionFiles>',
         ]),

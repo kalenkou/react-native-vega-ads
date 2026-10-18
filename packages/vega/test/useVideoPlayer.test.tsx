@@ -9,7 +9,15 @@ async function settle(): Promise<void> {
   });
 }
 
-function Harness({ uri, create, out }: { uri: string | null; create: () => W3cVideoPlayer; out: { current: W3cVideoPlayer | null } }): null {
+function Harness({
+  uri,
+  create,
+  out,
+}: {
+  uri: string | null;
+  create: () => W3cVideoPlayer;
+  out: { current: W3cVideoPlayer | null };
+}): null {
   out.current = useVideoPlayer(uri, { createVideoPlayer: create });
   return null;
 }

@@ -96,7 +96,11 @@ function sendFile(request, response, path) {
     response.writeHead(416, { 'Content-Range': `bytes */${size}` }).end();
     return;
   }
-  response.writeHead(206, { ...headers, 'Content-Length': end - start + 1, 'Content-Range': `bytes ${start}-${end}/${size}` });
+  response.writeHead(206, {
+    ...headers,
+    'Content-Length': end - start + 1,
+    'Content-Range': `bytes ${start}-${end}/${size}`,
+  });
   createReadStream(path, { start, end }).pipe(response);
 }
 
