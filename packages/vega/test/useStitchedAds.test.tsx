@@ -36,14 +36,14 @@ async function setup(overrides: Partial<UseStitchedAdsOptions> = {}) {
   const http = new FakeHttp()
     .on(VMAP_URL, { body: fixture('vmap/pre-mid-post.xml') })
     .on('https://ads.test/pre.xml', { body: INLINE })
-    .on('https://ads.test/mid1.xml', { body: INLINE.replace('<Linear>', '<Linear skipoffset="00:00:05">') });
+    .on('https://ads.test/mid1.xml', { body: INLINE.replace('<Linear>', '<Linear skipoffset="00:00:05">') })
+    .on('https://ads.test/post.xml', { body: INLINE });
   const player = new FakeW3cPlayer(600);
   const events: string[] = [];
   const out: { current: StitchedAds | null } = { current: null };
   const options: UseStitchedAdsOptions = {
     vmapUrl: VMAP_URL,
     player,
-    streamSeconds: NaN,
     http,
     clock: new FakeClock(),
     onEvent: (name) => events.push(name),
@@ -62,7 +62,9 @@ async function setup(overrides: Partial<UseStitchedAdsOptions> = {}) {
   const play = (from: number, to: number) => {
     for (let t = from; t <= to + 1e-9; t += 0.5) at(Number(t.toFixed(2)));
   };
-  return { http, player, events, out, renderer, at, play, ads: () => out.current as StitchedAds };
+  const rerender = (changes: Partial<UseStitchedAdsOptions>) =>
+    act(() => renderer.update(<Harness options={{ ...options, ...changes }} out={out} />));
+  return { http, player, events, out, renderer, at, play, rerender, ads: () => out.current as StitchedAds };
 }
 
 it('tracks the stitched ads as the player plays and shows which ad is on', async () => {
@@ -136,3 +138,50 @@ it('an unmount before the VMAP arrives leaves the player alone', async () => {
   });
   expect(events).toEqual([]);
 });
+
+it('is ready once the schedule is loaded, so the app can start the stream then', async () => {
+  const http = new FakeHttp().on(VMAP_URL, { body: fixture('vmap/pre-mid-post.xml') });
+  const out: { current: StitchedAds | null } = { current: null };
+  let renderer!: TestRenderer.ReactTestRenderer;
+  act(() => {
+    renderer = TestRenderer.create(
+      <Harness options={{ vmapUrl: VMAP_URL, player: new FakeW3cPlayer(600), http, clock: new FakeClock() }} out={out} />,
+    );
+  });
+  expect(out.current?.ready).toBe(false);
+  await settle();
+  expect(out.current?.ready).toBe(true);
+  act(() =>
+    renderer.update(
+      <Harness options={{ vmapUrl: null, player: new FakeW3cPlayer(600), http, clock: new FakeClock() }} out={out} />,
+    ),
+  );
+  expect(out.current?.ready).toBe(false);
+  act(() => renderer.unmount());
+});
+
+it('the stream length can come later: the VMAP loads once, the ad on screen goes on, the end break is placed', async () => {
+  const { http, events, play, at, rerender, renderer } = await setup();
+  play(0, 4);
+  rerender({ streamSeconds: 600 });
+  await settle();
+  play(4.5, 12);
+  expect(http.requests.filter((url) => url === VMAP_URL)).toHaveLength(1);
+  expect(events).toEqual(['impression', 'start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete']);
+  at(589.5);
+  play(590, 600);
+  expect(events.filter((e) => e === 'impression')).toHaveLength(2);
+  act(() => renderer.unmount());
+});
+
+it('the end of the stream completes the ad that ends with it, and clears the label', async () => {
+  const { events, play, at, player, ads, renderer } = await setup({ streamSeconds: 600 });
+  at(589.5);
+  play(590, 599.5);
+  act(() => player.emit('pause'));
+  act(() => player.emit('ended'));
+  expect(events.slice(-2)).toEqual(['thirdQuartile', 'complete']);
+  expect(ads().ad).toBeNull();
+  act(() => renderer.unmount());
+});
+
