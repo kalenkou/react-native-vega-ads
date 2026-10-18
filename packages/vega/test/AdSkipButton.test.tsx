@@ -17,9 +17,9 @@ function ui(skip: AdUiState['skip']): AdUiState {
   };
 }
 
-const hidden = { visible: false, enabled: false, label: '' };
-const waiting = { visible: true, enabled: false, label: 'Skip in 3' };
-const ready = { visible: true, enabled: true, label: 'Skip Ad' };
+const hidden = { visible: false, enabled: false, label: '', accessibilityLabel: '' };
+const waiting = { visible: true, enabled: false, label: 'Skip in 3', accessibilityLabel: 'Skip Ad' };
+const ready = { visible: true, enabled: true, label: 'Skip Ad', accessibilityLabel: 'Skip Ad' };
 
 function render(element: JSX.Element) {
   let renderer!: TestRenderer.ReactTestRenderer;
@@ -42,12 +42,16 @@ describe('AdSkipButton', () => {
     const { host } = render(<AdSkipButton ui={ui(hidden)} onSkip={jest.fn()} />);
     expect(host('vega-ads-skip')).toBeUndefined();
     expect(host('vega-ads-focus')?.props.hasTVPreferredFocus).toBe(true);
-    expect(host('vega-ads-focus')?.props.accessibilityLabel).toBe('Ad 1 of 3 · 0:12');
+    // Only the ad's name: VoiceView reads the focused element again whenever its label changes,
+    // and it would read the clock every second and the dot as "middle dot".
+    expect(host('vega-ads-focus')?.props.accessibilityLabel).toBe('Ad 1 of 3');
   });
 
   it('shows the countdown disabled, then skips with focus once allowed', () => {
     const onSkip = jest.fn();
     const first = render(<AdSkipButton ui={ui(waiting)} onSkip={onSkip} />);
+    expect(first.text()?.props.children).toBe('Skip in 3');
+    expect(first.host('vega-ads-skip')?.props.accessibilityLabel).toBe('Skip Ad'); // the same every second
     expect(first.host('vega-ads-skip')?.props.accessibilityState).toEqual({ disabled: true });
     act(() => first.host('vega-ads-skip')?.props.onPress());
     expect(onSkip).not.toHaveBeenCalled();

@@ -100,7 +100,12 @@ export interface AdUiState {
   name: string;
   /** The time part of the label, "0:12"; empty while the ad's duration is unknown. */
   timeLeft: string;
-  skip: { visible: boolean; enabled: boolean; label: string };
+  /**
+   * The Skip button: `label` is what it shows ("Skip in 3", then "Skip Ad"). `accessibilityLabel` is
+   * what VoiceView reads. It stays "Skip Ad" during the countdown, so VoiceView does not read the
+   * focused button again every second.
+   */
+  skip: { visible: boolean; enabled: boolean; label: string; accessibilityLabel: string };
   /** Text for the screen reader (VoiceView) when the ad starts. */
   announcement: string;
   /** Text for the screen reader while Skip is possible; empty otherwise. */
@@ -139,10 +144,10 @@ export function adUiState(snapshot: SessionSnapshot, strings: Partial<AdUiString
   const skippable = snapshot.skipIn !== null;
   const waitSeconds = Math.ceil(snapshot.skipIn ?? 0);
   const skip = !skippable
-    ? { visible: false, enabled: false, label: '' }
+    ? { visible: false, enabled: false, label: '', accessibilityLabel: '' }
     : snapshot.canSkip
-      ? { visible: true, enabled: true, label: s.skip }
-      : { visible: true, enabled: false, label: s.skipIn(waitSeconds) };
+      ? { visible: true, enabled: true, label: s.skip, accessibilityLabel: s.skip }
+      : { visible: true, enabled: false, label: s.skipIn(waitSeconds), accessibilityLabel: s.skip };
 
   const parts = [name];
   if (known) parts.push(s.seconds(Math.round(snapshot.adDuration)));

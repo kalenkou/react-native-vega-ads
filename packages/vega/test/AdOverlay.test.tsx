@@ -14,7 +14,7 @@ function ui(overrides: Partial<AdUiState> = {}): AdUiState {
     label,
     name,
     timeLeft,
-    skip: { visible: false, enabled: false, label: '' },
+    skip: { visible: false, enabled: false, label: '', accessibilityLabel: '' },
     announcement: 'Ad 1 of 3, 12 seconds',
     skipAnnouncement: '',
     why: '',
@@ -76,7 +76,10 @@ describe('AdOverlay', () => {
     act(() => {
       renderer = TestRenderer.create(
         <AdOverlay
-          ui={ui({ why: 'Volume matched to the movie', skip: { visible: true, enabled: true, label: 'Skip Ad' } })}
+          ui={ui({
+            why: 'Volume matched to the movie',
+            skip: { visible: true, enabled: true, label: 'Skip Ad', accessibilityLabel: 'Skip Ad' },
+          })}
           onSkip={jest.fn()}
           showWhy
           styles={styles}
@@ -145,11 +148,13 @@ describe('AdOverlay', () => {
       (n) => n.props.testID === 'vega-ads-focus' && typeof (n.type as unknown) === 'string',
     )[0];
     expect(anchor?.props.hasTVPreferredFocus).toBe(true);
-    expect(anchor?.props.accessibilityLabel).toBe('Ad 1 of 3 · 0:12');
+    expect(anchor?.props.accessibilityLabel).toBe('Ad 1 of 3'); // no clock: VoiceView would read it every second
   });
 
   it('shows a disabled Skip countdown that ignores presses', () => {
-    const { skipButton, texts, onSkip } = render(ui({ skip: { visible: true, enabled: false, label: 'Skip in 3' } }));
+    const { skipButton, texts, onSkip } = render(
+      ui({ skip: { visible: true, enabled: false, label: 'Skip in 3', accessibilityLabel: 'Skip Ad' } }),
+    );
     expect(texts()).toContain('Skip in 3');
     expect(skipButton()?.props.accessibilityState).toEqual({ disabled: true });
     act(() => skipButton()?.props.onPress());
@@ -157,7 +162,9 @@ describe('AdOverlay', () => {
   });
 
   it('takes D-pad focus and skips when Skip is allowed', () => {
-    const { skipButton, onSkip } = render(ui({ skip: { visible: true, enabled: true, label: 'Skip Ad' } }));
+    const { skipButton, onSkip } = render(
+      ui({ skip: { visible: true, enabled: true, label: 'Skip Ad', accessibilityLabel: 'Skip Ad' } }),
+    );
     const button = skipButton();
     expect(button?.props.hasTVPreferredFocus).toBe(true);
     expect(button?.props.accessibilityRole).toBe('button');
@@ -178,7 +185,7 @@ describe('AdOverlay', () => {
   });
 
   it('does not announce again while the Skip countdown changes the text', () => {
-    const skip = { visible: true, enabled: false, label: 'Skip in 5' };
+    const skip = { visible: true, enabled: false, label: 'Skip in 5', accessibilityLabel: 'Skip Ad' };
     const { update } = render(
       ui({ label: 'Ad · 0:15', announcement: 'Ad, 15 seconds, you can skip in 5 seconds', skip }),
     );
@@ -194,8 +201,8 @@ describe('AdOverlay', () => {
   });
 
   it('tells the screen reader once when Skip becomes possible, not when the ad starts skippable', () => {
-    const waiting = { visible: true, enabled: false, label: 'Skip in 1' };
-    const ready = { visible: true, enabled: true, label: 'Skip Ad' };
+    const waiting = { visible: true, enabled: false, label: 'Skip in 1', accessibilityLabel: 'Skip Ad' };
+    const ready = { visible: true, enabled: true, label: 'Skip Ad', accessibilityLabel: 'Skip Ad' };
     const { update } = render(ui({ label: 'Ad · 0:15', skip: waiting }));
     update(ui({ label: 'Ad · 0:14', skip: ready, skipAnnouncement: 'You can skip the ad now' }));
     update(ui({ label: 'Ad · 0:13', skip: ready, skipAnnouncement: 'You can skip the ad now' }));
@@ -209,13 +216,16 @@ describe('AdOverlay', () => {
 
   it('does not say "skip now" for the next ad of a pod that starts skippable', () => {
     const { update } = render(
-      ui({ label: 'Ad 1 of 2 · 0:15', skip: { visible: true, enabled: false, label: 'Skip in 5' } }),
+      ui({
+        label: 'Ad 1 of 2 · 0:15',
+        skip: { visible: true, enabled: false, label: 'Skip in 5', accessibilityLabel: 'Skip Ad' },
+      }),
     );
     update(
       ui({
         label: 'Ad 2 of 2 · 0:10',
         announcement: 'Ad 2 of 2, 10 seconds',
-        skip: { visible: true, enabled: true, label: 'Skip Ad' },
+        skip: { visible: true, enabled: true, label: 'Skip Ad', accessibilityLabel: 'Skip Ad' },
         skipAnnouncement: 'You can skip the ad now',
       }),
     );
@@ -232,7 +242,7 @@ describe('useAdAnnouncements', () => {
   it('gives an app overlay the same announcements: each ad once, then when Skip opens', () => {
     let renderer!: TestRenderer.ReactTestRenderer;
     const waiting = ui({
-      skip: { visible: true, enabled: false, label: 'Skip in 3' },
+      skip: { visible: true, enabled: false, label: 'Skip in 3', accessibilityLabel: 'Skip Ad' },
       skipAnnouncement: 'You can skip the ad now',
     });
     act(() => {
@@ -245,7 +255,14 @@ describe('useAdAnnouncements', () => {
     expect(announce).toHaveBeenCalledWith('Ad 1 of 3, 12 seconds');
 
     act(() => {
-      renderer.update(<Custom state={{ ...waiting, skip: { visible: true, enabled: true, label: 'Skip ad' } }} />);
+      renderer.update(
+        <Custom
+          state={{
+            ...waiting,
+            skip: { visible: true, enabled: true, label: 'Skip ad', accessibilityLabel: 'Skip Ad' },
+          }}
+        />,
+      );
     });
     expect(announce).toHaveBeenLastCalledWith('You can skip the ad now');
   });

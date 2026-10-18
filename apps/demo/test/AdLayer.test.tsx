@@ -27,7 +27,7 @@ function adsWith(ui: Partial<VegaAds['ui']>, skip = jest.fn()): VegaAds {
       label: 'Ad 1 of 2 · 0:12',
       name: 'Ad 1 of 2',
       timeLeft: '0:12',
-      skip: {visible: false, enabled: false, label: ''},
+      skip: {visible: false, enabled: false, label: '', accessibilityLabel: ''},
       announcement: '',
       skipAnnouncement: '',
       caption: '',
@@ -86,7 +86,14 @@ describe('AdLayer', () => {
   it('skips only once Skip is enabled', () => {
     const skip = jest.fn();
     const waiting = adsWith(
-      {skip: {visible: true, enabled: false, label: 'Skip in 3'}},
+      {
+        skip: {
+          visible: true,
+          enabled: false,
+          label: 'Skip in 3',
+          accessibilityLabel: 'Skip Ad',
+        },
+      },
       skip,
     );
     let renderer!: TestRenderer.ReactTestRenderer;
@@ -109,7 +116,14 @@ describe('AdLayer', () => {
     expect(skip).not.toHaveBeenCalled();
 
     const ready = adsWith(
-      {skip: {visible: true, enabled: true, label: 'Skip ad'}},
+      {
+        skip: {
+          visible: true,
+          enabled: true,
+          label: 'Skip ad',
+          accessibilityLabel: 'Skip Ad',
+        },
+      },
       skip,
     );
     act(() => {

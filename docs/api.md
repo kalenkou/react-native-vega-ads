@@ -115,6 +115,6 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 | `DualSurfaceView` | `surfaces`, `contentPlayer?`, `onContentSurfaceCreated?`, `onContentSurfaceDestroyed?`, `scalingMode?` (default `'fit'`), `style?` |
 | `AdSurfaceLayers` | `surfaces`, `scalingMode?` (default `'fit'`), `style?` |
 | `AdOverlay` | `ui`, `onSkip`, `showWhy?`, `captions?`, `style?`, `styles?` (`AdStyles`) |
-| `AdSkipButton` | `ui`, `onSkip`, `styles?`. Skip for your own overlay: takes the D-pad focus, ignores presses until Skip is allowed. During a non-skippable ad it holds the focus. |
+| `AdSkipButton` | `ui`, `onSkip`, `styles?`. Skip for your own overlay: takes the D-pad focus, ignores presses until Skip is allowed. During a non-skippable ad it holds the focus. VoiceView reads "Skip Ad" (`ui.skip.accessibilityLabel`) during the countdown, not every number. |
 | `AdCountdown` | `nextBreakIn`, `strings?`, `style?`, `styles?`. Takes no D-pad focus. Announces the break once for VoiceView. |
 | `PauseAd` | `view` (`ads.pauseAd`), `strings?`, `style?`, `styles?`. The image beside the paused picture (up to 600 px high), "Ad", the QR code if any, "Back closes the ad". Takes no D-pad focus. Announced once for VoiceView. `VegaAdsPlayer` draws it for you. |

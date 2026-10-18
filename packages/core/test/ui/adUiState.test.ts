@@ -79,16 +79,32 @@ describe('adUiState (R26)', () => {
   });
 
   it('hides the skip button for a non-skippable ad', () => {
-    expect(adUiState(snapshot({ skipIn: null })).skip).toEqual({ visible: false, enabled: false, label: '' });
+    expect(adUiState(snapshot({ skipIn: null })).skip).toEqual({
+      visible: false,
+      enabled: false,
+      label: '',
+      accessibilityLabel: '',
+    });
   });
 
   it('counts down to skip, then enables it', () => {
-    expect(adUiState(snapshot({ skipIn: 2.1 })).skip).toEqual({ visible: true, enabled: false, label: 'Skip in 3' });
+    expect(adUiState(snapshot({ skipIn: 2.1 })).skip).toEqual({
+      visible: true,
+      enabled: false,
+      label: 'Skip in 3',
+      accessibilityLabel: 'Skip Ad',
+    });
     expect(adUiState(snapshot({ skipIn: 0, canSkip: true })).skip).toEqual({
       visible: true,
       enabled: true,
       label: 'Skip Ad',
+      accessibilityLabel: 'Skip Ad',
     });
+  });
+
+  it('keeps the Skip name for VoiceView during the countdown, so it is not read every second', () => {
+    const names = [4.2, 3.1, 2, 1].map((skipIn) => adUiState(snapshot({ skipIn })).skip.accessibilityLabel);
+    expect(new Set(names)).toEqual(new Set(['Skip Ad']));
   });
 
   it('has a screen reader line for the moment Skip becomes possible', () => {
@@ -129,6 +145,7 @@ describe('adUiState (R26)', () => {
     });
     expect(ui.label).toBe('Reklama 1 z 2 · 0:12');
     expect(ui.skip.label).toBe('Pomiń za 2');
+    expect(ui.skip.accessibilityLabel).toBe('Pomiń');
     expect(ui.announcement).toBe('Reklama 1 z 2, 15 s, Pomiń za 2');
   });
 });

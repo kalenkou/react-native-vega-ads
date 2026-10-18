@@ -16,6 +16,8 @@ export interface AdSkipButtonProps {
  * The Skip button for an ad overlay, own or built-in: it takes the D-pad focus, ignores presses
  * until Skip is allowed and tells VoiceView it is disabled. During a non-skippable ad it holds the
  * focus with an invisible anchor, so the remote does not move focus to the screen behind the ad.
+ * VoiceView reads the focused element again whenever its label changes, so both labels stay the
+ * same for the whole ad: "Skip Ad" during the countdown, the ad's name without the clock.
  */
 export function AdSkipButton({ ui, onSkip, styles: app = {} }: AdSkipButtonProps): ReactElement | null {
   if (!ui.visible) {
@@ -27,7 +29,7 @@ export function AdSkipButton({ ui, onSkip, styles: app = {} }: AdSkipButtonProps
         testID="vega-ads-focus"
         style={styles.focusAnchor}
         hasTVPreferredFocus
-        accessibilityLabel={ui.label}
+        accessibilityLabel={ui.name}
         onPress={() => undefined}
       />
     );
@@ -39,7 +41,7 @@ export function AdSkipButton({ ui, onSkip, styles: app = {} }: AdSkipButtonProps
       style={[styles.skip, app.skip, waiting && styles.skipWaiting, waiting && app.skipWaiting]}
       hasTVPreferredFocus
       accessibilityRole="button"
-      accessibilityLabel={ui.skip.label}
+      accessibilityLabel={ui.skip.accessibilityLabel}
       accessibilityState={{ disabled: waiting }}
       onPress={() => {
         if (ui.skip.enabled) {
