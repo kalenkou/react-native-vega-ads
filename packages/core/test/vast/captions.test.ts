@@ -56,6 +56,12 @@ describe('parseWebVtt', () => {
     expect(parseWebVtt(vtt)).toEqual([{ start: 4, end: 5, text: 'kept' }]);
   });
 
+  it('reads a file that starts with a byte order mark', () => {
+    expect(parseWebVtt('\uFEFFWEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n')).toEqual([
+      { start: 1, end: 2, text: 'Hello' },
+    ]);
+  });
+
   it('is empty for a file that is not WebVTT', () => {
     expect(parseWebVtt('1\n00:00:01,000 --> 00:00:02,000\nSRT text\n')).toEqual([]);
     expect(parseWebVtt('')).toEqual([]);

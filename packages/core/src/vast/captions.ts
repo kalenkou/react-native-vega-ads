@@ -20,7 +20,7 @@ function seconds(stamp: string): number {
  * cannot be read is skipped. A file without the WEBVTT header gives no cues.
  */
 export function parseWebVtt(vtt: string): CaptionCue[] {
-  const lines = vtt.replace(/^﻿/, '').split(/\r?\n/);
+  const lines = vtt.replace(/^\uFEFF/, '').split(/\r?\n/);
   if (!/^WEBVTT(\s|$)/.test(lines[0] ?? '')) {
     return [];
   }
