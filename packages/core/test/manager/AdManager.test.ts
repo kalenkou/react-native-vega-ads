@@ -718,6 +718,22 @@ describe('AdManager', () => {
     expect(ctx.http.requests).toEqual([]);
   });
 
+  it('moves a new content player to where the viewer was before it resumes (app back from the background)', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]), { resumeAt: 45 });
+    expect(ctx.content.calls.indexOf('seek:45')).toBeGreaterThanOrEqual(0);
+    expect(ctx.content.calls.indexOf('seek:45')).toBeLessThan(ctx.content.calls.indexOf('play'));
+    expect(ctx.content.getCurrentTime()).toBe(45);
+  });
+
+  it('leaves a content player that is already there where it is', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    ctx.content.setCurrentTime(45.4);
+    ctx.content.calls.length = 0;
+    await ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]), { resumeAt: 45.4 });
+    expect(ctx.content.calls.filter((call) => call.startsWith('seek:'))).toEqual([]);
+  });
+
   it('starts the content and reports the error when starting the schedule fails', async () => {
     const ctx = setup({});
     let first = true;

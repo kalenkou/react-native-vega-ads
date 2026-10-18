@@ -161,7 +161,8 @@ export class AdManager {
 
   /**
    * Reads the schedule, plays the pre-roll if there is one, otherwise starts the content.
-   * `resumeAt` continues a viewing that was interrupted: no pre-roll, no earlier breaks.
+   * `resumeAt` continues a viewing that was interrupted: no pre-roll, no earlier breaks. A content
+   * player that is not there yet (a new one) is moved to `resumeAt` first.
    * `preloaded` (from preloadAds()) saves the VMAP and pre-roll requests when it is for the same
    * schedule and at most five minutes old; a resumed viewing does not use it.
    * Never rejects: on failure the content plays and `error:start` is reported.
@@ -203,6 +204,9 @@ export class AdManager {
     );
     if (resumeAt !== undefined) {
       scheduler.resumeAt(resumeAt);
+      if (Math.abs(content.getCurrentTime() - resumeAt) > 1) {
+        content.setCurrentTime(resumeAt); // a new player, for example after the app was in the background
+      }
     }
     this.startPauseAds();
     this.reportTimeline(scheduler, null);
