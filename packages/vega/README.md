@@ -2,7 +2,7 @@
 
 VAST/VMAP video ads for React Native on Amazon Vega OS (Fire TV): w3cmedia players, a React hook, video surfaces and a 10-foot overlay.
 
-Part of [react-native-vega-ads](https://github.com/kalenkou/vega-ads). Full guide, manifest entries and device measurements: [main README](https://github.com/kalenkou/vega-ads#readme).
+Part of [react-native-vega-ads](https://github.com/kalenkou/react-native-vega-ads). Full guide, manifest entries and device measurements: [main README](https://github.com/kalenkou/react-native-vega-ads#readme).
 
 ## Use
 
@@ -33,16 +33,16 @@ Required in `manifest.toml`: the media category, the `IMediaPlaybackServer` inte
 
 | Export | What it is |
 |---|---|
-| `<VegaAdsPlayer>` | content player, ad surfaces, overlay, "Ad in N" countdown and pause ad in one component; every part can be replaced |
+| `<VegaAdsPlayer>` | content player, ad surfaces, overlay, "Ad in N" countdown and pause ad in one component. Every part can be replaced |
 | `useVideoPlayer(uri)` | the content `VideoPlayer`, initialized, `autoplay` off, released when the screen closes |
 | `useVegaAds(options)` | the hook: loads breaks, drives the players, returns `playing`, `ui`, `surfaces`, `skip`, `back` |
 | `DualSurfaceView` | content surface plus two ad surfaces |
-| `AdSurfaceLayers` | only the two ad surfaces, for screens that render their own content surface; mount it after that surface is created |
+| `AdSurfaceLayers` | only the two ad surfaces, for screens that render their own content surface. Mount it after that surface is created |
 | `AdOverlay` | "Ad 1 of 3 · 0:12", Skip button with D-pad focus, VoiceView announcement |
 | `useAdAnnouncements(ui)` | the VoiceView announcements of `AdOverlay`, for your own overlay |
 | `AdSkipButton` | the Skip button of `AdOverlay` (D-pad focus, disabled until allowed, focus anchor), for your own overlay |
 | `AdStyles` | your fonts and colours for the built-in ad UI (`adStyles` on `VegaAdsPlayer`, `styles` on each part) |
-| `AdCountdown`, `PauseAd` | "Ad in N" before a mid-roll; the pause ad from `ads.pauseAd` |
+| `AdCountdown`, `PauseAd` | "Ad in N" before a mid-roll. The pause ad from `ads.pauseAd` |
 | `W3cPlayerAdapter` | `PlayerPort` on a w3cmedia `VideoPlayer` |
 | `createAdMediaControlHandler` | media controls during ads: play/pause allowed, seek and skip blocked |
 | `preloadVegaAds(schedule)` | asks for the VMAP and the pre-roll on the title page, so the pre-roll starts sooner after Play |
@@ -132,13 +132,13 @@ when `ready` is true. A seek out of an ad ends its tracking without `complete`. 
 once. The end of the stream completes an ad that ends with it. `skip()` seeks to the end of the ad
 once skipping is allowed. Each break holds the ads a client-side break would play: one where the
 VMAP allows one (`allowMultipleAds="false"`), a pod in `sequence` order. `streamSeconds` is needed
-for `n%` and `end` breaks; leave it out while unknown and pass it when the player knows the
+for `n%` and `end` breaks. Leave it out while unknown and pass it when the player knows the
 duration: those breaks are placed then, without loading the VMAP again. Break times come from the
 VMAP only, not from SCTE-35 or HLS/DASH ad markers.
 
 Checked on a Fire TV Stick 4K Select (muted), a 110 s stream with a 10 s pre-roll and a 10 s
 mid-roll at 1:10: impression, start, quartiles and skip of the pre-roll (skip at 5 s moved the
-player to 0:10), the full mid-roll to `complete`; all 11 pixels reached the ad server.
+player to 0:10), the full mid-roll to `complete`. All 11 pixels reached the ad server.
 
 
 ## License

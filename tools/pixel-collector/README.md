@@ -18,8 +18,8 @@ Rules for the parameters:
 
 - `ad` may use only letters, digits, `.`, `_` and `-`, up to 64 characters.
 - `e` must be one of these events:
-  - VAST: `impression`, `start`, `firstQuartile`, `midpoint`, `thirdQuartile`, `complete`, `pause`, `resume`, `skip`, `notUsed` (an ad left out of a break), `error`;
-  - VAST pause ads: `creativeView`, `overlayViewDuration`, `close`;
+  - VAST: `impression`, `start`, `firstQuartile`, `midpoint`, `thirdQuartile`, `complete`, `pause`, `resume`, `skip`, `notUsed` (an ad left out of a break), `error`
+  - VAST pause ads: `creativeView`, `overlayViewDuration`, `close`
   - VMAP: `breakStart`, `breakEnd`.
 - Any other request gets HTTP 400 and is not counted.
 
@@ -35,20 +35,20 @@ Use the pixel URLs in your own VAST files:
 
 You need:
 
-- an AWS account;
-- the AWS SAM CLI;
+- an AWS account
+- the AWS SAM CLI
 - your own credentials in the standard AWS credential chain.
 
 The template contains no keys and no account IDs.
 
-1. Build: `npm run sam:build` (from this folder). It runs `sam build` with the repo's esbuild on the `PATH`, which bundles `src/index.ts`; a plain `sam build` stops with "Cannot find esbuild" unless esbuild is installed globally.
-2. Deploy: `sam deploy --guided`. Choose a stack name and a region. `samconfig.toml` stays local; git ignores it.
+1. Build: `npm run sam:build` (from this folder). It runs `sam build` with the repo's esbuild on the `PATH`, which bundles `src/index.ts`. A plain `sam build` stops with "Cannot find esbuild" unless esbuild is installed globally.
+2. Deploy: `sam deploy --guided`. Choose a stack name and a region. `samconfig.toml` stays local. Git ignores it.
 3. Read the stack outputs:
    - `MediaBucketName`: upload creatives and VMAP files here.
    - `MediaBaseUrl`: the CloudFront URL of the uploaded files.
    - `PixelBaseUrl`: the base URL of the pixel collector and the report.
 4. Upload the files:
-   - a creative: `aws s3 cp ad.mp4 s3://<bucket>/ads/ad.mp4 --content-type video/mp4`;
+   - a creative: `aws s3 cp ad.mp4 s3://<bucket>/ads/ad.mp4 --content-type video/mp4`
    - a VMAP file: `aws s3 cp breaks.vmap s3://<bucket>/vmap/movie.xml --content-type application/xml --cache-control max-age=60`.
 5. Open `<PixelBaseUrl>report` to see the counts.
 

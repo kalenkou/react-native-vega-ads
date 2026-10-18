@@ -1,151 +1,46 @@
 # react-native-vega-ads
 
-**Ads that watch the movie first.** Client-side ad insertion (CSAI) for React Native apps on Amazon Vega OS (Fire TV).
+Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, plays the ads on the native w3cmedia player and sends the IAB tracking pixels. It is for apps that have their own ad server. Open source, Apache-2.0.
 
-- **Never mid-sentence.** `make-vmap` places each break on a shot change or a silent moment and, with whisper.cpp, never inside a line of dialogue.
-- **Never louder than the movie.** An ad louder than the film is turned down to the film's loudness (EBU R128), never up.
-- **Never the same ad twice.** A creative is not shown again within 30 minutes, and a break has one ad per advertiser.
-- **Fewer unfitting ads after a hard scene.** A local vision model looks at the scene before each break, so there are no car ads right after a car crash. The player leaves out the blocked categories.
-- **Captions on ads, too.** `adCaptions` shows the ad's WebVTT captions from VAST 4.1 `<ClosedCaptionFiles>`; the demo turns them on and sizes them from the Fire TV Closed Captions setting.
+Breaks come at good moments. The `make-vmap` tool puts each break on a shot change, never in the middle of a line. A local vision model notes what the scene before the break shows. The player then leaves out ads that do not fit, for example a car ad right after a car crash. See [how the breaks are placed](docs/how-breaks-are-placed.md).
 
-| Before Play: the break map, with what the model saw before each break | A break: why it looks like this | Paused: a pause ad |
+`make-vmap` is optional and runs on your computer, not on the TV. The player works with any VMAP.
+
+| Movie page: where the ad breaks are, and what the scene before each break shows | During a break: the ad says what was left out and why | On pause: a pause ad with a QR code |
 | --- | --- | --- |
 | ![Sintel's movie page with the break map: pre-roll, 00:02:42.083 after injury, 00:09:03.125 after death and weapons, post-roll](docs/images/movie-page.jpg) | ![An ad in a mid-roll of Sintel: "No Kettlo ad after a scene with injury · Volume matched to the movie"](docs/images/ad-break.jpg) | ![The paused movie with a pause ad and a QR code](docs/images/pause-ad.jpg) |
 
 Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Foundation, CC BY 3.0. Ads: invented brands.
 
-```mermaid
-flowchart LR
-  subgraph prep["Before release, on your computer: make-vmap"]
-    film["Film"] --> ffmpeg["ffmpeg: shot changes, silent black frames"]
-    film --> whisper["whisper.cpp: speech"]
-    film --> vision["Local vision model: what the scene shows"]
-    ffmpeg --> vmap["VMAP: break times + categories to leave out"]
-    whisper --> vmap
-    vision --> vmap
-  end
-  vmap --> server["Your ad server"]
-  subgraph tv["On the TV: react-native-vega-ads"]
-    core["core: schedule, pods, no repeats, loudness, categories, IAB tracking"]
-    vega["vega: two w3cmedia players, overlay, media controls, VoiceView"]
-    core --> vega
-  end
-  server -- "VMAP and VAST" --> core
-  core -- "tracking pixels, VAST errors" --> server
-  vega --> viewer["Viewer: remote, Alexa, screen"]
-```
-
-`react-native-vega-ads` reads VAST 4 and VMAP 1, plays pre-, mid- and post-rolls on native w3cmedia players, switches between content and ads without a black frame, and sends IAB tracking events. It is for Vega app developers who have their own ad server and need video ads without a vendor SDK. It is open source under Apache-2.0.
-
-## For reviewers: five minutes
-
-| If you have | Look at |
-|---|---|
-| 1 minute | The three screenshots above, then [Measured on a real device](#measured-on-a-real-device): every number comes from a Fire TV Stick 4K Select, not the simulator. |
-| 2 minutes | [The break watches the movie first](#the-break-watches-the-movie-first): where breaks go, what the vision model reports, and the blind-labelled eval with its weak spots ([`tools/make-vmap/eval`](tools/make-vmap/eval/README.md)). |
-| 3 minutes | [Quick start](#quick-start): one component, `<VegaAdsPlayer source ads />`; then [Customise any part](#customise-any-part) for your own player, overlay and styles. |
-| 5 minutes, a terminal | `npm ci && npm run check` runs lint, types and the unit tests of the packages and tools (the demo app's 22 tests: see [Development](#development)). [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md) has each device run with its result, failures included; [`docs/friction-log.md`](docs/friction-log.md) has 26 platform issues with steps and suggestions. |
-| No ad server | [On AWS](#on-aws): one script puts the movies, ads, VAST, VMAP and captions on S3 + CloudFront and counts the pixels with Lambda and DynamoDB. |
-
-> Status: early. The API can still change. The packages are not on npm yet. Tested on one device (see below).
-
-## Why
-
-Vega apps have no ready, open way to play VAST/VMAP ads:
-
-- **No client-side IMA SDK on Vega.** Amazon's [supported libraries](https://developer.amazon.com/docs/vega-api/0.24/supported-libraries.html) list Google IMA DAI, Yospace, FreeWheel and TrueX: server-side insertion or partner services, mostly on request. There is no client-side VAST/VMAP SDK. Amazon's CSAI guide shows how to switch between two `VideoPlayer` instances. Ad requests, VAST/VMAP, tracking, pods, skip and error handling are left to each app ("App-specific logic"). See [Client-side ad insertion overview](https://developer.amazon.com/docs/vega/0.24/client-side-ad-insertion-overview-vega.html).
-- **Player vendors do not cover it.** The Bitmovin Vega sample states: "No client-side ad support, due to the lack of video element reusability on Vega OS" ([sample README](https://github.com/bitmovin/bitmovin-player-web-sample-fire-tv-vega)).
-- **The options that exist are closed.** FreeWheel's Vega AdManager is a beta for FreeWheel customers only ([forum t/5679](https://community.amazondeveloper.com/t/5679)). Logituit Logix Ads Manager runs the IMA HTML5 SDK inside a WebView, VOD only ([forum t/7536](https://community.amazondeveloper.com/t/7536)). Dolby OptiView for Vega uses the same Logix IMA integration, and its sample notes: "Skippable ads are not supported" ([OptiView Vega sample, ads.md](https://github.com/THEOplayer/react-native-optiview-vega-sample/blob/main/doc/ads.md)).
-- **Developers ask for it.** "Dealing with ads these days usually means working with VAST XML data" ([forum t/20419](https://community.amazondeveloper.com/t/20419), 25.09.2025).
-
-### The break watches the movie first
-
-`tools/make-vmap` places the breaks before the ads are ever requested, on your computer, with no cloud, no cost and no viewer data:
-
-1. **Where:** ffmpeg finds shot changes and silent black frames; whisper.cpp finds speech. A break never lands inside a line of dialogue or within 1 s of it. On Tears of Steel and Sintel, a break every 5 minutes cuts a line 24–32 % of the time and lands mid-shot 83–86 % of the time; make-vmap's 4 breaks there do neither ([table](tools/make-vmap/eval/README.md#timer-breaks-against-make-vmap)).
-2. **What comes after:** a local vision model (Qwen3.6-35B-A3B through llama.cpp) looks at three frames and the last minute of dialogue before each break and reports what it clearly sees: weapons, violence, injury, death, grief, vehicle crash, drinking, child in danger, each with its evidence. Fixed rules turn them into IAB ad categories to leave out after that scene, for example no car ads right after a car crash. The player enforces them (VAST error 205).
-3. **How well:** the author labelled 24 breaks blind, before seeing any model answer. The model finds most sensitive breaks (10 of 13 on the set we chose it on, 4 of 5 on a film we kept aside) but it also leaves out categories after calm scenes: after 3 of 4 calm breaks on the set we chose it on, 0 of 2 on the film kept aside. Method and every number: [`tools/make-vmap/eval`](tools/make-vmap/eval/README.md).
-4. **Why not on the TV:** the model runs once per film, before the film is published. A 1 GB stick cannot run a 35B vision model, and the viewer's data never reaches it. Its output is plain VMAP that any ad server reads. The viewer still sees its work three times: the break map with the scene signals on the movie page before Play, breaks that wait for the line to end, and the line under the ad that says why an ad was left out.
-
-### Options on Vega today
-
-| | react-native-vega-ads | Logix Ads Manager | Dolby OptiView Vega | FreeWheel AdManager |
-|---|---|---|---|---|
-| How ads are played | native w3cmedia players | IMA HTML5 SDK in a WebView | through the Logix IMA integration | FreeWheel SDK (beta) |
-| Your own VAST/VMAP server | yes | through Google Ad Manager | through Google Ad Manager | FreeWheel ad server |
-| Skippable ads | yes, Skip with D-pad focus | not supported in the integration the OptiView sample uses | "not supported" in the sample | not stated |
-| Remote and Alexa during ads | yes (media controls) | upstream 0.3.0: the hidden ad WebView can keep remote focus after the break ([Dolby's patch notes](https://github.com/THEOplayer/react-native-optiview-vega-sample/blob/main/lib/LOGIX_AD_MANAGER_PATCH.md)) | yes, with Dolby's patched Logix build (React Native 0.83) | not stated |
-| Licence and access | Apache-2.0, open | commercial | commercial | beta, FreeWheel customers |
-
-Sources are in the list above. "Not stated" means the public pages do not say. If you need Google Ad Manager features (programmatic demand, Open Measurement), an IMA-based option fits better; `react-native-vega-ads` fits when you serve your own VAST/VMAP.
-
-### Coming from react-native-video?
-
-On iOS and Android, `react-native-video` plays IMA ads. On Vega there is no official port. The community port [react-native-video-vega](https://github.com/TheWidlarzGroup/react-native-video-vega) (MIT) plays a URL and keeps the ad prop types, but has no ad playback. Amazon's [multi-TV sample](https://github.com/AmazonAppDev/react-native-multi-tv-app-sample) uses separate `.vega.tsx` player files on w3cmedia. `react-native-vega-ads` adds VAST/VMAP ads to that w3cmedia player: keep your `adTagUrl` (a VMAP tag) and pass it as `source: { vmapUrl }`.
+> Tested on a Fire TV Stick 4K Select (Vega OS 2.0). The API can change before 1.0.
 
 ## Features
 
-- VMAP 1, or your own list of VAST tags with times (`start`, seconds, `end`).
-- VAST 4 InLine and Wrapper (up to 5 levels), ad pods, skippable ads.
-- Two ad players: the next ad is prebuffered while the current one plays.
-- No black frame on content → ad → content. The content resumes at the same position.
-- No repeats, on by default: a creative is not shown again within 30 minutes, and a break has one copy of each creative and one ad per advertiser. The same creative is found by its Universal Ad ID or by its media file URLs, also when it comes from another ad source under another ad id. A dropped ad sends its `notUsed` pixels (VAST 4.1), so the ad server can use it elsewhere. Without more setup the rules hold for one piece of content. With `avoidRepeats.memory` (one AsyncStorage key, for example) they hold for the household across titles and app launches. Only creative ids, media URLs and times are stored, on the device; no viewer ID is needed.
-- Pause ads (IAB CTV Ad Portfolio): when the viewer pauses the content (remote or "Alexa, pause"), a still image from a VAST `<NonLinear>` shows beside the picture after 1.5 s, without sound, and goes away when the content plays or the viewer presses Back. Never when a break pauses the content. A QR code comes from the IAB `tl_qrcode` extension. Tracking: impression, `creativeView`, `overlayViewDuration`, `close`. Tested on a Fire TV Stick: all four pixels arrive, Back closes the ad and the app stays on the player. `pauseAdStyle` keeps it clear of your controls, for example `{ top: 100, bottom: 220 }`.
-- Break context: a break can block ad categories, for example cars right after a car crash. The list comes from the VMAP (`<vmap:Extension type="vega-ads:context"><BlockedAdCategories>1551 1571</BlockedAdCategories>`, IAB Ad Product Taxonomy codes, written by `make-vmap`) or with a break given by hand (`blockedAdCategories`). An ad whose VAST `<Category>` is blocked is left out with VAST error 205, the code VAST 4.1 gives a category that a wrapper's `BlockedAdCategories` does not allow; the app hears `skipped:category`.
-- Never louder than the movie: with `contentLoudness` (the content's integrated loudness in LUFS, EBU R128), an ad that is louder is turned down to it through the player volume, never up. VAST 4.x has no loudness field, so the ad's own loudness comes in a creative extension, `<CreativeExtension type="loudness"><IntegratedLoudness unit="LUFS">-16.0</IntegratedLoudness></CreativeExtension>`; `make-vmap`'s `buildVast` writes it. Event `loudness:<dB>`.
-- Short breaks, if you want them: `maxBreakAds` and `maxBreakSeconds` cap every break on the device (an ad that would end later is not started) and go to the ad server as the VAST 4.2 macros `[BREAKMAXADS]` and `[BREAKMAXDURATION]` (pass them to `preloadVegaAds` too). Ads left out send their `notUsed` pixels.
-- IAB tracking: impression, start, quartiles, complete, pause, resume, skip, error codes. VMAP `breakStart`, `breakEnd` and break `error` pixels, with VMAP 1.0.1 error codes.
-- Macros for the Fire TV advertising ID and the user's tracking choice (`IFA`, `LIMITADTRACKING`). `[ASSETURI]` names the media file that actually plays (vast-client alone puts the first file of the list there).
-- Remote and Alexa play/pause during ads. Seek, skip and speed commands are blocked during an ad.
-- 10-foot overlay: "Ad 1 of 3 · 0:12", a Skip button with D-pad focus, VoiceView announcements: each ad with its length and when Skip comes ("Ad 1 of 2, 15 seconds, you can skip in 5 seconds"), then "You can skip the ad now" when it does.
-- Captions in ads: a VAST 4.1 `<ClosedCaptionFiles>` WebVTT file is fetched while the ad buffers, in the viewer's language (`captionLanguage`, else the first WebVTT file), and `ui.caption` has the line for the current ad time. `adCaptions` shows it at the bottom of the built-in overlay; pass the viewer's Closed Captions setting to it (on Vega, `isClosedCaptioningEnabled()` of `@amazon-devices/kepler-a11y-settings-interface-turbo`). A caption file that fails or comes late never holds the ad and sends no VAST error.
-- Back during an ad goes to your app, as in the movie, so an ad without Skip cannot be skipped with Back. If you want Back to end the break and go on with the movie, set `backDuringAd: 'content'`. Back on a pause ad closes it.
-- Home during an ad releases the ad players, as Amazon requires for apps in the background. On return the content continues; the interrupted break is not shown again.
-- Errors and timeouts never stop playback: the content continues. An ad whose player is not ready in 8 s is skipped with VAST error 402. An ad that shows no frame in 5 s, buffers for 10 s, or stops with no media event for 30 s is skipped with VAST error 405. The long silent timeout covers Alexa requests: Fire TV stops the picture without an event while the viewer talks.
-- Pure-JS XML parsing (`@xmldom/xmldom`). You can pass your own parser.
+- Pre-, mid- and post-rolls from a VMAP, or from your own list of VAST tags.
+- VAST 4 wrappers, ad pods and skippable ads.
+- No black frame between the movie and the ads. The movie resumes where it stopped.
+- The remote and Alexa pause and play the ads. Skip gets the D-pad focus, and VoiceView reads the ads aloud.
+- IAB tracking: impression, quartiles, pause, skip, VAST error codes and the VMAP break events.
+- No repeats. The same ad does not come back within 30 minutes, and a break has one ad per advertiser.
+- An ad is never louder than the movie.
+- Pause ads, captions in ads, and ad categories left out after sensitive scenes.
+- In preview: tracking for ads that a server stitched into the stream, and Amazon's headless player.
 
-### Measured on a real device
-
-Fire TV Stick 4K Select, Vega OS 2.0, 11–16.10.2026. Details: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
-
-| Check | Result |
-|---|---|
-| Switch content → ad | 56–151 ms, no dark frame on video at ~30 fps |
-| Content resume position | where it paused, within 0.25 s; a seek back only above that (a seek re-buffers) |
-| Mid-roll prefetch | pod of 3 ads ready in 1.6 s, 15 s before the break |
-| Gap between ads in a pod | next ad's first frame 64–85 ms before the previous ad ends |
-| Tracking pixels | impression + 5 events per ad, all HTTP 200 |
-| Memory, 9 breaks × 3 ads in 11 min | PSS peak 91 MB, then flat at 65–68 MB (Amazon KPI: < 400 MiB) |
-| Demo app, a whole film with no key pressed (Tears of Steel and Sintel, 5 ads each), 16.10 | every ad to the end, the player closes by itself; PSS peak 95–116 MB |
-| Remote play/pause and "Alexa, pause/play" | pass during ads and content, with the manifest entries below |
-| Media controls focus switch | 197–217 ms |
-| VAST parse, 34.4 KB, Release build | ~49 ms text → DOM, ~11 ms DOM → model (median of 30) |
-| Cold launch: ad's first frame → impression pixel | 143 ms |
-| Play → pre-roll's first frame, ad server answering in 600 ms per request (10 cold launches each) | median 2.4 s without preload, 1.7 s with `preloadVegaAds` on the title page |
-| Phone video, content → pod of 3 → content | no black frame, no content frame between ads |
-| Full demo run after the last fixes (pre-roll, seek into the mid-roll pod, repeat left out), 16.10 | 3/3 cold launches |
-| Seek over a mid-roll | 4/4: the break plays, then the movie resumes at the seek target |
-| In Amazon's multi-TV sample, Google IMA sample VMAP | pre-, mid- and post-roll with all quartiles; remote pause, Back and Skip |
-| Demo cold launch (30 launches each, `kpi-visualizer --certification`), 16.10 | launch → first frame: P90 1.08 s with the native splash screen, 1.09 s with the final look (mean 0.88 s; Amazon's target: 1.5 s). Before the splash screen: mean 2.39 s, P90 3.35 s; Amazon's empty template: mean 2.07 s on this stick. Fully drawn (poster on screen, `useReportFullyDrawn`): P90 2.49 s, 3.46 s with the final look and its fonts (target: 8 s) |
+More detail: [docs/features.md](docs/features.md).
 
 ## Quick start
 
 ### 1. Install
 
-The packages are not published yet. Build and pack them from this repository:
-
 ```sh
-npm ci
-npm pack ./packages/core ./packages/vega   # builds both packages first
+npm install react-native-vega-ads
 ```
 
-Then, in your app, install the two `.tgz` files: `npm install path/to/react-native-ads-core-0.1.0.tgz path/to/react-native-vega-ads-0.1.0.tgz`. After the npm release this becomes `npm install react-native-vega-ads`.
-
-Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. Your Vega app already has them. The examples below also pass the Fire TV advertising ID: for that, add `@amazon-devices/kepler-adid-retriever` to your app. `react-native-ads-core` has no Vega dependency. `react-native-vega-ads` needs the two Amazon packages at run time; they are marked optional only so that installing works where they are missing, for example in a fresh clone of this repository.
+This also installs `react-native-ads-core`. Your Vega app already has the peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. For the Fire TV advertising ID, add `@amazon-devices/kepler-adid-retriever`.
 
 ### 2. Add entries to `manifest.toml`
 
-These entries are **required**. Without them, remote resume and Alexa do not work during ads (tested on the device).
+Without these entries, the remote and Alexa do not work during ads.
 
 ```toml
 [[components.interactive]]
@@ -171,382 +66,71 @@ attribute_options = []
 features = []
 ```
 
-**Media URLs must be HTTPS.** The w3cmedia player refuses `http://` media with "Invalid or insecure URI scheme" in the system log; the app gets only a generic error. Many ad servers still return `http://` media files, so check your VAST. For a development server, list it in the manifest (an IP address works):
+Ad and movie URLs must be HTTPS. The w3cmedia player refuses `http://` media and gives the app only a generic error. For a development server, add its address to the manifest:
 
 ```toml
 [network-traffic-policy.cleartext]
 allowed-domains = ["192.168.1.20"]
 ```
 
-Keep the usual w3cmedia services (`com.amazon.media.server`, `com.amazon.media.playersession.service` and others) as in any Vega video app. A full example is in [`apps/spike/manifest.toml`](apps/spike/manifest.toml).
+Keep the usual w3cmedia services of a Vega video app. A full manifest: [`apps/spike/manifest.toml`](apps/spike/manifest.toml).
 
-### 3. Play content with ads
-
-One component creates the content player, draws the video surfaces and the ad overlay, and fills the Fire TV advertising ID:
+### 3. Play a movie with ads
 
 ```tsx
 import { AdIdRetriever } from '@amazon-devices/kepler-adid-retriever';
 import { VegaAdsPlayer } from 'react-native-vega-ads';
 
 export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: string; onClose: () => void }) {
-  return <VegaAdsPlayer source={{ uri }} ads={{ vmapUrl }} adId={AdIdRetriever} onEnd={onClose} />;
-}
-```
-
-Remote and Alexa play/pause work through media controls. `onEnd` runs when the content and its post-roll are over. `adId` is optional; without it no ID is sent.
-
-Mid-rolls are marked for your timeline (`ads.timeline.marks`), and "Ad in 5" shows before each one, so a break never comes as a surprise.
-
-Start the ad requests on the title's page, so after Play the pre-roll only has to buffer:
-
-```tsx
-import { preloadVegaAds } from 'react-native-vega-ads';
-
-useEffect(() => preloadVegaAds({ vmapUrl }, { adId: AdIdRetriever }), [vmapUrl]);
-```
-
-The player with the same `ads` uses the answers once, within five minutes; otherwise it asks the ad server itself. Later breaks are requested during playback, as before.
-
-`useAdPlan(ads, options)` preloads the same way and returns what the viewer can know before Play: the number of breaks, the pre-roll (ads, seconds, skip after) and `marks`, where each break is (`start`, `end`, a time or a percent) with the scene signals from the VMAP context. The demo draws its break map from it; `adPlanLabel(plan)` gives one line: "4 ad breaks · first: 1 ad, 10 s".
-
-### Customise any part
-
-Every part of `<VegaAdsPlayer>` can be replaced; the ads keep working. The component is a thin default over the hook: `useVegaAds` gives the ad state (`ads.ui`, `ads.snapshot`, `ads.timeline`, `ads.pauseAd`) and the actions (`skip`, `togglePause`, `back`), and every built-in part reads only these. So you can draw all of the ad UI yourself; the components are optional defaults.
-
-Your own controls over the video (hidden during ads):
-
-```tsx
-<VegaAdsPlayer source={{ uri }} ads={{ vmapUrl }}>
-  {({ player, ads }) => !ads.playing && <MyControls player={player} />}
-</VegaAdsPlayer>
-```
-
-Your own player, for example the `VideoPlayer` that Shaka plays through. Create it as usual (initialized, `autoplay` off, source set); the component uses it and never releases it:
-
-```tsx
-<VegaAdsPlayer player={myVideoPlayer} ads={{ vmapUrl }} />
-```
-
-Your own content surface (the screen already draws one): the component adds only the ad surfaces above it.
-
-```tsx
-<VegaAdsPlayer player={myVideoPlayer} ads={{ vmapUrl }} contentSurface={false}>
-  <MyPlayerScreen />
-</VegaAdsPlayer>
-```
-
-Your fonts and colours on the built-in ad UI, with no own overlay: `adStyles` adds to the defaults of each part (`label`, `why`, `caption`, `skip`, `skipWaiting`, `skipText`, `skipWaitingText`, `countdown`, `pauseAdLabel`, `pauseAdHint`).
-
-```tsx
-<VegaAdsPlayer
-  source={{ uri }}
-  ads={{ vmapUrl }}
-  adStyles={{
-    label: { fontFamily: 'MyBrand-Bold', color: '#ffd166' },
-    skip: { backgroundColor: '#ffd166', borderColor: '#ffd166', right: 96 },
-    skipText: { color: '#111', fontFamily: 'MyBrand-Bold' },
-    skipWaiting: { backgroundColor: 'rgba(0,0,0,0.7)' },
-    skipWaitingText: { color: '#bbb' },
-  }}
-/>
-```
-
-Your own ad overlay, laid out as you like: `renderOverlay={(ads) => <MyAdOverlay ads={ads} />}`. `ads.ui` gives the text parts (`name` "Ad 1 of 3", `timeLeft` "0:12", `why`) and `ads.snapshot` the numbers (`position`, `total`, `adTime`, `adDuration`, `skipIn`). Put `<AdSkipButton ui={ads.ui} onSkip={ads.skip} styles={…} />` in it: the button takes the D-pad focus, ignores presses until Skip is allowed, and during a non-skippable ad holds the focus so the remote does not reach the screen behind the ad. Call `useAdAnnouncements(ads.ui)` in it: VoiceView then announces each ad and the moment Skip opens, as with the built-in overlay.
-
-```tsx
-function MyAdOverlay({ ads }: { ads: VegaAds }) {
-  useAdAnnouncements(ads.ui);
-  if (!ads.ui.visible) return null;
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <Text style={styles.badge}>{ads.ui.name}</Text>
-      <Text style={styles.clock}>{ads.ui.timeLeft}</Text>
-      <AdSkipButton ui={ads.ui} onSkip={ads.skip} styles={{ skip: styles.skip, skipText: styles.skipText }} />
-    </View>
+    <VegaAdsPlayer
+      source={{ uri }}
+      ads={{ vmapUrl }}
+      adId={AdIdRetriever}
+      onEvent={(name, info) => console.log(name, info?.ad?.id)}
+      onEnd={onClose}
+    />
   );
 }
 ```
 
-### Your own player UI, with the hook
+- `onEvent` gets every ad event, such as `impression`, the quartiles, `skip`, `breakStart`, `breakEnd` and `error:<code>`. The second argument tells which break and which ad. All events: [API reference](docs/api.md#events-onevent).
+- `onEnd` runs when the movie and its post-roll are over.
+- `adId` is optional. Without it, no advertising ID is sent.
 
-When your screen has its own controls, use the hook and the components. `useVideoPlayer` creates the content `VideoPlayer` (initialized, `autoplay` off) and releases it when the screen closes:
+Your own controls, ad overlay or player (Shaka, react-native-video v7), and ads loaded on the title page: see the [Guide](docs/guide.md).
 
-```tsx
-import { AdOverlay, DualSurfaceView, useVegaAds, useVideoPlayer } from 'react-native-vega-ads';
+## Packages
 
-export function PlayerScreen({ uri, vmapUrl }: { uri: string; vmapUrl: string }) {
-  const player = useVideoPlayer(uri);
-  const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player });
-
-  return (
-    <>
-      <DualSurfaceView surfaces={ads.surfaces} contentPlayer={player} />
-      {!ads.playing && <YourControls player={player} />}
-      <AdOverlay ui={ads.ui} onSkip={ads.skip} />
-    </>
-  );
-}
-```
-
-The hook starts the content after the pre-roll, or at once if there is none. Hide your controls while `ads.playing` is true.
-
-Without VMAP, pass a list of breaks (`ads={...}` on the component, `source:` in the hook):
-
-```ts
-{ breaks: [{ offset: 'start', vastUrl }, { offset: 600, vastUrl }, { offset: 'end', vastUrl }] }
-```
-
-With a post-roll, wait for `ads.ended` before you leave the screen at the end of the content.
-
-To fill the Fire TV advertising ID macros (`IFA`, `IFATYPE`, `LIMITADTRACKING`):
-
-```ts
-import { useMemo } from 'react';
-import { AdIdRetriever } from '@amazon-devices/kepler-adid-retriever';
-import { adIdMacros, vegaAdIdSource } from 'react-native-vega-ads';
-
-// Read the ID once, not on every render.
-const macros = useMemo(() => adIdMacros(vegaAdIdSource(AdIdRetriever)), []);
-const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player, macros });
-```
-
-When the user opts out of interest-based ads, or the ID service fails, the ID is not sent and `LIMITADTRACKING` is `1`. `<VegaAdsPlayer adId={AdIdRetriever}>` does this for you.
-
-A full integration into Amazon's sample app (Shaka, MP4 and DASH) is in [`examples/vega-video-sample`](examples/vega-video-sample).
-
-### If your screen already renders the content surface
-
-Some apps own their content surface, for example a Shaka player screen. Use `AdSurfaceLayers` instead of `DualSurfaceView`. Place it above your surface, over the same area. It adds only the two ad surfaces.
-
-Mount `AdSurfaceLayers` after your content surface is created, for example once its `onSurfaceViewCreated` has run. On Vega a video surface created later is drawn above the earlier ones, whatever the zIndex. Mounted first, the ads play behind the content surface and the screen stays black.
-
-```tsx
-<View style={{ flex: 1 }}>
-  <YourContentSurface />
-  <AdSurfaceLayers surfaces={ads.surfaces} />
-  <AdOverlay ui={ads.ui} onSkip={ads.skip} />
-</View>
-```
-
-Pass the `VideoPlayer` that Shaka plays through as `contentPlayer`.
-
-### If your app plays with react-native-video v7
-
-`rnvPlayerPort(player)` turns a react-native-video v7 `VideoPlayer` into the content player for the ads, through its public API (no dependency on react-native-video). Your `<VideoView>` shows the content; the component adds the ad surfaces and the overlay:
-
-```tsx
-import { useVideoPlayer, VideoView } from 'react-native-video';
-import { rnvPlayerPort, VegaAdsPlayer } from 'react-native-vega-ads';
-
-const player = useVideoPlayer({ uri }); // do not call play() here: the ads start the content
-const content = useMemo(() => rnvPlayerPort(player), [player]);
-
-<VegaAdsPlayer player={content} ads={{ vmapUrl }} adId={AdIdRetriever}>
-  {({ ads }) => <VideoView player={player} style={StyleSheet.absoluteFill} />}
-</VegaAdsPlayer>
-```
-
-Hide your controls while `ads.playing`: react-native-video reports `readyToPlay` during the pre-roll. react-native-video needs a Vega backend for this; tested on a Fire TV Stick with a prototype backend (pre-roll, pod, seek and events after the breaks).
-
-### If your app has its own remote handler (spatial navigation)
-
-On Vega, the play/pause key reaches both media controls and your JS key handler. Media controls already pause and resume the ad. So ignore `playpause` in your handler while `ads.playing` is true. Otherwise the ad toggles twice.
-
-```ts
-useTVEventHandler((event) => {
-  if (event.eventType === 'playpause' && ads.playing) {
-    return; // media controls handle the ad
-  }
-  // your normal handling
-});
-```
-
-## API reference
-
-### `<VegaAdsPlayer>`
-
-| Prop | Description |
+| Package | What it is |
 |---|---|
-| `source` | `{ uri }` of the content, or `null` to wait. |
-| `ads` | `{ vmapUrl }` or `{ breaks: [{ offset, vastUrl }] }`. `null` plays the content without ads. |
-| `adId` | `AdIdRetriever` from `@amazon-devices/kepler-adid-retriever`. Optional. |
-| `onEnd` | Called when the content and its post-roll are over. |
-| `player` | Your own content `VideoPlayer` instead of `source`, or any `PlayerPort` (for example `rnvPlayerPort(player)`; then your app draws the content). The component never releases it. |
-| `children` | Your UI over the video, or a function `({ player, ads }) => ...`. |
-| `contentSurface` | `false` when your screen draws the content surface itself. Default `true`. |
-| `renderOverlay` | `(ads) => ...` your own ad label and Skip button instead of `AdOverlay`. |
-| `countdown` | "Ad in N" before each mid-roll (`AdCountdown`). Default `true`. |
-| `showWhy` | Show `ui.why` in the built-in overlay: why the break looks as it does ("No Kettlo ad after a scene with injury · Volume matched to the movie"). Default `false`. |
-| `adCaptions` | Show the ad's closed caption (`ui.caption`) at the bottom of the built-in overlay. Pass the viewer's caption setting. Default `false`. |
-| `pauseAdStyle` | Style of the pause ad, to keep it clear of your own controls. |
-| `adStyles` | Your fonts, colours and positions for the parts of the built-in ad UI (`AdStyles`: `label`, `why`, `caption`, `skip`, `skipWaiting`, `skipText`, `skipWaitingText`, `countdown`, `pauseAdLabel`, `pauseAdHint`), on top of the defaults. |
-| `style`, `scalingMode` | Layout and w3cmedia scaling mode (default `'fit'`). |
-| other | Any `useVegaAds` option below (`onEvent`, `strings`, `adPause`, ...). |
+| `react-native-vega-ads` | Install this one. The player component, the `useVegaAds` hook, the ad overlay, the remote and media controls on Vega. |
+| `react-native-ads-core` | Comes with it. VAST and VMAP requests, the break schedule, pods and IAB tracking in plain TypeScript, with no React Native or Vega code. |
 
-### `useVideoPlayer(uri)`
+The core talks to the player through a small `PlayerPort` interface. So it can drive a player on another platform, but we tested it on a device only with Vega. See [Architecture](docs/architecture.md).
 
-Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` off), `null` before that or while `uri` is `null`. Releases it on unmount or when `uri` changes.
+## Docs
 
-### `useVegaAds(options)`
-
-| Option | Description |
-|---|---|
-| `source` | `{ vmapUrl }` or `{ breaks: [{ offset, vastUrl }] }`. `null` waits. |
-| `contentPlayer` | Your initialized content `VideoPlayer` (`autoplay = false`), or any `PlayerPort`. |
-| `macros` | Ad tag macros, for example `adIdMacros(source)` for `IFA` and `LIMITADTRACKING`. |
-| `prefetchSeconds` | How early a break is loaded and buffered. Default 15. |
-| `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |
-| `pauseAdUrl`, `pauseAdDelayMs` | VAST tag of a pause ad (`<NonLinear>` image), and how long the content stays paused before it shows. Default 1500 ms. |
-| `contentLoudness` | The content's integrated loudness in LUFS, for example from `ffmpeg -i movie.mp4 -af ebur128 -f null -`. Ads with a louder `loudness` creative extension are turned down to it. |
-| `captionLanguage` | The viewer's caption language (BCP 47, for example `'en-US'`). Picks the ad's WebVTT file in that language, else its first WebVTT file. |
-| `maxBreakAds`, `maxBreakSeconds` | Caps for every break, also sent as `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. Preloaded pre-roll requests use the macros you pass to `preloadVegaAds`. |
-| `avoidRepeats` | `{ withinMs, memory }`: how long a shown creative is not shown again (default 30 minutes), and where to remember it across titles and launches: `{ read, write }` of one string, for example `{ read: () => AsyncStorage.getItem('vega-ads.seen'), write: (v) => AsyncStorage.setItem('vega-ads.seen', v) }` with `@amazon-devices/react-native-async-storage__async-storage`. At most 500 creatives are kept. `false` turns the no-repeat rules off. |
-| `mediaFile` | Media file choice: `maxHeight`, `targetBitrateKbps`, or your own `select`. |
-| `strings` | Overlay texts. English by default. |
-| `backDuringAd` | What Back does during an ad. `'app'` (default): Back goes to your app, which usually closes the player. `'content'`: the break ends and the movie plays on, without skip or close pixels. |
-| `adPause` | The viewer may pause ads (remote, voice). Default `true`. With `false`, pause and "Alexa, stop" are ignored and play/pause only plays; a system pause (TV off) still pauses. |
-| `mediaControls` | Ad and content players take media controls focus. Default `true`; keep it on Vega. |
-| `contentMediaControlHandler` | Your content media controls handler; restored after each break. |
-| `onEvent` | Called with IAB events and errors, for logs and analytics. |
-
-### Returned object
-
-| Field | Description |
-|---|---|
-| `playing` | `true` while an ad is on screen. |
-| `ended` | `true` after the content ended and the post-roll, if any, is over. |
-| `snapshot` | Current break state: ad position, total, time, skip state. |
-| `ui` | Data for an ad overlay: `label` ("Ad 1 of 3 · 0:12") and its parts `name` and `timeLeft`, `skip`, `why`, `caption`, the VoiceView texts. |
-| `timeline` | `marks`: the mid-rolls (`id`, `time` in seconds, `done`) for your timeline. `nextBreakIn`: whole seconds to the next mid-roll in its last `countdownSeconds`, only once its ads are loaded; otherwise `null`. |
-| `surfaces` | Pass to `DualSurfaceView` or `AdSurfaceLayers`. |
-| `pauseAd` | The pause ad to draw with `<PauseAd view={ads.pauseAd} />`, or `null`. Back closes it. |
-| `closePauseAd()` | Close the pause ad from your own UI. Returns `false` if none is shown. |
-| `skip()` | Skip the ad. Returns `false` if skip is not allowed yet. |
-| `togglePause()` | Pause or play the ad from your own on-screen button. Not for the remote key. |
-| `back()` | Leave the break and return to the content. |
-
-### `preloadVegaAds(ads, options)`
-
-Requests the VMAP (or the manual schedule) and the pre-roll VAST before the player exists. `options`: `adId`, `macros`, `maxBreakAds` and `maxBreakSeconds`, the same as the player's. The next `VegaAdsPlayer` or `useVegaAds` with an equal `ads` object uses the answers once, if they are at most five minutes old; a failed early request is made again. Up to four titles wait at a time. In core, `preloadAds(schedule, { http, clock, macros, maxBreakAds, maxBreakSeconds })` returns the same data for `AdManager.start(schedule, { preloaded })`.
-
-### Events (`onEvent`)
-
-| Event | When | react-native-video `AdEvent` |
-|---|---|---|
-| `impression` | the ad's first frame is on screen | `IMPRESSION` |
-| `start`, `firstQuartile`, `midpoint`, `thirdQuartile`, `complete` | IAB progress of the ad | `STARTED`, `FIRST_QUARTILE`, `MIDPOINT`, `THIRD_QUARTILE`, `COMPLETED` |
-| `pause`, `resume` | the viewer paused or resumed the ad | `PAUSED`, `RESUMED` |
-| `skip` | the viewer pressed Skip | `SKIPPED` |
-| `loudness:<dB>` | an ad was turned down by that many dB (negative) to the content's loudness | – |
-| `skipped:repeat`, `skipped:advertiser`, `skipped:category`, `skipped:budget` | an ad was left out of a break: the viewer saw it, the break already has it or its advertiser, the break blocks its category, or it does not fit `maxBreakAds` / `maxBreakSeconds` | – |
-| `notUsed` | the `notUsed` pixels of that ad were sent | – |
-| `pauseAd:impression`, `pauseAd:creativeView`, `pauseAd:overlayViewDuration`, `pauseAd:close` | the pause ad showed, left the screen, or the viewer closed it | – |
-| `error:<code>` | an ad failed; `<code>` is the VAST error code (for example 400, 403, 405) | `ERROR` |
-| `breakStart` | a break starts: the content pauses for it, before its first ad event | `CONTENT_PAUSE_REQUESTED`, `AD_BREAK_STARTED` |
-| `breakEnd` | the break is over and the content resumes | `AD_BREAK_ENDED`, `CONTENT_RESUME_REQUESTED` |
-| `content:ended` | the content and the post-roll, if any, are over | `ALL_ADS_COMPLETED` (after the post-roll) |
-| `vmap:error:<code>` | the VMAP request failed (VMAP error code) | – |
-| `break:<id>:late` | in playback, a break was not ready in time and was skipped (after a seek over it the content waits for its ads instead) | – |
-| `break:<id>:empty` | the break had no ad to play: an empty ad response, a failed request, or every ad left out or failing; the content goes on | – (the IMA SDK reports an empty VAST as an `AdError` with code 1009) |
-| `break:<id>:interrupted` | the app went to the background (Home) during a break or while it loaded; it is not shown again | – |
-| `break:<id>:superseded` | a later seek started another break while this one still loaded; only the last break plays, and this one's ad player is released | – |
-| `standby:unavailable`, `standby:error` | the second ad player could not start; one player is used | – |
-| `error:start` | the ad schedule could not be started; the content plays without ads | – |
-
-### Components
-
-| Component | Props |
-|---|---|
-| `DualSurfaceView` | `surfaces`, `contentPlayer?`, `onContentSurfaceCreated?`, `onContentSurfaceDestroyed?`, `scalingMode?` (default `'fit'`), `style?` |
-| `AdSurfaceLayers` | `surfaces`, `scalingMode?` (default `'fit'`), `style?` |
-| `AdOverlay` | `ui`, `onSkip`, `showWhy?`, `captions?`, `style?`, `styles?` (`AdStyles`) |
-| `AdSkipButton` | `ui`, `onSkip`, `styles?`. Skip for your own overlay: takes the D-pad focus, ignores presses until Skip is allowed; during a non-skippable ad holds the focus. |
-| `AdCountdown` | `nextBreakIn`, `strings?`, `style?`, `styles?`. Takes no D-pad focus; announces the break once for VoiceView. |
-| `PauseAd` | `view` (`ads.pauseAd`), `strings?`, `style?`, `styles?`. The image beside the paused picture (up to 600 px high), "Ad", the QR code if any, "Back closes the ad". Takes no D-pad focus; announced once for VoiceView. `VegaAdsPlayer` draws it for you. |
-
-## Architecture
-
-Two packages, each for its own user:
-
-| Package | What it does | Who installs it |
-|---|---|---|
-| `react-native-vega-ads` | Vega integration: `useVegaAds`, surfaces, overlay, media controls, `W3cPlayerAdapter` | Vega apps with ads (this is the one to install) |
-| `react-native-ads-core` | VAST/VMAP requests, media file choice, IAB tracking, break schedule, pods, session state. No player code | installed with `react-native-vega-ads`; on its own when you need only VAST/VMAP and tracking |
-
-`core` never imports a player SDK, `fetch` or timers. It talks to the platform through ports: `PlayerPort`, `HttpPort` and `ClockPort`.
-
-Only the Vega adapter (`W3cPlayerAdapter`, w3cmedia) exists today, and only it is tested on a device. The core tests run against a fake player that follows w3cmedia's behaviour as measured on the stick. To try another player or platform, implement `PlayerPort`:
-
-```ts
-interface PlayerPort {
-  initialize(): Promise<void>;
-  attachSurface(handle: string): void;
-  detachSurface(handle: string): void;
-  setAutoplay(autoplay: boolean): void;
-  setSrc(url: string): void;
-  setMuted(muted: boolean): void;
-  setVolume?(volume: number): void; // 0..1; optional, needed for contentLoudness
-  play(): Promise<void>;
-  pause(): void;
-  getCurrentTime(): number; // seconds
-  setCurrentTime(seconds: number): void;
-  getDuration(): number;
-  takeMediaControlFocus(): Promise<void>;
-  on(event: 'canplay' | 'playing' | 'pause' | 'waiting' | 'timeupdate' | 'ended' | 'error', listener: () => void): () => void; // 'waiting': a buffering ad gets 10 s, a silent stall 30 s
-  deinitialize(): Promise<void>;
-}
-```
-
-Then pass your adapter as `contentPlayer`, or use `AdManager` from `react-native-ads-core` directly. `W3cPlayerAdapter` is the reference implementation.
-
-## Compatibility
-
-| Vega SDK | React Native | Status |
-|---|---|---|
-| 0.23 | 0.72 | Verified on Fire TV Stick 4K Select, Vega OS 2.0 (`apps/spike`) |
-| 0.24 | 0.72 | Verified on the same device (`apps/demo`, built with SDK 0.24.12112) |
-| 0.24 | 0.83 | Verified on the same device in Amazon's vega-video-sample with Shaka (`examples/vega-video-sample`) |
-
-The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read on 11.10.2026). The Vega Virtual Device of SDK 0.24 runs Vega OS 1.2.
+- [Guide](docs/guide.md): preload the ads, your own UI, player and surfaces, react-native-video v7, your own remote handler.
+- [API reference](docs/api.md): props, hook options, the returned object, events, components.
+- [Features](docs/features.md), [measured on a real device](docs/device-results.md), [known limitations](docs/limitations.md).
+- [Why this library](docs/why.md): what else plays ads on Vega today.
+- [How the breaks are placed](docs/how-breaks-are-placed.md), with the blind-labelled eval of the vision model.
+- [The ad backend on AWS](docs/aws.md): S3, CloudFront, Lambda and DynamoDB from one script.
+- [Amazon requirements](docs/amazon-requirements.md) and [our requirements](docs/requirements.md).
+- [Friction log](docs/friction-log.md): the project has 26 platform issues with steps and suggestions.
 
 ## Tools
 
-- [`tools/demo-ads`](tools/demo-ads) draws five demo ad creatives (invented brands, no third-party footage) and serves them with VAST, VMAP and a pixel log on the local network.
-- [`tools/pixel-collector`](tools/pixel-collector) collects tracking pixels on AWS Lambda and DynamoDB.
-- [`tools/make-vmap`](tools/make-vmap) finds mid-roll points in a video and writes a VMAP file for `react-native-vega-ads`: with Amazon Rekognition (shot cuts, black frames, credits), or on your computer with ffmpeg (shot cuts, silent black frames) and, optionally, whisper.cpp, so no break cuts a line of dialogue.
-- [`tools/vast-samples`](tools/vast-samples) runs every IAB Tech Lab VAST sample through the core: 46 of 46 linear H.264 samples and 7 of 7 live wrappers play (VAST 2.0–4.2). Google's public Ad Manager sample tags play too: VAST, wrapper, skippable, VMAP with a pod.
-- [`apps/demo`](apps/demo) is a small Vega app on `<VegaAdsPlayer>`: a movie page that preloads the ads, and a player with break marks, "Ad in 5", Skip and Back.
-
-## On AWS
-
-No ad server yet? The demo's whole ad backend runs on AWS from one script, and the library
-needs nothing AWS-specific: it reads the VAST and VMAP files from any HTTPS host.
-
-```
-make-vmap ──(Rekognition: shot cuts, black frames, end credits)──► VMAP with break times
-                                                                       │
-deploy-aws.sh ──► S3 (movies, ad creatives, VAST, VMAP, WebVTT) ──► CloudFront (HTTPS) ──► Fire TV app
-                                                                                             │
-                  DynamoDB ◄── Lambda function URL ◄────── IAB tracking pixels ◄─────────────┘
-                     └──► /report: impressions, quartiles, completion, ads left out, errors
-```
-
-1. [`tools/make-vmap`](tools/make-vmap) `--bucket B --key movie.mp4` sends the movie in S3 to Amazon Rekognition segment detection and places mid-rolls on shot cuts and black frames, never in the end credits. `--local` does the same on your computer with ffmpeg, to compare.
-2. `tools/demo-ads/deploy-aws.sh MEDIA_DIR` deploys [`tools/pixel-collector`](tools/pixel-collector) with AWS SAM (S3 + CloudFront with origin access control + Lambda function URL + DynamoDB on demand), uploads the media, and writes VAST, VMAP and WebVTT files that point to CloudFront and to the pixel collector.
-3. The app needs only the CloudFront URL. HTTPS media needs no cleartext entry in `manifest.toml`.
-4. `<pixel url>report` shows the day's counts per ad.
-
-The template has no keys or account IDs; `sam delete` removes it all.
-
-Checked on 18.10.2026 in eu-north-1 (`AWS_REGION` picks the region, default eu-west-1): one run
-deployed the stack and 960 MB of media in about 10 minutes. Then 3 of 3 runs on a Fire TV Stick
-4K Select played the movie and every ad from CloudFront, and the report counted every pixel:
-pre-roll, a two-ad mid-roll pod, the repeated ad left out. The Rekognition mode of `make-vmap`
-is unit-tested but has not run on AWS yet.
+- [`apps/demo`](apps/demo): a small Vega app on `<VegaAdsPlayer>`, with a movie page and a player.
+- [`tools/make-vmap`](tools/make-vmap): finds the break points in a movie and writes the VMAP.
+- [`tools/demo-ads`](tools/demo-ads): demo ad creatives, VAST, VMAP and a pixel log on your network.
+- [`tools/pixel-collector`](tools/pixel-collector): counts the tracking pixels on AWS Lambda and DynamoDB.
+- [`tools/vast-samples`](tools/vast-samples): every IAB Tech Lab VAST sample through the core.
 
 ## Development
 
-You need Node.js 22 and npm 10 (as in CI). For the demo app: the Vega SDK (we use 0.24.12112), and for its media: curl, shasum, unzip, ffmpeg with libx264 and AAC, and Python 3.
+You need Node.js 22 and npm 10. The demo app also needs the Vega SDK.
 
 ```sh
 npm ci
@@ -555,59 +139,21 @@ npm run check   # lint, types and the tests of the packages and tools
 cd apps/demo && npm ci && cp src/media.example.ts src/media.local.ts && npm run use-core && npm test
 ```
 
-## Requirements
-
-The rules the library was built against, R1–R28, with where each one is in the code: [`docs/requirements.md`](docs/requirements.md). Two are not built: a separate lost-audio-focus handler (R22) and a debug panel (R27).
-
-## Amazon requirements
-
-How the library meets the Appstore advertising policy, the Advertising ID policy and the Fire TV / Vega test criteria (ad fraud, audio focus, Home, Back, Alexa during ads, opt-out): [`docs/amazon-requirements.md`](docs/amazon-requirements.md).
-
-## Known limitations
-
-- **DRM.** The first Vega devices support only one secure video decoder ([media player requirements](https://developer.amazon.com/docs/vega/0.24/media-player-requirements.html)). If both content and ads are DRM-protected, the second player cannot decode at the same time. Use clear (non-DRM) ad creatives.
-- **1 GB devices.** All current Vega sticks have 1 GB RAM. `react-native-vega-ads` uses two ad players. Amazon's guide recommends one ad player on devices with limited memory or decoders. If the second ad player cannot start or fails, `react-native-vega-ads` continues with one ad player; the gap between ads in a pod is then longer. Test on your target devices.
-- **Amazon Publisher Services (APS).** Amazon's [advertising policy](https://developer.amazon.com/docs/policy-center/amazon-appstore-advertising.html) can require large ad-supported Fire TV apps to give 30% of ad impressions to APS. `react-native-vega-ads` does not integrate APS. Check if the rule applies to your app.
-- **Seek back before a prefetched break.** The break's ads stay loaded in their ad player until the viewer reaches the break again; the ad player is released only when the break plays or is passed.
-- **HTTPS media only**, unless the host is in the manifest's cleartext list (see Quick start).
-- **No VPAID or SIMID.** Interactive ads are not supported.
-- **NonLinear: pause ads only** (a static image). No overlay or squeezeback during playback, no Companion ads.
-- **No SSAI in 0.1.0.** `react-native-vega-ads` is client-side only. The break times from `make-vmap` are plain VMAP, so a server-side service that reads VMAP for on-demand video can use them too. For example, AWS Elemental MediaTailor places breaks at the VMAP time offsets when the content manifest has no ad markers ([ad stitching behavior for VOD](https://docs.aws.amazon.com/mediatailor/latest/ug/ad-behavior.html#no-markers)). We have not tested this. The `vega-ads:context` extension (blocked ad categories) is ours, and other services ignore it; pass the categories in the ad tag URL instead (`custParams` in `buildVmap`). A tracking-only mode for such stitched streams (`useStitchedAds`) and Amazon's headless player approach are in preview on branch [`feat/0.2`](https://github.com/kalenkou/vega-ads/tree/feat/0.2), checked on the stick, not on npm yet.
-- **XML.** Vega has no `DOMParser`, and native XML modules are not available. The library parses with pure JS (`@xmldom/xmldom`); `installDOMParser()` from `react-native-ads-core` adds a global `DOMParser` for other libraries. Pure-JS parsers such as `fast-xml-parser` also run on Vega. A 34.4 KB VAST takes about 60 ms on the JS thread. Ads load before the break, so the viewer does not wait. You can pass your own parser.
-
-## Friction log
-
-While building `react-native-vega-ads`, I logged platform issues with steps, expected and actual results, and suggestions. Full log: [`docs/friction-log.md`](docs/friction-log.md). Main points:
-
-- A Google sample video URL used in many player samples returns HTTP 403. The JS error has code 4 and an empty message; the cause is only in the system log.
-- The system log drops app `console.log` lines above 300 lines per second. Media pipeline logs use most of that budget.
-- Media controls with two players need both the manifest entry and `setMediaControlFocus`. With one step missing, nothing works and nothing is logged. The CSAI guide does not mention media controls.
-- The media control docs sample uses a deprecated API (`useComponentInstance`).
-- A video surface turns empty after `ended`, so content shows through between two ads for ~0.5 s. `react-native-vega-ads` starts the next ad ~500 ms early to hide this.
-- The play/pause key reaches both media controls and JS key handlers. Apps with their own remote handler toggle twice.
-- Without the media controls entries, a legacy player session still pauses a playing player on play/pause, and undoes an app's own resume.
-- The w3cmedia player refuses `http://` media; the manifest's cleartext list fixes it, but it is documented only for WebView.
-- On a cold launch, `setMediaControlFocus` blocks the JS thread for 1–2 s. Called right after `play()`, it delayed the impression; `react-native-vega-ads` now takes media controls focus after the first frame.
-- "Alexa, next" and "Alexa, skip" never reach the app during an ad, so voice Skip cannot be offered.
-- During an Alexa request the video stops with no media event; an app cannot tell it from a stalled stream.
-- The video sample's DRM title never asks for the hardware-secure path: it compares a boolean with the string `'true'`.
-- The Vega Virtual Device docs list other media keys than the SDK's keyboard mapping.
-- Video surfaces are stacked in the order they are created, not by zIndex. Ad surfaces created before the content surface play hidden behind it, with no warning.
-- There is no table of Alexa phrases to media controls commands for Vega.
-- With the TV off, the screenshot tool hangs or writes an empty file, without an error.
-- Amazon's automated device testing does not take Vega packages.
-- A default release build fails `vpt validate`: its build number is 0.
-- The media controls manifest check gave different answers for the same manifest (9 times true, 4 times false).
+The demo app's 22 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
 
 ## Credits
 
-Device tests and the demo use *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Soundtrack (C) Joram Letwory – www.tearsofsteel.org, CC BY-ND 3.0. The demo's second title is *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0. The eval also uses *Big Buck Bunny*, (CC) Blender Foundation | [www.bigbuckbunny.org](https://www.bigbuckbunny.org), CC BY 3.0. The demo ads use the Inter font (SIL Open Font License).
+Films:
 
-`make-vmap` runs [ffmpeg](https://ffmpeg.org) (LGPL/GPL, called as a program), [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (MIT) with its `ggml-base.en` model (MIT) and [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) with [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (Apache-2.0). None of them is in this repository or in the npm packages; you install them yourself. The packages depend on [@dailymotion/vast-client](https://github.com/dailymotion/vast-client-js), [@dailymotion/vmap](https://github.com/dailymotion/vmap-js) and [@xmldom/xmldom](https://github.com/xmldom/xmldom), all MIT. The demo app ships the [IBM Plex](https://github.com/IBM/plex) fonts (SIL Open Font License 1.1, unchanged TTF files from IBM's releases, licence in `apps/demo/assets/fonts`).
+- *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Soundtrack (C) Joram Letwory, www.tearsofsteel.org, CC BY-ND 3.0.
+- *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0.
+- *Big Buck Bunny* (eval only), (CC) Blender Foundation | [www.bigbuckbunny.org](https://www.bigbuckbunny.org), CC BY 3.0.
 
-## Security
+Fonts: the demo ads use Inter, and the demo app ships [IBM Plex](https://github.com/IBM/plex). Both are under the SIL Open Font License 1.1. The IBM Plex TTF files are unchanged from IBM's releases, with the licence in `apps/demo/assets/fonts`.
 
-Report vulnerabilities privately, see [SECURITY.md](SECURITY.md). `npm audit --omit=dev` (what the packages install) runs in CI.
+The packages depend on [@dailymotion/vast-client](https://github.com/dailymotion/vast-client-js), [@dailymotion/vmap](https://github.com/dailymotion/vmap-js) and [@xmldom/xmldom](https://github.com/xmldom/xmldom), all MIT.
+
+`make-vmap` runs [ffmpeg](https://ffmpeg.org) (LGPL/GPL, called as a program), [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (MIT) with its `ggml-base.en` model (MIT), and [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) with [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (Apache-2.0). They are not in this repository or in the npm packages. You install them yourself.
 
 ## License
 

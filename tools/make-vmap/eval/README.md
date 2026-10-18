@@ -7,7 +7,7 @@ How well does the vision model describe the scene before an ad break? This folde
 `breaks.json` has 24 mid-roll points from three open films. make-vmap chose them with `--local --speech-model ggml-base.en.bin --min-gap 50 --first-break-after 40`, so the set has more breaks than a real schedule would.
 
 - Tears of Steel (9) and Sintel (8): the set we choose the model and the prompt on.
-- Big Buck Bunny (7): held out. It is not used for any choice; it is run once with the final model and prompt.
+- Big Buck Bunny (7): held out. It is not used for any choice. It is run once with the final model and prompt.
 
 ## Labels
 
@@ -32,7 +32,7 @@ node eval/run.mjs --media DIR --labels eval/labels.json \
   --answers-out answers.json
 ```
 
-`DIR` holds `tears_of_steel_720p.mp4`, `sintel_720p.mp4` and `big_buck_bunny_720p.mp4`. The first two come from `tools/demo-ads/get_media.sh`. Big Buck Bunny (Sunflower version, 634.6 s, 30 fps), (CC) Blender Foundation | [www.bigbuckbunny.org](https://www.bigbuckbunny.org), CC BY 3.0, comes from `https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_30fps_normal.mp4.zip`, scaled to 720p with stereo sound: `ffmpeg -i bbb_sunflower_1080p_30fps_normal.mp4 -vf scale=1280:-2 -c:v libx264 -c:a aac -ac 2 big_buck_bunny_720p.mp4`. The model files: see [make-vmap](../README.md). The script needs `ffmpeg`, `whisper-cli` and a running `llama-server` (or `llama-mtmd-cli` with `--context-model` and `--context-mmproj`). It prints a Markdown table to standard output; `--answers-out` saves the model's answers and `--answers-in` compares saved answers with the labels again without a model. `--frames`, `--frame-width` and `--plain-prompt` repeat the variants below. Everything runs on this computer, with no cloud and no cost: on an Apple M5 Pro a model takes about a minute for 17 breaks, transcription included.
+`DIR` holds `tears_of_steel_720p.mp4`, `sintel_720p.mp4` and `big_buck_bunny_720p.mp4`. The first two come from `tools/demo-ads/get_media.sh`. Big Buck Bunny (Sunflower version, 634.6 s, 30 fps), (CC) Blender Foundation | [www.bigbuckbunny.org](https://www.bigbuckbunny.org), CC BY 3.0, comes from `https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_30fps_normal.mp4.zip`, scaled to 720p with stereo sound: `ffmpeg -i bbb_sunflower_1080p_30fps_normal.mp4 -vf scale=1280:-2 -c:v libx264 -c:a aac -ac 2 big_buck_bunny_720p.mp4`. The model files: see [make-vmap](../README.md). The script needs `ffmpeg`, `whisper-cli` and a running `llama-server` (or `llama-mtmd-cli` with `--context-model` and `--context-mmproj`). It prints a Markdown table to standard output. `--answers-out` saves the model's answers and `--answers-in` compares saved answers with the labels again without a model. `--frames`, `--frame-width` and `--plain-prompt` repeat the variants below. Everything runs on this computer, with no cloud and no cost: on an Apple M5 Pro a model takes about a minute for 17 breaks, transcription included.
 
 ## Result
 
@@ -59,7 +59,7 @@ Same prompt and frames (3 frames, 640 px), greedy decoding, answer bound to the 
 | 5 frames, 1280 px | 0.32 | 0.32 | 0.32 | 13/17 | 2 | 2 |
 | **3 frames, 640 px, the prompt says what counts as each signal** | **0.56** | **0.47** | **0.51** | 11/17 | 3 | 3 |
 
-Chosen by signal F1, because each signal decides which ad categories are blocked: Qwen3.6-35B-A3B, 3 frames, and the signal definitions in the prompt (`SIGNAL_DEFINITIONS`, the same words the labelling page shows). This is now the default; `--plain-prompt` gives the old prompt.
+Chosen by signal F1, because each signal decides which ad categories are blocked: Qwen3.6-35B-A3B, 3 frames, and the signal definitions in the prompt (`SIGNAL_DEFINITIONS`, the same words the labelling page shows). This is now the default. `--plain-prompt` gives the old prompt.
 
 ### 3. Held-out film, run once with the chosen model and prompt (Big Buck Bunny, 7 breaks)
 
@@ -90,7 +90,7 @@ The choice holds without the unsure labels.
 
 ### What this means
 
-- The chosen setting finds most sensitive breaks (10 of 13 on the selection set, 4 of 5 on the held-out film); the older model found 3 of 13.
+- The chosen setting finds most sensitive breaks (10 of 13 on the selection set, 4 of 5 on the held-out film). The older model found 3 of 13.
 - It still names the wrong signal often, and on the selection set it blocked 3 of the 4 calm breaks. A blocked break only drops some ad categories (rules in `SENSITIVITY_RULES`), it does not drop the break.
 - One person labelled the breaks, half of them unsure, on three animated or effects-heavy open films. A second labeller and more films would be the next step.
 

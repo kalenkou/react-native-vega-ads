@@ -2,17 +2,17 @@
 
 VAST 4 / VMAP 1 and player-independent ad break logic for client-side ad insertion in React Native: ad requests, media file choice, IAB tracking, break schedule, ad pods, two-player hand-over and overlay state.
 
-Most apps get it through [`react-native-vega-ads`](https://github.com/kalenkou/vega-ads/tree/main/packages/vega). Use it on its own for VAST/VMAP and tracking only. The break logic talks to the player through `PlayerPort`; today the only adapter is the Vega one, tested on a Fire TV Stick.
+Most apps get it through [`react-native-vega-ads`](https://github.com/kalenkou/react-native-vega-ads/tree/main/packages/vega). Use it on its own for VAST/VMAP and tracking only. The break logic talks to the player through `PlayerPort`. Today the only adapter is the Vega one, tested on a Fire TV Stick.
 
-Part of [react-native-vega-ads](https://github.com/kalenkou/vega-ads). On Amazon Vega OS use [`react-native-vega-ads`](https://github.com/kalenkou/vega-ads/tree/main/packages/vega), which wraps this package in a React hook.
+Part of [react-native-vega-ads](https://github.com/kalenkou/react-native-vega-ads). On Amazon Vega OS use [`react-native-vega-ads`](https://github.com/kalenkou/react-native-vega-ads/tree/main/packages/vega), which wraps this package in a React hook.
 
 ## Ports
 
 `core` never imports a player SDK, `fetch` or timers. Give it:
 
-- `PlayerPort` – your content player and a factory for ad players (see the main README for the interface);
-- `HttpPort` – `get(url, { signal })`;
-- `ClockPort` – `now`, `setTimeout`, `clearTimeout`.
+- `PlayerPort`: your content player and a factory for ad players (see the main README for the interface)
+- `HttpPort`: `get(url, { signal })`
+- `ClockPort`: `now`, `setTimeout`, `clearTimeout`.
 
 ## Use
 
@@ -36,11 +36,11 @@ await manager.start({ vmapUrl: 'https://ads.example.com/vmap.xml' });
 
 What it handles:
 
-- pre-, mid- and post-rolls; a seek over a break plays only the last skipped break;
-- pods in `sequence` order; the next ad starts ~500 ms before the current one ends, so no content frame shows between ads;
-- impression only for a visible ad; one sound at a time;
+- pre-, mid- and post-rolls. A seek over a break plays only the last skipped break
+- pods in `sequence` order. The next ad starts ~500 ms before the current one ends, so no content frame shows between ads
+- impression only for a visible ad. One sound at a time
 - every error and timeout ends in content, with the VAST error code sent.
-- the VMAP and the pre-roll can be requested before the player exists: `preloadAds(schedule, { http, clock, macros })`, then `manager.start(schedule, { preloaded })`; answers older than five minutes are not used;
+- the VMAP and the pre-roll can be requested before the player exists: `preloadAds(schedule, { http, clock, macros })`, then `manager.start(schedule, { preloaded })`. Answers older than five minutes are not used
 - `onTimeline` gives the mid-rolls for a timeline and an "Ad in N" countdown, only for a break whose ads are loaded.
 
 ## VAST and VMAP only
@@ -74,7 +74,7 @@ if (vast.status === 'ok') {
 |---|---|
 | `requestVmap(url, deps)` | VMAP 1 → breaks (`start`, seconds, `end`), pods grouped by offset, VMAP error codes |
 | `requestVast(urlOrXml, deps)` | VAST 4 InLine/Wrapper (up to 5 wrappers), pods by `sequence`, `[CACHEBUSTING]` and app macros, VAST error codes |
-| `selectMediaFile(files, options)` | H.264 MP4 or HLS that fits the screen and bitrate; 403 if none |
+| `selectMediaFile(files, options)` | H.264 MP4 or HLS that fits the screen and bitrate. 403 if none |
 | `AdTracker` | impression, start, quartiles, complete, pause, resume, skip, error |
 | `adIdMacros(source)` | `IFA`, `IFATYPE`, `LIMITADTRACKING` from the Fire TV advertising ID |
 | `installImagePolyfill(http)` | `Image` for tracking pixels on platforms without it |

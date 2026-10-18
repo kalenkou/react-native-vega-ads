@@ -14,11 +14,11 @@ Result on 15.10.2026 (`--online`, samples commit `6a60797`):
 
 | Sample | Plays |
 |---|---|
-| Linear video with an H.264 mp4 (VAST 2.0–4.2) | 46 of 46 |
-| Wrapper (VAST 3.0–4.2) | 7 of 7 |
+| Linear video with an H.264 mp4 (VAST 2.0-4.2) | 46 of 46 |
+| Wrapper (VAST 3.0-4.2) | 7 of 7 |
 | Wrapper whose ad server no longer exists (VAST 2.0) | 0 of 4, VAST error 301 |
 | Linear without an H.264 mp4: VPAID, Flash video, audio only | 0 of 5, VAST error 403, as intended |
-| Non-linear or companion only | 0 of 7, no linear ad (error 200); non-linear ads are used as pause ads |
+| Non-linear or companion only | 0 of 7, no linear ad (error 200). Non-linear ads are used as pause ads |
 | VAST 1.0 | 0 of 6, not supported |
 
 The first run found three ways real ad servers describe a plain H.264 file that the player had refused: `codec="H.264"`, `codec="0"` and `apiFramework="VAST"`. They play since then.
@@ -27,4 +27,4 @@ The first run found three ways real ad servers describe a plain H.264 file that 
 
 `node check-ima.mjs` requests Google's public [IMA sample tags](https://developers.google.com/interactive-media-ads/docs/sdks/html5/client-side/tags) (a test network of Google Ad Manager) through the core. Put `correlator=[CACHEBUSTING]` in a Google Ad Manager tag: the core fills a new random number for every request, and Google returns no ad for a repeated correlator.
 
-Result on 15.10.2026: single linear, skippable (Skip after 5 s) and redirect (wrapper) tags played 15 of 15 times; the redirect error tag gave VAST error 303 5 of 5 times. Every ad the VMAP tags returned played: pre-, mid- and post-rolls and a mid-roll pod of 3. Google's test server does not always fill: after many requests in a row it returned VMAP breaks without ads.
+Result on 15.10.2026: single linear, skippable (Skip after 5 s) and redirect (wrapper) tags played 15 of 15 times. The redirect error tag gave VAST error 303 5 of 5 times. Every ad the VMAP tags returned played: pre-, mid- and post-rolls and a mid-roll pod of 3. Google's test server does not always fill: after many requests in a row it returned VMAP breaks without ads.
