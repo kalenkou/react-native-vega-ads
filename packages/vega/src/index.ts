@@ -75,5 +75,7 @@ export type {
   RepeatMemory,
   RepeatOptions,
   SessionSnapshot,
+  SessionState,
+  StitchedAdState,
   WatchReport,
 } from 'react-native-ads-core';
