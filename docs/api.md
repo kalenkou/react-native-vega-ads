@@ -20,9 +20,11 @@
 | `style`, `scalingMode` | Layout and w3cmedia scaling mode (default `'fit'`). |
 | other | Any `useVegaAds` option below (`onEvent`, `strings`, `adPause`, ...). |
 
-## `useVideoPlayer(uri)`
+## `useVideoPlayer(uri, options?)`
 
 Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` off), `null` before that or while `uri` is `null`. Releases it on unmount or when `uri` changes.
+
+Amazon requires an app to release its media players in the background, or the system ends the app. So in the background the hook releases the player and returns `null`. Back in front, it returns a new player for the same `uri`. `options.onRelease(position)` gets the position the viewer had. Pass it to `useVegaAds({ startAt })` to continue there. `VegaAdsPlayer` does this for you.
 
 ## `useVegaAds(options)`
 
@@ -30,6 +32,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 |---|---|
 | `source` | `{ vmapUrl }` or `{ breaks: [{ offset, vastUrl }] }`. `null` waits. |
 | `contentPlayer` | Your initialized content `VideoPlayer` (`autoplay = false`), or any `PlayerPort`. |
+| `startAt` | Continue a viewing here, in seconds: no pre-roll and no earlier breaks. The content player is moved there first. In core: `AdManager.start(schedule, { resumeAt })`. |
 | `macros` | Ad tag macros, for example `adIdMacros(source)` for `IFA` and `LIMITADTRACKING`. |
 | `prefetchSeconds` | How early a break is loaded and buffered. Default 15. |
 | `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |

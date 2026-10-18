@@ -91,7 +91,7 @@ function MyAdOverlay({ ads }: { ads: VegaAds }) {
 
 ## Your own player UI, with the hook
 
-When your screen has its own controls, use the hook and the components. `useVideoPlayer` creates the content `VideoPlayer` (initialized, `autoplay` off) and releases it when the screen closes:
+When your screen has its own controls, use the hook and the components. `useVideoPlayer` creates the content `VideoPlayer` (initialized, `autoplay` off). It releases the player when the screen closes and in the background, as Amazon requires. Pass `onRelease` to `useVideoPlayer` and the position to `useVegaAds({ startAt })` to continue at the same place:
 
 ```tsx
 import { AdOverlay, DualSurfaceView, useVegaAds, useVideoPlayer } from 'react-native-vega-ads';

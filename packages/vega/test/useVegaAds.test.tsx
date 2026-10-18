@@ -145,6 +145,14 @@ describe('useVegaAds', () => {
     expect(ctx.content.calls).toContain('play');
   });
 
+  it('starts at startAt as a continued viewing: no pre-roll, the content moves there and plays', async () => {
+    const ctx = setup({ startAt: 120 });
+    await ctx.surfacesReady();
+    expect(ctx.http.requests).toEqual([]);
+    expect(ctx.content.currentTime).toBe(120);
+    expect(ctx.content.calls).toContain('play');
+  });
+
   it('does not repeat the pre-roll when the surfaces are recreated', async () => {
     const ctx = setup();
     const ad = await ctx.prerollPlaying();

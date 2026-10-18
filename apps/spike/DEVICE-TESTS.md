@@ -107,7 +107,7 @@ The public AmazonAppDev/vega-video-sample (React Native 0.83, w3cmedia 2.3.2, Sh
 | Back during the 3rd pod ad | `breakEnd`, content continues at 0:17 with the player UI → PASS |
 | Back during the mid-roll pod (second run) | content continues at 0:16. One screenshot right after Back shows a black frame with the player UI, the next one (3 s later) shows the content → PASS |
 | Home during the pre-roll (launcher started with `vlcm launch-app`) | the ad player pauses, its audio stream stops and the player is destroyed in the first 0.1 s of the log. Launcher in foreground 2.3 s later. No ad audio after → PASS |
-| Same, then 4.6 s in the background | the system Low Resource Killer ends the app (`memory-mid: request to terminate`, `LowResourceKiller`). The same happens with Home during content without an ad, so it is the sample's memory on a 1 GB stick, not the ads |
+| Same, then 4.6 s in the background | the system ends the app (`LowResourceKiller`). The same happens with Home during content without an ad. First read as memory on a 1 GB stick. The real cause (found 19.10.2026): the content player was not released, and the log says `onBackground Kill <pid> for using session media-playback`. Amazon requires apps to release their media players in the background |
 | Background/foreground during the pre-roll (`vlcm trigger-app background`, then `foreground`) | no ad on return. The sample itself closes the player screen on `background` (`navigateBack` in its `handleAppStateChange`), so it shows the details screen. Resume after background is covered by unit tests (`suspend`/`wake`) |
 
 Regression after the review fixes (stall watchdog, late/duplicate event guards, VMAP pixels, request macros, a589ddb), same device and sample, MP4 title:
@@ -384,7 +384,7 @@ Build with the review fixes up to `457140b`, after a reboot of the stick (before
 |---|---|
 | Full demo run | 3/3 PASS, before and after `457140b` |
 | Seek over the mid-roll | 3/3 PASS: the pod plays, the movie resumes at 142.7-144.2 s |
-| Home right after Play, while the pre-roll still loads (new) | PASS: no ad pixel. The system's Low Resource Killer ended the app in the background, as before (see above), so the relaunch is a cold start on the movie page |
+| Home right after Play, while the pre-roll still loads (new) | PASS: no ad pixel. The system ended the app in the background because the content player was still open (see above), so the relaunch is a cold start on the movie page |
 | Home and Back during the pre-roll | PASS: no pixel after `firstQuartile` |
 | Back during the ad, Back again, relaunch. Another app during the ad, then the demo | PASS: no ad pixel after leaving. No demo entry in `vlcm crash-history` |
 | Household memory, two cold launches | PASS: launch 2 leaves Kettlo out (`notUsed`) and plays Ferntop |

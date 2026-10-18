@@ -113,8 +113,19 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
     ...options
   } = props;
   const ownsPlayer = appPlayer === undefined;
-  const created = useVideoPlayer(ownsPlayer ? (source?.uri ?? null) : null, {
+  const uri = ownsPlayer ? (source?.uri ?? null) : null;
+  // In the background the movie player is released (Amazon requires it). Back in front, a new
+  // player continues where the viewer was, without the ads already seen. When the viewer has seen
+  // nothing yet, it starts over, pre-roll included.
+  const resume = useRef<{ uri: string | null; seen: boolean; at?: number }>({ uri, seen: false });
+  if (resume.current.uri !== uri) {
+    resume.current = { uri, seen: false };
+  }
+  const created = useVideoPlayer(uri, {
     createVideoPlayer: options.createVideoPlayer,
+    onRelease: (position) => {
+      resume.current.at = resume.current.seen || position > 0 ? position : undefined;
+    },
   });
   const contentPlayer = ownsPlayer ? created : appPlayer;
   // A PlayerPort has no w3cmedia surface to draw: the app shows the content itself.
@@ -127,10 +138,14 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
   const allMacros = useMemo<Macros | undefined>(() => vegaMacros(adId, macros), [adId, macrosKey]);
   const ads = useVegaAds({
     ...options,
+    startAt: resume.current.at ?? options.startAt,
     source: contentPlayer ? (schedule ?? { breaks: [] }) : null,
     contentPlayer,
     macros: allMacros,
   });
+  if (ads.playing) {
+    resume.current.seen = true;
+  }
 
   const latestOnEnd = useRef(onEnd);
   latestOnEnd.current = onEnd;

@@ -9,6 +9,9 @@ import { AdOverlay } from '../src/AdOverlay';
 import { PauseAd } from '../src/PauseAd';
 import { VegaAdsPlayer, VegaAdsPlayerProps } from '../src/VegaAdsPlayer';
 import { FakeW3cPlayer } from './fakes/FakeW3cPlayer';
+import * as keplerModule from '@amazon-devices/react-native-kepler';
+
+const kepler = keplerModule as unknown as { emitAppState(state: string): void };
 
 const inline = readFileSync(`${__dirname}/../../core/fixtures/vast/inline.xml`, 'utf8');
 const TAG = 'https://ads.test/pre.xml?lat=[LIMITADTRACKING]';
@@ -99,6 +102,65 @@ describe('VegaAdsPlayer', () => {
     act(() => ctx.players[0]?.emit('ended'));
     await settle();
     expect(onEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases its movie player in the background, as Amazon requires, and continues there when the app is back', async () => {
+    const ctx = setup({ ads: { breaks: [{ offset: 300, vastUrl: TAG }] } });
+    await settle();
+    ctx.surfacesReady();
+    await settle();
+    const first = ctx.players[0] as FakeW3cPlayer;
+    first.currentTime = 77;
+    act(() => kepler.emitAppState('background'));
+    await settle();
+    expect(first.deinitialized).toBe(true);
+    act(() => kepler.emitAppState('active'));
+    await settle();
+    ctx.surfacesReady();
+    await settle();
+    const movies = ctx.players.filter((player) => player.src === 'https://cdn.test/movie.mp4');
+    expect(movies).toHaveLength(2);
+    expect(movies[1]?.currentTime).toBe(77);
+    expect(movies[1]?.calls).toContain('play');
+    expect(ctx.http.requests).toEqual([]);
+  });
+
+  it('does not show a pre-roll again that was on screen when the app went to the background (R13)', async () => {
+    const ctx = setup();
+    ctx.http.on(TAG, { body: inline });
+    await settle();
+    ctx.surfacesReady();
+    await settle();
+    const ad = ctx.players[ctx.players.length - 1] as FakeW3cPlayer;
+    expect(ad.src).not.toBe('https://cdn.test/movie.mp4');
+    act(() => ad.emit('canplay'));
+    await settle();
+    act(() => ad.emit('playing'));
+    await settle();
+    const asked = ctx.http.requests.length;
+    act(() => kepler.emitAppState('background'));
+    act(() => kepler.emitAppState('active'));
+    await settle();
+    ctx.surfacesReady();
+    await settle();
+    expect(ctx.http.requests.length).toBe(asked);
+    const movies = ctx.players.filter((player) => player.src === 'https://cdn.test/movie.mp4');
+    expect(movies[1]?.calls).toContain('play');
+  });
+
+  it('plays the pre-roll after all when the app left before the viewer saw anything', async () => {
+    const ctx = setup();
+    ctx.http.on(TAG, { body: inline });
+    await settle();
+    ctx.surfacesReady();
+    await settle();
+    const asked = ctx.http.requests.length;
+    act(() => kepler.emitAppState('background'));
+    act(() => kepler.emitAppState('active'));
+    await settle();
+    ctx.surfacesReady();
+    await settle();
+    expect(ctx.http.requests.length).toBe(asked * 2);
   });
 
   it('releases the content player when the screen closes', async () => {

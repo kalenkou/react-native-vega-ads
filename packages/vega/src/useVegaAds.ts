@@ -32,6 +32,12 @@ export interface UseVegaAdsOptions {
   /** A VMAP URL, or VAST tags with their times. `null` waits (for example, until the title is known). */
   source: AdSchedule | null;
   /**
+   * Continue a viewing here, in seconds: no pre-roll and no earlier breaks. For a Resume button, or
+   * with the position from `useVideoPlayer`'s `onRelease` after the app was in the background.
+   * Read when the ads start.
+   */
+  startAt?: number;
+  /**
    * Your content `VideoPlayer` (also when Shaka plays through it), initialized, with
    * `autoplay = false` and its source set. The hook starts it after the pre-roll, or at
    * once when there is none. Any other player works through a `PlayerPort` adapter.
@@ -251,7 +257,11 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     // A preloadVegaAds() of this schedule (from the title's page) saves the first ad requests.
     void created.start(
       source,
-      resumed ? { resumeAt: content.getCurrentTime() } : { preloaded: takePreload(sourceKey) },
+      resumed
+        ? { resumeAt: content.getCurrentTime() }
+        : o.startAt !== undefined
+          ? { resumeAt: o.startAt }
+          : { preloaded: takePreload(sourceKey) },
     );
     return () => {
       manager.current = null;
