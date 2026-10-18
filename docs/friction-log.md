@@ -9,7 +9,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Actual:** black screen. JS got `error` with `code = 4` and an empty `message`. The real cause (`souphttpsrc ... Forbidden (403)`) was visible only in the system log at warning level.
 - **Severity:** medium (looks like a player or surface bug. Cost ~30 min).
 - **Workaround:** switched to an archive.org MP4. Checked URLs from the Mac with `curl -r 0-1000` first.
-- **Suggestion:** pass the HTTP status into `MediaError.message` (e.g. "HTTP 403 Forbidden") so the app can show and report the real cause.
+- **Suggestion:** pass the HTTP status into `MediaError.message` (for example "HTTP 403 Forbidden") so the app can show and report the real cause.
 
 ## FL-02 · System log silently drops app `console.log` lines (11.10.2026)
 - **Task:** read the app's own `console.log` diagnostics through `vega exec vda shell loggingctl log -f` during video playback.
@@ -30,7 +30,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Expected:** the CSAI guide for Vega covers media controls for the two-player pattern, or the runtime warns when one of the two steps is missing.
 - **Actual:** the CSAI JS guide (implement-csai-js-vega, last modified 13.03.2026) does not mention media controls, `setMediaControlFocus`, Alexa or the manifest entry. The W3C Media "media control" page (last modified 27.01.2026) does say to add manifest entries and call `setMediaControlFocus`, but the manifest snippet is on another page, and in the type definitions `setMediaControlFocus` is marked `@hidden`. With one step missing there is no error or warning. The only hint is `isSessionInForeground :0` in the system log. The remote key reaches the app (`KEY_PLAYPAUSE` in inputd) and is dropped.
 - **Severity:** high for ad-supported apps (a basic remote/voice feature silently does nothing. Dolby's patch of the Logix IMA ads manager also fixes "media-control ownership").
-- **Workaround:** both steps (variant C). Call `setMediaControlFocus` on the ad player at ad start and on the content player at resume. Focus switch takes 197-256 ms.
+- **Workaround:** both steps (variant C). Call `setMediaControlFocus` on the ad player at ad start and on the content player at resume. Focus switch takes 197-217 ms.
 - **Suggestion:** add a "media controls with two players" section to the CSAI guide, with the manifest snippet. Remove `@hidden` from `setMediaControlFocus` in typings. Log a warning when `setMediaControlFocus` is called and the manifest has no `IMediaPlaybackServer` (and vice versa).
 
 ## FL-04 · Media control docs sample uses a deprecated API (11.10.2026)
@@ -91,7 +91,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Task:** let the viewer skip a skippable ad by voice, Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1, SDK 0.24.
 - **Steps:** manifest `IMediaPlaybackServer` with `command_options = ["Next"]` (the "Attributes and features" page says optional commands arrive only when listed). A `KeplerMediaControlHandler` subclass for the ad player with `handleNext` overridden. The ad player's published actions set to PLAY, PAUSE, TOGGLE_PLAY_PAUSE, STOP, NEXT before `setMediaControlFocus` (w3cmedia publishes SEEK, FAST_FORWARD, SKIP_FORWARD... but not NEXT by default). During a skippable ad, past its skip offset, say "Alexa, next" and "Alexa, skip". Every app event mirrored to a server log because the device log drops app lines.
 - **Expected:** `handleNext` is called, or a documented reason why not. A table of Alexa phrases → media control commands.
-- **Actual:** with the default actions Alexa answers "Next is not supported". With NEXT published Alexa says nothing, and `handleNext` is never called (no app event in four runs). No Vega page maps Alexa phrases to commands.
+- **Actual:** with the default actions Alexa answers "Next is not supported". With NEXT published, Alexa says nothing. `handleNext` is never called (no app event in four runs). No Vega page maps Alexa phrases to commands.
 - **Severity:** medium (voice skip of skippable ads is not possible. "multi-modal" ad UX limited to pause/play).
 - **Workaround:** Skip button with D-pad focus. "Alexa, pause/play" works.
 - **Suggestion:** publish the Alexa phrase → command table for Vega. Deliver Next when listed in `command_options`. Let apps set supported actions through a public API (today only `mediaControlStateUtil.capabilities`, an undocumented field).
@@ -145,7 +145,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Task:** get the same evidence other Fire TV apps can show: Amazon installs, launches and measures the app on its own devices.
 - **Steps:** read the Appstore Quality Central and Live Device Interaction docs. Search the developer forum.
 - **Expected:** a way to run a `.vpkg` on Amazon-hosted Fire TV Stick 4K Select devices.
-- **Actual:** both services take Fire OS APKs only. An Amazon reply on the forum (https://community.amazondeveloper.com/t/can-t-we-test-vega-apps-on-appstore-quality-center/28258): "There is no VPKG/Vega OS support at this time", and the Fire TV Stick 4K Select is not in Live Device Interaction.
+- **Actual:** both services take Fire OS APKs only. An Amazon reply on the forum (https://community.amazondeveloper.com/t/can-t-we-test-vega-apps-on-appstore-quality-center/28258): "There is no VPKG/Vega OS support at this time". The Fire TV Stick 4K Select is not in Live Device Interaction.
 - **Severity:** medium (a Vega developer without a stick cannot check the app on hardware before submitting. The docs say "you must test your app on a Fire TV Stick before submitting").
 - **Workaround:** test on our own stick against the Vega KPI targets with `vega exec perf kpi-visualizer --certification` and the list in "Test before submission".
 - **Suggestion:** add Vega devices to Appstore Quality Central and Live Device Interaction.
@@ -181,7 +181,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Task:** measure the demo's cold launch on a Fire TV Stick 4K Select, Vega OS 2.0, with `vega exec perf kpi-visualizer --kpi cool-start-latency --certification` (Perf CLI 0.24.0), then follow Amazon's slow-launch workflow.
 - **Steps:** run 30 cold launches of an app that does not call `useReportFullyDrawn()` (no `@amazon-devices/kepler-performance-api` in the app). Read the report, then the Perfetto trace of an iteration.
 - **Expected:** no "fully drawn" value, or a clear note that the marker is missing. Amazon's TTFD workflow says: "If TTFD KPI values are null/undefined, this indicates missing or incorrect `useReportFullyDrawn()` API usage."
-- **Actual:** the report showed "Application launch to fully drawn" for 29 of 30 launches, marked statistically sound (√), almost equal to first frame (mean 2398.2 ms vs 2393.4 ms, max 4243.8 ms vs 4243.7 ms). In the two traces we read, a `fully_drawn` slice from the `stem-init` process comes 67-87 ms before the app's `gwsi_firstFrame`, although the app never asked for one. After we added the hook, the trace has two `fully_drawn` slices per launch, and the tool reported fully drawn at mean 2129 ms, P90 2494 ms.
+- **Actual:** the report showed "Application launch to fully drawn" for 29 of 30 launches, marked statistically sound (√), almost equal to first frame (mean 2398.2 ms vs 2393.4 ms, max 4243.8 ms vs 4243.7 ms). In the two traces we read, a `fully_drawn` slice from the `stem-init` process comes 67-87 ms before the app's `gwsi_firstFrame`, although the app never asked for one. After we added the hook, the trace has two `fully_drawn` slices per launch. The tool reported fully drawn at mean 2129 ms, P90 2494 ms.
 - **Severity:** low (a developer can believe the TTFD KPI is met and implemented, and the TTFD workflow's own check for a missing marker never fires).
 - **Workaround:** check the app code for `useReportFullyDrawn()` instead of trusting a non-empty TTFD value.
 - **Suggestion:** report TTFD as missing when the app did not emit the marker, or document which component emits the automatic `fully_drawn` and when.
@@ -208,7 +208,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Task:** use react-native-video v7 (`7.0.0-beta.12`, the npm `beta` tag) in a Vega app made from the React Native 0.83 template.
 - **Steps:** `npm install react-native-video react-native-nitro-modules`, import `useVideoPlayer` and `VideoView`, build, run on the stick.
 - **Expected:** a build error or a clear runtime message that the package has no Vega support. Amazon's Vega knowledge base (media playback API, migration notes) says: "`react-native-video` must be removed: It has native Android code (ExoPlayer) that does not work on Vega. There is no compatibility layer."
-- **Actual:** the build passes. The app aborts ~1 s after launch (SIGABRT): `react-native-nitro-modules` calls `TurboModuleRegistry.getEnforcing('NitroModules')`, and building its error message fails in React Native for Vega with "__fbBatchedBridgeConfig is not set, cannot invoke native modules".
+- **Actual:** the build passes. The app aborts ~1 s after launch (SIGABRT): `react-native-nitro-modules` calls `TurboModuleRegistry.getEnforcing('NitroModules')`. Building its error message fails in React Native for Vega with "__fbBatchedBridgeConfig is not set, cannot invoke native modules".
 - **Severity:** medium (the most used React Native video library cannot be tried on Vega, and the crash does not name the cause).
 - **Workaround:** a Vega backend for v7 built like its web one (`*.kepler.ts` platform files on w3cmedia), proposed upstream. It plays MP4 on the stick with the v7 API.
 - **Suggestion:** list Nitro-based libraries as unsupported in the Vega compatibility docs, and make `getEnforcing` failures readable.

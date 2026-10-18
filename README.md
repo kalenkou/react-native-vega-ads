@@ -2,7 +2,7 @@
 
 Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, the IAB standards for video ads and ad breaks. It plays the ads on Vega's video player (w3cmedia) and sends the IAB tracking pixels: the requests that tell the ad server an ad was seen. It is for apps that have their own ad server. Open source, Apache-2.0.
 
-Vega has no other open library that plays VAST or VMAP ads in the app. [Why this library](docs/why.md) compares the options.
+To our knowledge, Vega has no other open library that plays VAST or VMAP ads in the app. [Why this library](docs/why.md) compares the options.
 
 An optional AI tool places the breaks between lines of dialogue and leaves out ads that do not fit the scene. See [AI break placement](#ai-break-placement-optional).
 
@@ -14,14 +14,14 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 
 > Tested on a Fire TV Stick 4K Select (Vega OS 2.0). The API can change before 1.0.
 
-Measured on that stick: the switch from the movie to an ad takes 56-151 ms. Memory peaks at 91 MB with 27 ads in 11 minutes. The demo app starts in 1.09 s (P90). More: [device results](docs/device-results.md). To try it, build the demo app in [`apps/demo`](apps/demo). It plays two films with ads. Its "Compare: ads as usual" button plays the same film with ads on a timer, for comparison.
+Measured on that stick: the switch from the movie to an ad takes 56-151 ms. Memory peaks at 91 MB with 27 ads in 11 minutes. The demo app shows its first frame in 1.09 s (P90 of 30 cold launches). More: [device results](docs/device-results.md). To try it, build the demo app in [`apps/demo`](apps/demo). It plays two films with ads. Its "Compare: ads as usual" button plays the same film with ads on a timer, for comparison.
 
 ## Features
 
 - Ads before, during and after the movie (pre-, mid- and post-rolls). The break times come from a VMAP file or from your own list of ad URLs (VAST tags).
 - VAST 4 wrappers (one ad server passes the request on to another), ad pods (several ads in one break) and skippable ads.
 - No black frame between the movie and the ads. The movie resumes where it stopped.
-- Home and back: in the background the app releases its video players, as Amazon requires, so Fire TV does not close it. Back in the app, the movie continues at the same second, and the ads already shown do not come again.
+- Home and Back: in the background the library releases every video player, as Amazon requires. So Fire TV does not close the app. Back in the app, the movie continues at the same second. Ads already shown do not come again.
 - The remote and Alexa pause and play the ads. The Skip button gets the remote's focus. VoiceView, the Fire TV screen reader, reads out each ad.
 - IAB tracking: the ad server learns when an ad was shown, each quarter of it, pause, skip and errors. It also learns when a break starts and ends.
 - No repeats. The same ad does not come back within 30 minutes. A break has one ad per advertiser. With `avoidRepeats.memory` the app remembers the shown ads across movies and launches.
@@ -58,7 +58,7 @@ What your ad server needs:
 - `[BLOCKEDADCATEGORIES]` in your VAST tag URL. The player fills it with the blocked categories of the break, so the ad server can send fitting ads up front.
 - Spare ads in the response are a good idea: ads without `sequence` (a VAST 4 "ad buffet"). One of them takes the place of a blocked ad, in a pod too. Without them the break plays one ad less.
 
-Everything runs on your computer. No cloud, no cost, no viewer data. On an Apple M5 Pro, Sintel (15 min, 2 breaks) takes 31 s with all three steps. Commands: [tools/make-vmap](tools/make-vmap). How well the model does: [how the breaks are placed](docs/how-breaks-are-placed.md).
+Everything runs on your computer. No cloud, no cost, no viewer data. On an Apple M5 Pro, Sintel (15 min, 2 mid-roll breaks) takes 31 s with all three steps. Commands: [tools/make-vmap](tools/make-vmap). How well the model does: [how the breaks are placed](docs/how-breaks-are-placed.md).
 
 ## Quick start
 
@@ -181,7 +181,7 @@ Films:
 - *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0.
 - *Big Buck Bunny* (eval only), (CC) Blender Foundation | [www.bigbuckbunny.org](https://www.bigbuckbunny.org), CC BY 3.0.
 
-Fonts: the demo ads use Inter. The demo app ships [IBM Plex](https://github.com/IBM/plex). Both are under the SIL Open Font License 1.1. The IBM Plex TTF files are unchanged from IBM's releases, with the licence in `apps/demo/assets/fonts`.
+Fonts: the demo ads use Inter. The demo app ships [IBM Plex](https://github.com/IBM/plex). Both are under the SIL Open Font License 1.1. The IBM Plex TTF files are unchanged from IBM's releases, with the license in `apps/demo/assets/fonts`.
 
 The packages depend on [@dailymotion/vast-client](https://github.com/dailymotion/vast-client-js), [@dailymotion/vmap](https://github.com/dailymotion/vmap-js) and [@xmldom/xmldom](https://github.com/xmldom/xmldom), all MIT.
 
