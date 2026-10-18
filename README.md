@@ -2,9 +2,7 @@
 
 Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, plays the ads on the native w3cmedia player and sends the IAB tracking pixels. It is for apps that have their own ad server. Open source, Apache-2.0.
 
-Breaks come at good moments. The `make-vmap` tool puts each break on a shot change, never in the middle of a line. A local vision model notes what the scene before the break shows. The player then leaves out ads that do not fit, for example a car ad right after a car crash. See [how the breaks are placed](docs/how-breaks-are-placed.md).
-
-`make-vmap` is optional and runs on your computer, not on the TV. The player works with any VMAP.
+An optional AI tool places the breaks between lines of dialogue and leaves out ads that do not fit the scene. See [AI break placement](#ai-break-placement-optional).
 
 | Movie page: where the ad breaks are, and what the scene before each break shows | During a break: the ad says what was left out and why | On pause: a pause ad with a QR code |
 | --- | --- | --- |
@@ -23,10 +21,37 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 - IAB tracking: impression, quartiles, pause, skip, VAST error codes and the VMAP break events.
 - No repeats. The same ad does not come back within 30 minutes, and a break has one ad per advertiser.
 - An ad is never louder than the movie, when its VAST carries the ad's loudness.
-- Pause ads, captions in ads, and ad categories left out after sensitive scenes (from the VMAP that `make-vmap` writes).
+- Pause ads and captions in ads.
+- A break can block ad categories. The list comes from the VMAP or from your code.
+- Your own ad UI: every event comes with the ad's data (`onEvent(name, info)`), the ad on screen is in `snapshot.ad`, and you can replace the overlay (`renderOverlay`), its styles (`adStyles`) and its texts, in any language (`strings`).
 - In preview: tracking for ads that a server stitched into the stream, and Amazon's headless player.
 
 More detail: [docs/features.md](docs/features.md).
+
+## AI break placement (optional)
+
+`make-vmap` is a command-line tool in this repository. It is not in the npm packages. You run it on your computer, once per movie, before you publish the movie. The player works with any VMAP, so you can skip this part.
+
+What you get:
+
+- Breaks at shot changes and never in the middle of a line of dialogue.
+- After a sensitive scene, the break blocks ad categories that do not fit. For example, no car ad right after a car crash.
+- The ad tells the viewer why: "No Kettlo ad after a scene with injury".
+
+How to use it:
+
+1. Install [ffmpeg](https://ffmpeg.org). For the speech step add [whisper.cpp](https://github.com/ggml-org/whisper.cpp) with a small speech model. For the scene step add [llama.cpp](https://github.com/ggml-org/llama.cpp) with the Qwen3.6 vision model (about 24 GB of memory). Each step is optional.
+2. Run `make-vmap` on the movie file. It writes a VMAP file with the break times and, for each break, the blocked ad categories.
+3. Put the VMAP file next to the movie on any HTTPS host.
+4. Give its URL to the player: `ads={{ vmapUrl }}`.
+
+What your ad server needs:
+
+- An IAB category in each ad's VAST (`<Category>`). An ad without one is never left out.
+- `[BLOCKEDADCATEGORIES]` in your VAST tag URL. The player fills it with the blocked categories of the break, so the ad server can send fitting ads up front.
+- Stand-by ads in the response (a VAST 4 "ad buffet") are a good idea. One of them takes the place of a blocked ad. Without them the break plays one ad less.
+
+Everything runs on your computer. No cloud, no cost, no viewer data. On an Apple M5 Pro a 15-minute film takes 31 s. Commands: [tools/make-vmap](tools/make-vmap). How well the model does: [how the breaks are placed](docs/how-breaks-are-placed.md).
 
 ## Quick start
 
