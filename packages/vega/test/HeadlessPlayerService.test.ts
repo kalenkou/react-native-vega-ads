@@ -244,3 +244,25 @@ test('view, volume and mute sent before the load (the core does that) still reac
   expect(players[0]!.volume).toBe(0.3);
   expect(players[0]!.muted).toBe(true);
 });
+
+test('volume, mute and rate alone do not start a player: they wait for the load or the view', async () => {
+  const { players, service } = setup();
+  service.handleSetVolume(0.3, B);
+  service.handleSetMute(true, B);
+  service.handleSetPlaybackRate(2, B);
+  service.handleSetVolume(0.5); // no session: a call from the SDK's own media controls
+  expect(players).toHaveLength(0);
+  service.handleLoad(media('https://ads.test/ad.mp4'), { startPosition: 0, autoPlay: false }, B);
+  await players[0]!.finishInit();
+  expect(players).toHaveLength(1);
+  expect([players[0]!.volume, players[0]!.muted, players[0]!.playbackRate]).toEqual([0.3, true, 2]);
+});
+
+test('an unload forgets the settings of a session that never started', async () => {
+  const { players, service } = setup();
+  service.handleSetVolume(0.3, B);
+  service.handleUnload(B);
+  service.handleLoad(media('https://ads.test/ad.mp4'), { startPosition: 0, autoPlay: false }, B);
+  await players[0]!.finishInit();
+  expect(players[0]!.volume).toBe(1);
+});

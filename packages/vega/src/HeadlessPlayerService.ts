@@ -59,6 +59,8 @@ export class HeadlessPlayerService {
   private readonly sessions = new Map<number, Session>();
   private readonly statusUpdates = new Set<number>();
   private readonly errorUpdates = new Set<number>();
+  /** Settings for a session that has no player yet: applied when the load or the view starts it. */
+  private readonly pending = new Map<number, Array<(player: HeadlessServicePlayer) => void>>();
 
   constructor(
     private readonly server: HeadlessPlayerServer,
@@ -70,9 +72,9 @@ export class HeadlessPlayerService {
   }
 
   /**
-   * Runs once the session's player is initialized. `open`: a setting that may come before the
-   * load (the core sets the view and volume first) starts the session; other commands for an
-   * unknown session do nothing.
+   * Runs once the session's player is initialized. `open`: the load and the view start the
+   * session (the core sets the view before the load); other commands for an unknown session do
+   * nothing.
    */
   private run(
     sessionId: HeadlessSessionId | undefined,
@@ -105,12 +107,15 @@ export class HeadlessPlayerService {
       event,
       () => this.report(id, sessionId, session, event),
     ]);
+    const settings = this.pending.get(id) ?? [];
+    this.pending.delete(id);
     session.queue = player.initialize().then(() => {
       if (session.released) return;
       session.initialized = true;
       session.listeners.forEach(([event, listener]) =>
         player.addEventListener(event, listener),
       );
+      settings.forEach((apply) => apply(player));
     });
     session.queue.catch(() => undefined);
     this.sessions.set(id, session);
@@ -173,6 +178,7 @@ export class HeadlessPlayerService {
   /** Amazon's order: clear the surface, then deinitialize. */
   handleUnload(sessionId?: HeadlessSessionId): void {
     const id = this.key(sessionId);
+    this.pending.delete(id);
     const session = this.sessions.get(id);
     if (!session) return;
     this.sessions.delete(id);
@@ -236,37 +242,42 @@ export class HeadlessPlayerService {
     });
   }
 
+  /**
+   * Volume, mute and rate may come before the load (the core sets the volume first). They wait
+   * for the session instead of starting a player: a call without a known session (for example
+   * from the SDK's own media controls) must not leave a stray decoder behind.
+   */
+  private setting(
+    sessionId: HeadlessSessionId | undefined,
+    apply: (player: HeadlessServicePlayer) => void,
+  ): void {
+    const id = this.key(sessionId);
+    if (this.sessions.has(id)) {
+      this.run(sessionId, (player) => apply(player));
+      return;
+    }
+    this.pending.set(id, [...(this.pending.get(id) ?? []), apply]);
+  }
+
   handleSetMute(isMuted: boolean, sessionId?: HeadlessSessionId): void {
-    this.run(
-      sessionId,
-      (player) => {
-        player.muted = isMuted;
-      },
-      true,
-    );
+    this.setting(sessionId, (player) => {
+      player.muted = isMuted;
+    });
   }
 
   handleSetVolume(volume: number, sessionId?: HeadlessSessionId): void {
-    this.run(
-      sessionId,
-      (player) => {
-        player.volume = volume;
-      },
-      true,
-    );
+    this.setting(sessionId, (player) => {
+      player.volume = volume;
+    });
   }
 
   handleSetPlaybackRate(
     playbackRate: number,
     sessionId?: HeadlessSessionId,
   ): void {
-    this.run(
-      sessionId,
-      (player) => {
-        player.playbackRate = playbackRate;
-      },
-      true,
-    );
+    this.setting(sessionId, (player) => {
+      player.playbackRate = playbackRate;
+    });
   }
 
   handleGetCurrentPosition(sessionId?: HeadlessSessionId): number {
