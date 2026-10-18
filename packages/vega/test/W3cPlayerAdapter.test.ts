@@ -9,6 +9,8 @@ class RecordingPlayer implements W3cVideoPlayer {
   src = '';
   currentTime = 0;
   duration = NaN;
+  /** HTMLMediaElement.readyState: 0 until the media is loaded. */
+  readyState = 4;
   listeners = new Map<string, Set<(event?: unknown) => void>>();
 
   async initialize(): Promise<void> {
@@ -131,6 +133,53 @@ describe('W3cPlayerAdapter', () => {
     off();
     native.emit('timeupdate');
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('seeks again once the media is loaded, because Vega ignores a seek before that', () => {
+    const { native, port } = make();
+    native.readyState = 0;
+    port.setCurrentTime(42);
+    native.currentTime = 0; // what the device does with a seek before the media is loaded
+    native.emit('loadedmetadata');
+    expect(native.currentTime).toBe(42);
+    native.currentTime = 50;
+    native.emit('canplay');
+    expect(native.currentTime).toBe(50); // once only: later events do not move the viewer back
+    expect([...native.listeners.values()].every((set) => set.size === 0)).toBe(true);
+  });
+
+  it('seeks again on canplay when the player sends no loadedmetadata', () => {
+    const { native, port } = make();
+    native.readyState = 0;
+    port.setCurrentTime(42);
+    native.currentTime = 0;
+    native.emit('canplay');
+    expect(native.currentTime).toBe(42);
+  });
+
+  it('a later seek replaces the waiting one', () => {
+    const { native, port } = make();
+    native.readyState = 0;
+    port.setCurrentTime(42);
+    native.readyState = 1; // loaded, but the event has not come yet
+    port.setCurrentTime(7);
+    native.emit('loadedmetadata');
+    expect(native.currentTime).toBe(7);
+  });
+
+  it('seeks a loaded player at once and waits for nothing', () => {
+    const { native, port } = make();
+    port.setCurrentTime(42);
+    expect(native.currentTime).toBe(42);
+    expect([...native.listeners.values()].every((set) => set.size === 0)).toBe(true);
+  });
+
+  it('drops a waiting seek on deinitialize', async () => {
+    const { native, port } = make();
+    native.readyState = 0;
+    port.setCurrentTime(42);
+    await port.deinitialize();
+    expect([...native.listeners.values()].every((set) => set.size === 0)).toBe(true);
   });
 
   it('drops all its listeners on deinitialize', async () => {

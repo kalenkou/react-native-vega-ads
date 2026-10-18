@@ -12,6 +12,8 @@ export interface W3cVideoPlayer {
   src: string;
   currentTime: number;
   readonly duration: number;
+  /** HTMLMediaElement.readyState: 0 until the media is loaded. */
+  readonly readyState?: number;
   initialize(): Promise<void>;
   setSurfaceHandle(handle: string): void;
   clearSurfaceHandle(handle: string): void;
@@ -27,6 +29,7 @@ export interface W3cVideoPlayer {
 /** PlayerPort on top of a w3cmedia VideoPlayer. */
 export class W3cPlayerAdapter implements PlayerPort {
   private readonly subscriptions = new Set<() => void>();
+  private cancelSeek: (() => void) | null = null;
 
   /**
    * @param player a `new VideoPlayer()` from @amazon-devices/react-native-w3cmedia
@@ -82,7 +85,26 @@ export class W3cPlayerAdapter implements PlayerPort {
   }
 
   setCurrentTime(seconds: number): void {
+    this.cancelSeek?.();
     this.player.currentTime = seconds;
+    if (this.player.readyState !== 0) {
+      return;
+    }
+    // Vega ignores a seek before the media is loaded (a new player after the app was in the
+    // background), so the seek is made again on the first sign that it is.
+    const events = ['loadedmetadata', 'canplay'];
+    const seek = (): void => {
+      cancel();
+      this.player.currentTime = seconds;
+    };
+    const cancel = (): void => {
+      events.forEach((event) => this.player.removeEventListener(event, seek));
+      this.subscriptions.delete(cancel);
+      this.cancelSeek = null;
+    };
+    events.forEach((event) => this.player.addEventListener(event, seek));
+    this.subscriptions.add(cancel);
+    this.cancelSeek = cancel;
   }
 
   getDuration(): number {
