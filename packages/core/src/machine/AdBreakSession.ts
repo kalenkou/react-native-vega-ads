@@ -1,5 +1,5 @@
 import { PodController, PodItem } from '../pod/PodController';
-import { adEventAd, type AdEventInfo } from '../events';
+import { adEventAd, type AdEventAd, type AdEventInfo } from '../events';
 import type { RepeatGuard } from '../pod/RepeatGuard';
 import {
   adLoudness,
@@ -41,6 +41,8 @@ export interface SessionSnapshot {
   why?: BreakWhy;
   /** The ad's closed caption at `adTime` (VAST `<ClosedCaptionFiles>`, WebVTT); '' when there is none. */
   caption: string;
+  /** The ad on screen: its ids, title, advertiser and timing. Null between ads. */
+  ad: AdEventAd | null;
 }
 
 export interface BreakWhy {
@@ -926,6 +928,7 @@ export class AdBreakSession {
         quieter: this.player !== null && this.quieter.has(this.player),
       },
       caption: current ? captionAt(this.captions.get(current.item.ad) ?? [], this.player?.getCurrentTime() ?? 0) : '',
+      ad: current ? adEventAd(current.item.ad) : null,
     });
   }
 }

@@ -13,7 +13,7 @@ First release.
 - `AdTracker`: impression only for a visible ad, start, quartiles, complete, pause, resume, skip, error. `installImagePolyfill` sends pixels without `Image`.
 - `AdManager`: pre-, mid- and post-rolls through a `PlayerPort`. Pods play in `sequence` order on two players, and the next ad starts about 500 ms before the current one ends. A seek over breaks plays only the last one. Every error and timeout ends in content.
 - Break events for the app: `breakStart` before a break's first ad, `breakEnd`, and `break:<id>:empty` when a break has no ad to play.
-- `onEvent(name, info)`: the second argument has the break id and the ad (id, creative id, title, advertiser, duration, place in the pod).
+- `onEvent(name, info)`: the second argument has the break id and the ad (id, creative id, title, advertiser, duration, place in the pod). `snapshot.ad` has the same data for the ad on screen.
 - No repeated creatives or advertisers across breaks and, with an optional memory, across titles and launches. Break limits `maxBreakAds` and `maxBreakSeconds`. Ads of a category the break blocks are left out.
 - Never louder than the movie: with `contentLoudness`, a louder ad is turned down to it, never up.
 - Pause ads from VAST NonLinear (IAB CTV Ad Portfolio), with QR code and IAB tracking.

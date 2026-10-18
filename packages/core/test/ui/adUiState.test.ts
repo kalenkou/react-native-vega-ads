@@ -2,7 +2,7 @@ import { adCountdownState, adUiState } from '../../src/ui/adUiState';
 import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
 
 function snapshot(overrides: Partial<SessionSnapshot>): SessionSnapshot {
-  return { state: 'playing', position: 1, total: 2, adTime: 3.2, adDuration: 15, canSkip: false, skipIn: null, adSurface: 'ad', caption: '', ...overrides };
+  return { state: 'playing', position: 1, total: 2, adTime: 3.2, adDuration: 15, canSkip: false, skipIn: null, adSurface: 'ad', caption: '', ad: null, ...overrides };
 }
 
 describe('adUiState (R26)', () => {

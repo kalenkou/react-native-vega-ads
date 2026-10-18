@@ -91,6 +91,7 @@ export const IDLE_SNAPSHOT: SessionSnapshot = Object.freeze({
   skipIn: null,
   adSurface: null,
   caption: '',
+  ad: null,
 });
 
 /**

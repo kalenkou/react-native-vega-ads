@@ -52,7 +52,7 @@ Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` o
 |---|---|
 | `playing` | `true` while an ad is on screen. |
 | `ended` | `true` after the content ended and the post-roll, if any, is over. |
-| `snapshot` | Current break state: ad position, total, time, skip state. |
+| `snapshot` | Current break state: `position` and `total` in the pod, `adTime` and `adDuration` in seconds, `canSkip` and `skipIn`, and `ad`, the ad on screen (`id`, `creativeId`, `title`, `advertiser`, `duration` and more, or `null`). Enough for your own ad label, counter or progress bar. |
 | `ui` | Data for an ad overlay: `label` ("Ad 1 of 3 · 0:12") and its parts `name` and `timeLeft`, `skip`, `why`, `caption`, the VoiceView texts. |
 | `timeline` | `marks`: the mid-rolls (`id`, `time` in seconds, `done`) for your timeline. `nextBreakIn`: whole seconds to the next mid-roll in its last `countdownSeconds`, only once its ads are loaded. Otherwise `null`. |
 | `surfaces` | Pass to `DualSurfaceView` or `AdSurfaceLayers`. |

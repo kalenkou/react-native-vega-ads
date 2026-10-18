@@ -181,6 +181,18 @@ describe('AdManager', () => {
     expect(info('breakEnd')).toEqual({ breakId: 'break-1' });
   });
 
+  it('puts the ad on screen into the snapshot, for an own ad UI', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    expect(ctx.last()?.ad).toMatchObject({ id: 'ad-1', creativeId: 'cr-1', title: 'Inline linear 10s', duration: 10 });
+    await playAdToEnd(ctx);
+    expect(ctx.last()?.ad).toBeNull();
+  });
+
   it('gives a failed ad its error code and the ad', async () => {
     const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
     const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
