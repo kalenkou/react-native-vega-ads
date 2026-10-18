@@ -538,6 +538,12 @@ deploy-aws.sh ──► S3 (movies, ad creatives, VAST, VMAP, WebVTT) ──► 
 
 The template has no keys or account IDs; `sam delete` removes it all.
 
+Checked on 18.10.2026 in eu-north-1 (`AWS_REGION` picks the region, default eu-west-1): one run
+deployed the stack and 960 MB of media in about 10 minutes. Then 3 of 3 runs on a Fire TV Stick
+4K Select played the movie and every ad from CloudFront, and the report counted every pixel:
+pre-roll, a two-ad mid-roll pod, the repeated ad left out. The Rekognition mode of `make-vmap`
+is unit-tested but has not run on AWS yet.
+
 ## Development
 
 You need Node.js 22 and npm 10 (as in CI). For the demo app: the Vega SDK (we use 0.24.12112), and for its media: curl, shasum, unzip, ffmpeg with libx264 and AAC, and Python 3.
