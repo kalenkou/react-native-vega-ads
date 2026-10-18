@@ -40,13 +40,17 @@ async function setup(overrides: Partial<UseStitchedAdsOptions> = {}) {
     .on('https://ads.test/post.xml', { body: INLINE });
   const player = new FakeW3cPlayer(600);
   const events: string[] = [];
+  const infos: unknown[] = [];
   const out: { current: StitchedAds | null } = { current: null };
   const options: UseStitchedAdsOptions = {
     vmapUrl: VMAP_URL,
     player,
     http,
     clock: new FakeClock(),
-    onEvent: (name) => events.push(name),
+    onEvent: (name, info) => {
+      events.push(name);
+      infos.push(info);
+    },
     ...overrides,
   };
   let renderer!: TestRenderer.ReactTestRenderer;
@@ -64,16 +68,17 @@ async function setup(overrides: Partial<UseStitchedAdsOptions> = {}) {
   };
   const rerender = (changes: Partial<UseStitchedAdsOptions>) =>
     act(() => renderer.update(<Harness options={{ ...options, ...changes }} out={out} />));
-  return { http, player, events, out, renderer, at, play, rerender, ads: () => out.current as StitchedAds };
+  return { http, player, events, infos, out, renderer, at, play, rerender, ads: () => out.current as StitchedAds };
 }
 
 it('tracks the stitched ads as the player plays and shows which ad is on', async () => {
-  const { events, play, ads, renderer } = await setup();
+  const { events, infos, play, ads, renderer } = await setup();
   play(0, 4);
   expect(ads().ad).toEqual({ index: 1, count: 1, remaining: 6, secondsUntilSkip: null });
   play(4.5, 12);
   expect(ads().ad).toBeNull();
   expect(events).toEqual(['impression', 'start', 'firstQuartile', 'midpoint', 'thirdQuartile', 'complete']);
+  expect(infos).toEqual(events.map(() => ({})));
   act(() => renderer.unmount());
 });
 

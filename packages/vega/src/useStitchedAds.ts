@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  type AdEventHandler,
   installImagePolyfill,
   loadStitchedBreaks,
   placeStitchedBreaks,
@@ -27,8 +28,8 @@ export interface UseStitchedAdsOptions {
    */
   streamSeconds?: number;
   macros?: Macros;
-  /** IAB event names after their pixels are sent: impression, start, quartiles, complete, skip. */
-  onEvent?: (name: string) => void;
+  /** IAB event names after their pixels are sent: impression, start, quartiles, complete, skip. `info` is `{}` in this preview. */
+  onEvent?: AdEventHandler;
   http?: HttpPort;
   clock?: ClockPort;
 }
@@ -78,7 +79,7 @@ export function useStitchedAds(options: UseStitchedAdsOptions): StitchedAds {
       if (!live) return;
       const created = new StitchedAdTracker(placeStitchedBreaks(loaded, latest.current.streamSeconds ?? NaN), {
         macros,
-        onEvent: (name) => latest.current.onEvent?.(name),
+        onEvent: (name) => latest.current.onEvent?.(name, {}),
       });
       breaks.current = loaded;
       tracker.current = created;
