@@ -1289,6 +1289,21 @@ describe('AdManager', () => {
       expect(ctx.last()).toMatchObject({ position: 1, total: 1 });
     });
 
+    it('fills a blocked pod ad with a spare ad of the response (VAST 4 ad buffet)', async () => {
+      const xml = fixture('vast/pod-cat.xml');
+      const coffee = xml.slice(xml.indexOf('  <Ad id="coffee"'), xml.indexOf('</VAST>'));
+      const tea = coffee.replace('id="coffee" sequence="2"', 'id="tea"').replace(/coffee/g, 'tea');
+      const ctx = setup({ 'https://ads.test/pod-spare.xml': xml.replace('</VAST>', `${tea}</VAST>`) });
+      const starting = ctx.manager.start({
+        breaks: [{ offset: 'start', vastUrl: 'https://ads.test/pod-spare.xml', blockedAdCategories: ['1571'] }],
+      });
+      await settle();
+      ctx.lastAdPlayer().emitCanPlay();
+      await starting;
+      expect(ctx.lastAdPlayer().src).toBe('https://cdn.test/tea.mp4');
+      expect(ctx.last()).toMatchObject({ position: 1, total: 2 });
+    });
+
     it('passes the scene signals on, so the break can say why an ad is missing', async () => {
       const ctx = setup({ 'https://ads.test/pod-cat.xml': fixture('vast/pod-cat.xml') });
       const starting = ctx.manager.start({

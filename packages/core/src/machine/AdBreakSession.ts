@@ -368,14 +368,18 @@ export class AdBreakSession {
     });
   }
 
-  /** Drops the ads of a category the break blocks; the ad server hears error 205 for each. */
+  /**
+   * Drops the ads of a category the break blocks; the ad server hears error 205 for each. A
+   * blocked pod ad gets the place of the response's next spare ad (VAST 4 ad buffet), as a
+   * failed one would.
+   */
   private withoutBlocked(responses: LinearAd[][]): LinearAd[][] {
     const blocked = new Set(this.deps.blockedAdCategories ?? []);
     if (blocked.size === 0) {
       return responses;
     }
-    return responses.map((ads) =>
-      ads.filter((linear) => {
+    return responses.map((ads) => {
+      const kept = ads.filter((linear) => {
         if (!(linear.ad.categories ?? []).some((category) => blocked.has(category.value))) {
           return true;
         }
@@ -383,8 +387,19 @@ export class AdBreakSession {
         this.blockedAfterScene.push(linear.ad.advertiser?.value?.trim() || null);
         this.deps.onEvent?.('skipped:category', { ad: adEventAd(linear) });
         return false;
-      }),
-    );
+      });
+      const spares = kept.filter((linear) => linear.sequence === null);
+      const freed = ads.filter((linear) => linear.sequence !== null && !kept.includes(linear));
+      if (kept.length === spares.length || freed.length === 0) {
+        return kept; // no pod left, or no pod ad blocked: the buffet works as usual
+      }
+      const moved = new Map<LinearAd, LinearAd>();
+      freed.forEach((slot, index) => {
+        const spare = spares[index];
+        if (spare) moved.set(spare, { ...spare, sequence: slot.sequence });
+      });
+      return kept.map((linear) => moved.get(linear) ?? linear);
+    });
   }
 
   /** Drops the ads the viewer rules do not allow; the ad server hears `notUsed` for each. */
