@@ -1,5 +1,5 @@
 import { ClockPort, HttpPort, Macros, MediaFileOptions, ScheduledBreak, VastResult, VmapTrackingEvent } from '../vast';
-import type { AdEventHandler } from '../events';
+import type { AdEventHandler, AdEventInfo } from '../events';
 import { AdBreakSession, SessionSnapshot } from '../machine/AdBreakSession';
 import { BreakMark, BreakScheduler, Decision } from '../schedule/BreakScheduler';
 import type { PlayerPort } from '../ports';
@@ -167,7 +167,7 @@ export class AdManager {
     try {
       await this.run(schedule, options.resumeAt, options.preloaded);
     } catch {
-      this.deps.onEvent?.('error:start');
+      this.emit('error:start');
       if (!this.disposed) {
         await this.playContent().catch(() => undefined);
       }
@@ -235,6 +235,10 @@ export class AdManager {
     this.pauseAds?.viewerPaused();
   }
 
+  private emit(name: string, info: AdEventInfo = {}): void {
+    this.deps.onEvent?.(name, info);
+  }
+
   /** Viewer pressed Back during an ad: back to the content (R23). */
   async back(): Promise<void> {
     if (this.active?.state === 'playing') {
@@ -293,9 +297,9 @@ export class AdManager {
     const cutOff = this.cutOff;
     this.cutOff = null;
     if (cutOff && !this.disposed) {
-      this.deps.onEvent?.(`break:${cutOff}:interrupted`, { breakId: cutOff });
+      this.emit(`break:${cutOff}:interrupted`, { breakId: cutOff });
       if (this.isPostRoll(cutOff)) {
-        this.deps.onEvent?.('content:ended'); // playing it again would restart the title
+        this.emit('content:ended'); // playing it again would restart the title
       } else {
         await this.playContent();
       }
@@ -307,12 +311,12 @@ export class AdManager {
     }
     this.suspended = null;
     this.prepared.delete(suspended.id);
-    this.deps.onEvent?.(`break:${suspended.id}:interrupted`, { breakId: suspended.id });
+    this.emit(`break:${suspended.id}:interrupted`, { breakId: suspended.id });
     this.contentStarted = true;
     await suspended.session.resumeContent();
     this.deps.onChange?.(IDLE_SNAPSHOT);
     if (this.isPostRoll(suspended.id)) {
-      this.deps.onEvent?.('content:ended');
+      this.emit('content:ended');
     }
   }
 
@@ -332,7 +336,7 @@ export class AdManager {
       // (a break waits for its ads only before the content started).
       canShow: () => this.contentStarted && !this.contentEnded && !this.active && !this.background,
       onChange: onPauseAd,
-      onEvent: (name) => this.deps.onEvent?.(name),
+      onEvent: (name) => this.emit(name),
     });
     this.pauseAds.start();
   }
@@ -340,7 +344,7 @@ export class AdManager {
   private async resolve(schedule: AdSchedule): Promise<ScheduledBreak[]> {
     const { breaks, errorCode } = await resolveSchedule(schedule, { http: this.deps.http, clock: this.deps.clock, macros: this.macros });
     if (errorCode !== undefined) {
-      this.deps.onEvent?.(`vmap:error:${errorCode}`);
+      this.emit(`vmap:error:${errorCode}`);
     }
     return breaks;
   }
@@ -361,7 +365,7 @@ export class AdManager {
     this.contentEnded = true;
     const decisions = scheduler.onEnded();
     if (!decisions.some((d) => d.type === 'start')) {
-      this.deps.onEvent?.('content:ended');
+      this.emit('content:ended');
     }
     void this.apply(decisions).catch(() => undefined); // a break that fails never stops the content
   }
@@ -455,7 +459,7 @@ export class AdManager {
         if (name === 'impression') {
           this.impressed = true;
         }
-        this.deps.onEvent?.(name, { ...info, breakId: id });
+        this.emit(name, { ...info, breakId: id });
       },
     });
     const entry: Prepared = {
@@ -483,10 +487,10 @@ export class AdManager {
     if (!entry.loaded && this.contentStarted && !waitForLoad) {
       // Pausing the content to wait for a slow ad server is worse than losing the break.
       this.prepared.delete(id);
-      this.deps.onEvent?.(`break:${id}:late`, { breakId: id });
+      this.emit(`break:${id}:late`, { breakId: id });
       void entry.session.interrupt();
       if (this.isPostRoll(id)) {
-        this.deps.onEvent?.('content:ended');
+        this.emit('content:ended');
       }
       return;
     }
@@ -496,7 +500,7 @@ export class AdManager {
       const earlier = this.prepared.get(other);
       if (earlier) {
         this.prepared.delete(other);
-        this.deps.onEvent?.(`break:${other}:superseded`, { breakId: other });
+        this.emit(`break:${other}:superseded`, { breakId: other });
         void earlier.session.interrupt();
       }
     }
@@ -510,7 +514,7 @@ export class AdManager {
       if (this.background) {
         this.cutOff = id;
       } else if (!this.contentStarted) {
-        this.deps.onEvent?.(`break:${id}:interrupted`, { breakId: id });
+        this.emit(`break:${id}:interrupted`, { breakId: id });
         await this.playContent();
       }
       return;
@@ -518,7 +522,7 @@ export class AdManager {
     if (this.active) {
       // Another break started while this one loaded: one break at a time.
       this.prepared.delete(id);
-      this.deps.onEvent?.(`break:${id}:superseded`, { breakId: id });
+      this.emit(`break:${id}:superseded`, { breakId: id });
       await entry.session.interrupt();
       return;
     }
@@ -526,9 +530,9 @@ export class AdManager {
       this.prepared.delete(id);
       this.trackBreak(id, 'error', VMAP_NO_PLAYABLE_AD);
       // No ad to play: an empty answer, a failed request, or every ad left out or failing.
-      this.deps.onEvent?.(`break:${id}:empty`, { breakId: id });
+      this.emit(`break:${id}:empty`, { breakId: id });
       if (this.isPostRoll(id)) {
-        this.deps.onEvent?.('content:ended');
+        this.emit('content:ended');
       } else if (!this.contentStarted) {
         await this.playContent();
       }
@@ -537,7 +541,7 @@ export class AdManager {
     this.active = entry.session;
     this.activeId = id;
     this.trackBreak(id, 'breakStart');
-    this.deps.onEvent?.('breakStart', { breakId: id });
+    this.emit('breakStart', { breakId: id });
     await entry.session.start({ resumeContent: !this.isPostRoll(id) });
   }
 
@@ -552,7 +556,7 @@ export class AdManager {
       this.prepared.delete(id);
       this.deps.onChange?.(IDLE_SNAPSHOT);
       if (this.isPostRoll(id)) {
-        this.deps.onEvent?.('content:ended');
+        this.emit('content:ended');
       }
       return;
     }

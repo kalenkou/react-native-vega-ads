@@ -214,6 +214,7 @@ describe('AdManager', () => {
     await ctx.manager.start({ vmapUrl: VMAP });
     expect(ctx.content.calls).toContain('play');
     expect(ctx.events).toContain('vmap:error:1008');
+    expect(ctx.details).toContainEqual(['vmap:error:1008', {}]);
   });
 
   it('starts the content when the pre-roll has no ads, and tells the app', async () => {
@@ -354,6 +355,7 @@ describe('AdManager', () => {
       expect(ctx.events).not.toContain('loudness:-8.0');
       await ctx.lastAdPlayer().flush();
       expect(ctx.events.slice(ctx.events.indexOf('impression'))).toContain('loudness:-8.0');
+      expect(ctx.details).toContainEqual(['loudness:-8.0', { breakId: expect.any(String), ad: expect.objectContaining({ id: 'ad-1' }) }]);
     });
 
     it('never turns a quieter ad up', async () => {
@@ -542,6 +544,7 @@ describe('AdManager', () => {
     const ctx = await preThenSameMid();
     expect(ctx.content.paused).toBe(false);
     expect(ctx.events).toContain('skipped:repeat');
+    expect(ctx.details).toContainEqual(['skipped:repeat', { breakId: 'break-2', ad: expect.objectContaining({ id: 'ad-1', creativeId: 'cr-1' }) }]);
     expect(ctx.events.filter((e) => e === 'impression')).toHaveLength(1);
   });
 
@@ -591,6 +594,7 @@ describe('AdManager', () => {
     }
     expect(ctx.content.paused).toBe(false);
     expect(ctx.events).toContain('break:break-1:late');
+    expect(ctx.details).toContainEqual(['break:break-1:late', { breakId: 'break-1' }]);
   });
 
   it('releases the ad player of a prefetched break that a seek jumped over', async () => {
@@ -685,6 +689,7 @@ describe('AdManager', () => {
     };
     await expect(ctx.manager.start(manual([]))).resolves.toBeUndefined();
     expect(ctx.events).toContain('error:start');
+    expect(ctx.details).toContainEqual(['error:start', {}]);
     expect(ctx.content.calls).toContain('play');
   });
 
@@ -818,6 +823,7 @@ describe('AdManager', () => {
     ctx.content.emitEnded();
     await settle();
     expect(ctx.events).toContain('content:ended');
+    expect(ctx.details).toContainEqual(['content:ended', {}]);
   });
 
   it('skip() passes to the active break and is false without one', async () => {

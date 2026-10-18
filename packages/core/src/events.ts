@@ -28,9 +28,10 @@ export interface AdEventInfo {
   ad?: AdEventAd;
 }
 
-/** `onEvent` callback: the event name and, when there is one, its break and ad. */
-export type AdEventHandler = (name: string, info?: AdEventInfo) => void;
+/** `onEvent` callback: the event name and its details. `info` is `{}` for an event without a break or ad. */
+export type AdEventHandler = (name: string, info: AdEventInfo) => void;
 
+/** @internal The details of a VAST ad for `onEvent`. */
 export function adEventAd(linear: LinearAd): AdEventAd {
   const { ad, creative } = linear;
   return {

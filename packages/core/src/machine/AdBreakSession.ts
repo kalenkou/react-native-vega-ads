@@ -1,5 +1,5 @@
 import { PodController, PodItem } from '../pod/PodController';
-import { adEventAd, type AdEventHandler } from '../events';
+import { adEventAd, type AdEventInfo } from '../events';
 import type { RepeatGuard } from '../pod/RepeatGuard';
 import {
   adLoudness,
@@ -108,7 +108,7 @@ export interface SessionDeps {
   /** What the scene before the break shows (`ScheduledBreak.sceneSignals`); only explains the blocked ads. */
   sceneSignals?: readonly string[];
   /** Ad and break events by name, ad events with their ad; the full list is in docs/api.md, "Events (`onEvent`)". */
-  onEvent?: AdEventHandler;
+  onEvent?: (name: string, info?: AdEventInfo) => void;
   /**
    * The viewer's caption language (BCP 47, such as "en-US"). The ad's WebVTT file in that
    * language is used, else its first WebVTT file.
