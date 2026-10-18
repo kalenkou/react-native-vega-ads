@@ -1,7 +1,13 @@
 import { readFileSync } from 'fs';
 import { installImagePolyfill } from '../../src/vast/polyfill/image';
 import { requestVast, LinearAd } from '../../src/vast/request/VastRequester';
-import { loadStitchedAds, stitchedBreak, StitchedAdTracker } from '../../src/stitched/StitchedAdTracker';
+import {
+  loadStitchedAds,
+  loadStitchedBreaks,
+  placeStitchedBreaks,
+  stitchedBreak,
+  StitchedAdTracker,
+} from '../../src/stitched/StitchedAdTracker';
 import { FakeClock } from '../fakes/FakeClock';
 import { FakeHttp } from '../fakes/FakeHttp';
 
@@ -119,6 +125,41 @@ it('pause and resume during an ad are tracked', async () => {
   expect(events.slice(-3)).toEqual(['pause', 'resume', 'pause']);
 });
 
+it('the pause a player sends just before the end of an ad is not counted', async () => {
+  const { tracker, events, play } = await setup();
+  play(299, 309.75);
+  tracker.paused();
+  expect(events).not.toContain('pause');
+});
+
+it('when the stream ends during an ad: complete if it played to its end, else no complete', async () => {
+  const { tracker, events, play } = await setup();
+  play(299, 309.5);
+  tracker.streamEnded();
+  expect(events.slice(-2)).toEqual(['thirdQuartile', 'complete']);
+  expect(tracker.current()).toBeNull();
+  const second = await setup();
+  second.play(299, 304);
+  second.tracker.streamEnded();
+  expect(second.events).toEqual(['impression', 'start', 'firstQuartile']);
+  expect(second.tracker.current()).toBeNull();
+});
+
+it('place() moves the ads, for example once the stream length is known; an ad keeps its progress', async () => {
+  const [a, b, c] = [await loadAd(), await loadAd(), await loadAd()];
+  const events: string[] = [];
+  const tracker = new StitchedAdTracker(stitchedBreak(0, [a]), { onEvent: (name) => events.push(name) });
+  for (let t = 0; t <= 4; t += 0.25) tracker.update(t);
+  tracker.place([...stitchedBreak(0, [a]), ...stitchedBreak(50, [b]), ...stitchedBreak(90, [c])]);
+  for (let t = 4.25; t <= 60; t += 0.25) tracker.update(t);
+  tracker.place([...stitchedBreak(0, [a]), ...stitchedBreak(50, [b]), ...stitchedBreak(95, [c])]);
+  for (let t = 60.25; t <= 92; t += 0.25) tracker.update(t);
+  expect(tracker.current()).toBeNull();
+  for (let t = 92.25; t <= 106; t += 0.25) tracker.update(t);
+  expect(events.filter((e) => e === 'impression')).toHaveLength(3);
+  expect(events.filter((e) => e === 'complete')).toHaveLength(3);
+});
+
 it('skip is allowed after the skip offset and returns where the content goes on; the label counts whole seconds', async () => {
   const { tracker, events, play } = await setup(SKIPPABLE);
   play(99, 103);
@@ -190,6 +231,38 @@ describe('loadStitchedAds', () => {
       [90.5, 1, 2],
       [100.5, 2, 2],
     ]);
+  });
+
+  it('a break gets the ads the client player would play: one where the VMAP allows one, a pod in sequence order, one ad of a response without sequence numbers', async () => {
+    const POD = readFileSync(`${__dirname}/../../fixtures/vast/pod-cat.xml`, 'utf8');
+    const reversed = POD.replace('sequence="1"', 'sequence="X"').replace('sequence="2"', 'sequence="1"').replace('sequence="X"', 'sequence="2"');
+    const unsequenced = POD.replace(/ sequence="\d"/g, '');
+    const http = new FakeHttp()
+      .on(VMAP, { body: vmap('pre-mid-post.xml') }) // pre and post: allowMultipleAds="false"
+      .on('https://ads.test/pre.xml', { body: POD })
+      .on('https://ads.test/mid1.xml', { body: reversed })
+      .on('https://ads.test/mid2.xml', { body: unsequenced })
+      .on('https://ads.test/post.xml', { body: INLINE });
+    const ads = await loadStitchedAds(VMAP, { http, clock: new FakeClock() }, 600);
+    expect(ads.map((a) => [a.start, a.ad.ad.id, a.index, a.count])).toEqual([
+      [0, 'car', 1, 1],
+      [90.5, 'coffee', 1, 2],
+      [100.5, 'car', 2, 2],
+      [300, 'car', 1, 1],
+      [590, 'ad-1', 1, 1],
+    ]);
+  });
+
+  it('the breaks load once and can be placed again for another stream length', async () => {
+    const http = new FakeHttp()
+      .on(VMAP, { body: vmap('pre-mid-post.xml') })
+      .on('https://ads.test/pre.xml', { body: INLINE })
+      .on('https://ads.test/mid1.xml', { body: INLINE })
+      .on('https://ads.test/mid2.xml', { body: INLINE })
+      .on('https://ads.test/post.xml', { body: INLINE });
+    const breaks = await loadStitchedBreaks(VMAP, { http, clock: new FakeClock() });
+    expect(placeStitchedBreaks(breaks, NaN).map((a) => a.start)).toEqual([0, 90.5]);
+    expect(placeStitchedBreaks(breaks, 600).map((a) => a.start)).toEqual([0, 90.5, 300, 590]);
   });
 
   it('a VMAP that cannot be loaded gives no ads', async () => {
