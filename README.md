@@ -159,12 +159,12 @@ You need Node.js 22 and npm 10. The demo app also needs the Vega SDK.
 
 ```sh
 npm ci
-npm run check   # lint, types and the tests of the packages and tools
+npm run check   # lint, format, types and the tests of the packages and tools
 # the demo app's tests (the demo is not a workspace)
 cd apps/demo && npm ci && cp src/media.example.ts src/media.local.ts && npm run use-core && npm test
 ```
 
-The demo app's 22 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
+Before a pull request run `npm run format` and `npm run check`. See [CONTRIBUTING.md](CONTRIBUTING.md). The demo app's 22 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
 
 ## Credits
 
