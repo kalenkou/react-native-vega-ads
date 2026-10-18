@@ -5,6 +5,7 @@ import { BackHandler } from 'react-native';
 const kepler = require('@amazon-devices/react-native-kepler') as { emitAppState(state: string): void; appStateListenerCount(): number };
 import { FakeClock } from '../../core/test/fakes/FakeClock';
 import { FakeHttp } from '../../core/test/fakes/FakeHttp';
+import type { AdEventInfo } from '../src';
 import { useVegaAds, UseVegaAdsOptions, VegaAds } from '../src/useVegaAds';
 import { FakeW3cPlayer } from './fakes/FakeW3cPlayer';
 import { W3cPlayerAdapter } from '../src/W3cPlayerAdapter';
@@ -174,6 +175,15 @@ describe('useVegaAds', () => {
     act(() => ctx.ads().surfaces.onAdSurface('a2'));
     await settle();
     expect(ctx.http.requests.filter((url) => url === PRE)).toHaveLength(1);
+  });
+
+  it('gives onEvent the break and the ad of each event', async () => {
+    const details: Array<[string, AdEventInfo | undefined]> = [];
+    const ctx = setup({ onEvent: (name, info) => details.push([name, info]) });
+    await ctx.prerollPlaying();
+    const impression = details.find(([name]) => name === 'impression');
+    expect(impression?.[1]?.breakId).toEqual(expect.any(String));
+    expect(impression?.[1]?.ad).toMatchObject({ id: 'ad-1', creativeId: 'cr-1', title: 'Inline linear 10s' });
   });
 
   it('tells the app when an ad is on screen', async () => {

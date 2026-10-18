@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler } from 'react-native';
 import { useKeplerAppStateManager } from '@amazon-devices/react-native-kepler';
 import {
+  AdEventHandler,
   AdManager,
   AdSchedule,
   AdTimeline,
@@ -88,8 +89,8 @@ export interface UseVegaAdsOptions {
    * `'content'`: the break ends and the content plays on, without skip or close pixels.
    */
   backDuringAd?: 'app' | 'content';
-  /** IAB events sent and errors, for logs and analytics. */
-  onEvent?: (name: string) => void;
+  /** IAB events sent and errors, for logs and analytics. The second argument has the break and the ad of the event. */
+  onEvent?: AdEventHandler;
   /** Defaults to the app's own component instance (needed for remote and Alexa play/pause). */
   componentInstance?: () => unknown;
   /** For tests and other runtimes. */
@@ -231,11 +232,11 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       onPauseAd: setPauseAd,
       onChange: setSnapshot,
       onTimeline: setTimeline,
-      onEvent: (name) => {
+      onEvent: (name, info) => {
         if (name === 'content:ended') {
           setEnded(true);
         }
-        latest.current.onEvent?.(name);
+        latest.current.onEvent?.(name, info);
       },
     });
     manager.current = created;
