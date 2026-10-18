@@ -92,7 +92,8 @@ export interface HeadlessPlayerOptions {
 export class HeadlessPlayerAdapter implements PlayerPort {
   private readonly listeners = new Map<PlayerEventName, Set<() => void>>();
   private subscriptions: Subscription[] = [];
-  private autoplay = true;
+  /** Off until the core asks: the content must not start under a pre-roll. */
+  private autoplay = false;
   private state: string | undefined;
   private time = 0;
   private duration = 0;
@@ -112,38 +113,46 @@ export class HeadlessPlayerAdapter implements PlayerPort {
 
   async initialize(): Promise<void> {
     const mine = (id?: HeadlessSessionId): boolean => id === undefined || id.id === this.session.id;
-    this.subscriptions = await Promise.all([
-      this.client.registerStatusListener(
-        {
-          onSessionStatusChanged: (update) => {
-            const status = update.find((s) => mine(s.sessionId));
-            if (status) this.onStatus(status);
+    // One at a time, each kept as soon as it exists: if a later one fails, deinitialize still
+    // removes the earlier ones.
+    const registrations: Array<() => Promise<Subscription>> = [
+      () =>
+        this.client.registerStatusListener(
+          {
+            onSessionStatusChanged: (update) => {
+              const status = update.find((s) => mine(s.sessionId));
+              if (status) this.onStatus(status);
+            },
           },
-        },
-        this.session,
-      ),
-      this.client.registerPositionListener(
-        {
-          onPositionUpdated: (update) => {
-            const position = update.find((p) => mine(p.sessionId));
-            if (position) {
-              this.time = position.position;
-              this.emit('timeupdate');
-            }
+          this.session,
+        ),
+      () =>
+        this.client.registerPositionListener(
+          {
+            onPositionUpdated: (update) => {
+              const position = update.find((p) => mine(p.sessionId));
+              if (position) {
+                this.time = position.position;
+                this.emit('timeupdate');
+              }
+            },
           },
-        },
-        POSITION_INTERVAL_SECONDS,
-        this.session,
-      ),
-      this.client.registerErrorListener(
-        {
-          onError: (_error, sessionId) => {
-            if (mine(sessionId)) this.emit('error');
+          POSITION_INTERVAL_SECONDS,
+          this.session,
+        ),
+      () =>
+        this.client.registerErrorListener(
+          {
+            onError: (_error, sessionId) => {
+              if (mine(sessionId)) this.emit('error');
+            },
           },
-        },
-        this.session,
-      ),
-    ]);
+          this.session,
+        ),
+    ];
+    for (const register of registrations) {
+      this.subscriptions.push(await register());
+    }
   }
 
   private onStatus(status: HeadlessSessionStatus): void {

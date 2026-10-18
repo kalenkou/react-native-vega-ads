@@ -95,9 +95,24 @@ test('initialize listens to status, position and errors of its own session', asy
 
 test('setSrc loads the media with the autoplay set before it, from the start', async () => {
   const { client, adapter } = await setup();
-  adapter.setAutoplay(false);
+  adapter.setAutoplay(true);
+  adapter.setSrc('https://ads.test/a.mp4');
+  expect(client.calls.slice(-1)[0]).toBe('load:https://ads.test/a.mp4:0:true:7');
+});
+
+test('without setAutoplay the media does not start by itself: the core starts the content after a pre-roll', async () => {
+  const { client, adapter } = await setup();
   adapter.setSrc('https://ads.test/a.mp4');
   expect(client.calls.slice(-1)[0]).toBe('load:https://ads.test/a.mp4:0:false:7');
+});
+
+test('if one listener cannot be registered, deinitialize still removes the others', async () => {
+  const client = new RecordingClient();
+  client.registerErrorListener = () => Promise.reject(new Error('service gone'));
+  const adapter = new HeadlessPlayerAdapter(client, { id: 7 }, () => ({ name: 'app' }));
+  await expect(adapter.initialize()).rejects.toThrow('service gone');
+  await adapter.deinitialize();
+  expect(client.unsubscribed).toBe(2);
 });
 
 test('session states become the player events the core waits for, once per change', async () => {
