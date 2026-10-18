@@ -35,7 +35,7 @@ Required in `manifest.toml`: the media category, the `IMediaPlaybackServer` inte
 |---|---|
 | `<VegaAdsPlayer>` | content player, ad surfaces, overlay, "Ad in N" countdown and pause ad in one component. Every part can be replaced |
 | `useVideoPlayer(uri)` | the content `VideoPlayer`, initialized, `autoplay` off, released when the screen closes |
-| `useVegaAds(options)` | the hook: loads breaks, drives the players, returns `playing`, `ui`, `surfaces`, `skip`, `back` |
+| `useVegaAds(options)` | the hook: loads breaks, drives the players, returns `playing`, `ui`, `ad`, `surfaces`, `skip`, `back` |
 | `DualSurfaceView` | content surface plus two ad surfaces |
 | `AdSurfaceLayers` | only the two ad surfaces, for screens that render their own content surface. Mount it after that surface is created |
 | `AdOverlay` | "Ad 1 of 3 · 0:12", Skip button with D-pad focus, VoiceView announcement |

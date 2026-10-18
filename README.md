@@ -1,6 +1,6 @@
 # react-native-vega-ads
 
-Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, plays the ads on the native w3cmedia player and sends the IAB tracking pixels. It is for apps that have their own ad server. Open source, Apache-2.0.
+Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, the IAB standards for video ads and ad breaks. It plays the ads on Vega's video player (w3cmedia) and sends the IAB tracking pixels: the requests that tell the ad server an ad was seen. It is for apps that have their own ad server. Open source, Apache-2.0.
 
 An optional AI tool places the breaks between lines of dialogue and leaves out ads that do not fit the scene. See [AI break placement](#ai-break-placement-optional).
 
@@ -14,17 +14,19 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 
 ## Features
 
-- Pre-, mid- and post-rolls from a VMAP, or from your own list of VAST tags.
-- VAST 4 wrappers, ad pods and skippable ads.
+- Ads before, during and after the movie (pre-, mid- and post-rolls). The break times come from a VMAP file or from your own list of ad URLs (VAST tags).
+- VAST 4 wrappers (one ad server passes the request on to another), ad pods (several ads in one break) and skippable ads.
 - No black frame between the movie and the ads. The movie resumes where it stopped.
-- The remote and Alexa pause and play the ads. Skip gets the D-pad focus, and each ad is announced to VoiceView.
-- IAB tracking: impression, quartiles, pause, skip, VAST error codes and the VMAP break events.
+- The remote and Alexa pause and play the ads. The Skip button gets the remote's focus. VoiceView, the Fire TV screen reader, reads out each ad.
+- IAB tracking: the ad server learns when an ad was shown, each quarter of it, pause, skip and errors, and when a break starts and ends.
 - No repeats. The same ad does not come back within 30 minutes, and a break has one ad per advertiser.
-- An ad is never louder than the movie, when its VAST carries the ad's loudness.
-- Pause ads and captions in ads.
-- A break can block ad categories. The list comes from the VMAP or from your code.
-- Your own ad UI: every event comes with the ad's data (`onEvent(name, info)`), the ad on screen is in `snapshot.ad`, and you can replace the overlay (`renderOverlay`), its styles (`adStyles`) and its texts, in any language (`strings`).
-- In preview: tracking for ads that a server stitched into the stream, and Amazon's headless player.
+- An ad is never louder than the movie, when its VAST says how loud the ad is.
+- Pause ads (an ad with a QR code while the movie is paused) and captions in ads.
+- A break can block ad categories, for example no car ads right after a car crash. The list comes from the VMAP or from your code.
+- Your own ad UI: ad events come with the ad's data (`onEvent(name, info)`), the ad on screen is in `ads.ad`, and you can replace the overlay (`renderOverlay`), its styles (`adStyles`) and its texts, in any language (`strings`).
+- In preview, the API can change:
+  - Tracking for server-side ads, where your server puts the ads into the video stream itself.
+  - Amazon's headless player, where the video plays in a separate process.
 
 More detail: [docs/features.md](docs/features.md).
 
@@ -36,22 +38,22 @@ What you get:
 
 - Breaks at shot changes and never in the middle of a line of dialogue.
 - After a sensitive scene, the break blocks ad categories that do not fit. For example, no car ad right after a car crash.
-- The ad tells the viewer why: "No Kettlo ad after a scene with injury".
+- With `showWhy`, the ad tells the viewer why: "No Kettlo ad after a scene with injury".
 
 How to use it:
 
-1. Install [ffmpeg](https://ffmpeg.org). For the speech step add [whisper.cpp](https://github.com/ggml-org/whisper.cpp) with a small speech model. For the scene step add [llama.cpp](https://github.com/ggml-org/llama.cpp) with the Qwen3.6 vision model (about 24 GB of memory). Each step is optional.
+1. Install [ffmpeg](https://ffmpeg.org). For the speech step add [whisper.cpp](https://github.com/ggml-org/whisper.cpp) with a small speech model. For the scene step add [llama.cpp](https://github.com/ggml-org/llama.cpp) with the Qwen3.6 vision model (about 24 GB of memory). The speech and scene steps are optional. The scene step needs the speech step.
 2. Run `make-vmap` on the movie file. It writes a VMAP file with the break times and, for each break, the blocked ad categories.
 3. Put the VMAP file next to the movie on any HTTPS host.
 4. Give its URL to the player: `ads={{ vmapUrl }}`.
 
 What your ad server needs:
 
-- An IAB category in each ad's VAST (`<Category>`). An ad without one is never left out.
+- An IAB category in each ad's VAST (`<Category>`). `make-vmap` uses IAB Ad Product Taxonomy 2.0 codes, for example `1571` for electric vehicles. An ad without a category is never left out.
 - `[BLOCKEDADCATEGORIES]` in your VAST tag URL. The player fills it with the blocked categories of the break, so the ad server can send fitting ads up front.
-- Stand-by ads in the response (a VAST 4 "ad buffet") are a good idea. One of them takes the place of a blocked ad. Without them the break plays one ad less.
+- Spare ads in the response are a good idea: ads without `sequence` (a VAST 4 "ad buffet"). One of them takes the place of a blocked ad, in a pod too. Without them the break plays one ad less.
 
-Everything runs on your computer. No cloud, no cost, no viewer data. On an Apple M5 Pro a 15-minute film takes 31 s. Commands: [tools/make-vmap](tools/make-vmap). How well the model does: [how the breaks are placed](docs/how-breaks-are-placed.md).
+Everything runs on your computer. No cloud, no cost, no viewer data. On an Apple M5 Pro, Sintel (15 min, 2 breaks) takes 31 s with all three steps. Commands: [tools/make-vmap](tools/make-vmap). How well the model does: [how the breaks are placed](docs/how-breaks-are-placed.md).
 
 ## Quick start
 
@@ -143,7 +145,7 @@ The core talks to the player through a small `PlayerPort` interface. So it can d
 - [How the breaks are placed](docs/how-breaks-are-placed.md), with the blind-labelled eval of the vision model.
 - [The ad backend on AWS](docs/aws.md): S3, CloudFront, Lambda and DynamoDB from one script.
 - [Amazon requirements](docs/amazon-requirements.md) and [our requirements](docs/requirements.md).
-- [Friction log](docs/friction-log.md): the project has 26 platform issues with steps and suggestions.
+- [Friction log](docs/friction-log.md): 26 problems we hit on the Vega platform, with steps to repeat them and suggestions.
 
 ## Tools
 

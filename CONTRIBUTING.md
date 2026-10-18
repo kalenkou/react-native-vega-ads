@@ -8,7 +8,7 @@ You need Node.js 22 and npm 10.
 
 ```sh
 npm ci
-npm run check   # lint, format, types and all tests
+npm run check   # lint, format, types and the tests of the packages and tools
 ```
 
 The demo app has its own steps: [apps/demo](apps/demo/README.md).

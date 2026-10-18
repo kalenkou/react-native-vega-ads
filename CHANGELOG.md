@@ -14,7 +14,7 @@ First release.
 - `AdManager`: pre-, mid- and post-rolls through a `PlayerPort`. Pods play in `sequence` order on two players, and the next ad starts about 500 ms before the current one ends. A seek over breaks plays only the last one. Every error and timeout ends in content.
 - Break events for the app: `breakStart` before a break's first ad, `breakEnd`, and `break:<id>:empty` when a break has no ad to play.
 - `onEvent(name, info)`: the second argument has the break id and the ad (id, creative id, title, advertiser, duration, place in the pod). `snapshot.ad` has the same data for the ad on screen.
-- Break context: a break blocks ad categories (from the VMAP or by hand). Blocked ads are left out with VAST error 205, stand-by ads take their place, and `[BLOCKEDADCATEGORIES]` tells the ad server the list in each request of the break.
+- Break context: a break blocks ad categories (from the VMAP or by hand). Blocked ads are left out with VAST error 205, spare ads of the response take their place, and `[BLOCKEDADCATEGORIES]` tells the ad server the list in each request of the break.
 - No repeated creatives or advertisers across breaks and, with an optional memory, across titles and launches. Break limits `maxBreakAds` and `maxBreakSeconds`.
 - Never louder than the movie: with `contentLoudness`, a louder ad is turned down to it, never up.
 - Pause ads from VAST NonLinear (IAB CTV Ad Portfolio), with QR code and IAB tracking.
@@ -27,7 +27,7 @@ First release.
 
 - `<VegaAdsPlayer>`: content, ads, overlay, countdown and pause ad in one component on Amazon Vega OS (Fire TV). Every part can be replaced.
 - `useVegaAds`, `useVideoPlayer`, `DualSurfaceView`, `AdSurfaceLayers` on `@amazon-devices/react-native-w3cmedia`.
-- `AdOverlay` with D-pad focus on Skip and VoiceView announcements. `useAdAnnouncements` and `AdSkipButton` for your own overlay. `adStyles` for your fonts and colours on the built-in ad UI. `ads.ui.name` and `ads.ui.timeLeft` for an own layout of the label.
+- `AdOverlay` with D-pad focus on Skip and VoiceView announcements. `useAdAnnouncements` and `AdSkipButton` for your own overlay. `adStyles` for your fonts and colours on the built-in ad UI. `ads.ui.name` and `ads.ui.timeLeft` for an own layout of the label. `ads.ad` is the ad on screen, and `onEvent` gets the break and the ad of each event.
 - `createAdMediaControlHandler`: "Alexa, pause" and the remote during ads. Seek and skip are blocked.
 - `vegaAdIdSource` for the Fire TV advertising ID. `preloadVegaAds` and `useAdPlan` for the title page. `rnvPlayerPort` for react-native-video v7.
 - Preview: `useStitchedAds` (IAB tracking of ads stitched into the stream by a server). `HeadlessPlayerService` and `HeadlessPlayerAdapter` (Amazon's headless player approach). `createAdPlayer` for ad players that are any `PlayerPort`.

@@ -5,7 +5,7 @@
 | Prop | Description |
 |---|---|
 | `source` | `{ uri }` of the content, or `null` to wait. |
-| `ads` | `{ vmapUrl }` or `{ breaks: [{ offset, vastUrl }] }`. `null` plays the content without ads. |
+| `ads` | `{ vmapUrl }` or `{ breaks: [{ offset, vastUrl }] }`. `null` plays the content without ads. A break given by hand can also have `blockedAdCategories` (IAB codes to leave out) and `sceneSignals` (what the scene before it shows, for the why line). |
 | `adId` | `AdIdRetriever` from `@amazon-devices/kepler-adid-retriever`. Optional. |
 | `onEnd` | Called when the content and its post-roll are over. |
 | `player` | Your own content `VideoPlayer` instead of `source`, or any `PlayerPort` (for example `rnvPlayerPort(player)`, then your app draws the content). The component never releases it. |

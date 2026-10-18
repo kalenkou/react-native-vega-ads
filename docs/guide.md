@@ -73,7 +73,7 @@ Your fonts and colours on the built-in ad UI, with no own overlay: `adStyles` ad
 />
 ```
 
-Your own ad overlay, laid out as you like: `renderOverlay={(ads) => <MyAdOverlay ads={ads} />}`. `ads.ui` gives the text parts (`name` "Ad 1 of 3", `timeLeft` "0:12", `why`) and `ads.snapshot` the numbers (`position`, `total`, `adTime`, `adDuration`, `skipIn`). Put `<AdSkipButton ui={ads.ui} onSkip={ads.skip} styles={…} />` in it: the button takes the D-pad focus, ignores presses until Skip is allowed, and during a non-skippable ad holds the focus so the remote does not reach the screen behind the ad. Call `useAdAnnouncements(ads.ui)` in it: VoiceView then announces each ad and the moment Skip opens, as with the built-in overlay.
+Your own ad overlay, laid out as you like: `renderOverlay={(ads) => <MyAdOverlay ads={ads} />}`. `ads.ui` gives the text parts (`name` "Ad 1 of 3", `timeLeft` "0:12", `why`) and `ads.snapshot` the numbers (`position`, `total`, `adTime`, `adDuration`, `skipIn`). `ads.ad` is the ad on screen: `id`, `title`, `advertiser` and more. Put `<AdSkipButton ui={ads.ui} onSkip={ads.skip} styles={…} />` in it: the button takes the D-pad focus, ignores presses until Skip is allowed, and during a non-skippable ad holds the focus so the remote does not reach the screen behind the ad. Call `useAdAnnouncements(ads.ui)` in it: VoiceView then announces each ad and the moment Skip opens, as with the built-in overlay.
 
 ```tsx
 function MyAdOverlay({ ads }: { ads: VegaAds }) {
