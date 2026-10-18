@@ -1,4 +1,5 @@
 import { PodController, PodItem } from '../pod/PodController';
+import { adEventAd, type AdEventHandler } from '../events';
 import type { RepeatGuard } from '../pod/RepeatGuard';
 import {
   adLoudness,
@@ -106,8 +107,8 @@ export interface SessionDeps {
   blockedAdCategories?: readonly string[];
   /** What the scene before the break shows (`ScheduledBreak.sceneSignals`); only explains the blocked ads. */
   sceneSignals?: readonly string[];
-  /** Ad and break events by name; the full list is in the README, "Events (`onEvent`)". */
-  onEvent?: (name: string) => void;
+  /** Ad and break events by name, ad events with their ad; the full list is in docs/api.md, "Events (`onEvent`)". */
+  onEvent?: AdEventHandler;
   /**
    * The viewer's caption language (BCP 47, such as "en-US"). The ad's WebVTT file in that
    * language is used, else its first WebVTT file.
@@ -350,10 +351,11 @@ export class AdBreakSession {
         if (name === 'impression') {
           this.deps.repeats?.shown(ad);
         }
-        this.deps.onEvent?.(name);
+        const info = { ad: adEventAd(ad) };
+        this.deps.onEvent?.(name, info);
         const down = name === 'impression' ? this.turnedDown.get(ad) : undefined;
         if (down !== undefined) {
-          this.deps.onEvent?.(`loudness:${down}`);
+          this.deps.onEvent?.(`loudness:${down}`, info);
         }
       },
     });
@@ -372,7 +374,7 @@ export class AdBreakSession {
         }
         this.trackerFor(linear).error(CATEGORY_BLOCKED);
         this.blockedAfterScene.push(linear.ad.advertiser?.value?.trim() || null);
-        this.deps.onEvent?.('skipped:category');
+        this.deps.onEvent?.('skipped:category', { ad: adEventAd(linear) });
         return false;
       }),
     );
@@ -392,7 +394,7 @@ export class AdBreakSession {
   /** The ad will not play in this break: the ad server hears `notUsed`, the app `skipped:<reason>`. */
   private notUsed(ad: LinearAd, reason: string): void {
     this.trackerFor(ad).notUsed();
-    this.deps.onEvent?.(`skipped:${reason}`);
+    this.deps.onEvent?.(`skipped:${reason}`, { ad: adEventAd(ad) });
   }
 
   private pickFile(ad: LinearAd, tracker: AdTracker): string | null {
@@ -407,7 +409,7 @@ export class AdBreakSession {
 
   private fail(tracker: AdTracker, code: number): void {
     tracker.error(code);
-    this.deps.onEvent?.(`error:${code}`);
+    this.deps.onEvent?.(`error:${code}`, { ad: adEventAd(tracker.linear) });
     this.pod?.fail();
   }
 
@@ -751,7 +753,7 @@ export class AdBreakSession {
     } else {
       // Not fail(): the pod has already moved on to the active ad.
       previous.tracker.error(errorCode);
-      this.deps.onEvent?.(`error:${errorCode}`);
+      this.deps.onEvent?.(`error:${errorCode}`, { ad: adEventAd(previous.tracker.linear) });
     }
     // The finished ad's surface is empty now; the active ad is the one to show.
     this.shownSurface = this.playerSurface;

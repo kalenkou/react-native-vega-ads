@@ -1,4 +1,5 @@
 import { ClockPort, HttpPort, Macros, MediaFileOptions, ScheduledBreak, VastResult, VmapTrackingEvent } from '../vast';
+import type { AdEventHandler } from '../events';
 import { AdBreakSession, SessionSnapshot } from '../machine/AdBreakSession';
 import { BreakMark, BreakScheduler, Decision } from '../schedule/BreakScheduler';
 import type { PlayerPort } from '../ports';
@@ -26,8 +27,11 @@ export interface AdManagerDeps {
   prefetchSeconds?: number;
   /** The snapshot of the break on screen, or IDLE_SNAPSHOT between breaks. */
   onChange?: (snapshot: SessionSnapshot) => void;
-  /** Ad and break events by name; the full list is in the README, "Events (`onEvent`)". */
-  onEvent?: (name: string) => void;
+  /**
+   * Ad and break events by name; the second argument has the break and, for ad events, the ad.
+   * The full list is in docs/api.md, "Events (`onEvent`)".
+   */
+  onEvent?: AdEventHandler;
   /** The breaks on the content timeline and the countdown to the next one; called on changes only. */
   onTimeline?: (timeline: AdTimeline) => void;
   /** How many seconds before a mid-roll the countdown starts. Default 5. */
@@ -289,7 +293,7 @@ export class AdManager {
     const cutOff = this.cutOff;
     this.cutOff = null;
     if (cutOff && !this.disposed) {
-      this.deps.onEvent?.(`break:${cutOff}:interrupted`);
+      this.deps.onEvent?.(`break:${cutOff}:interrupted`, { breakId: cutOff });
       if (this.isPostRoll(cutOff)) {
         this.deps.onEvent?.('content:ended'); // playing it again would restart the title
       } else {
@@ -303,7 +307,7 @@ export class AdManager {
     }
     this.suspended = null;
     this.prepared.delete(suspended.id);
-    this.deps.onEvent?.(`break:${suspended.id}:interrupted`);
+    this.deps.onEvent?.(`break:${suspended.id}:interrupted`, { breakId: suspended.id });
     this.contentStarted = true;
     await suspended.session.resumeContent();
     this.deps.onChange?.(IDLE_SNAPSHOT);
@@ -447,11 +451,11 @@ export class AdManager {
       contentLoudness: this.deps.contentLoudness,
       captionLanguage: this.deps.captionLanguage,
       onChange: (snapshot) => this.onSessionChange(id, session, snapshot),
-      onEvent: (name) => {
+      onEvent: (name, info) => {
         if (name === 'impression') {
           this.impressed = true;
         }
-        this.deps.onEvent?.(name);
+        this.deps.onEvent?.(name, { ...info, breakId: id });
       },
     });
     const entry: Prepared = {
@@ -479,7 +483,7 @@ export class AdManager {
     if (!entry.loaded && this.contentStarted && !waitForLoad) {
       // Pausing the content to wait for a slow ad server is worse than losing the break.
       this.prepared.delete(id);
-      this.deps.onEvent?.(`break:${id}:late`);
+      this.deps.onEvent?.(`break:${id}:late`, { breakId: id });
       void entry.session.interrupt();
       if (this.isPostRoll(id)) {
         this.deps.onEvent?.('content:ended');
@@ -492,7 +496,7 @@ export class AdManager {
       const earlier = this.prepared.get(other);
       if (earlier) {
         this.prepared.delete(other);
-        this.deps.onEvent?.(`break:${other}:superseded`);
+        this.deps.onEvent?.(`break:${other}:superseded`, { breakId: other });
         void earlier.session.interrupt();
       }
     }
@@ -506,7 +510,7 @@ export class AdManager {
       if (this.background) {
         this.cutOff = id;
       } else if (!this.contentStarted) {
-        this.deps.onEvent?.(`break:${id}:interrupted`);
+        this.deps.onEvent?.(`break:${id}:interrupted`, { breakId: id });
         await this.playContent();
       }
       return;
@@ -514,7 +518,7 @@ export class AdManager {
     if (this.active) {
       // Another break started while this one loaded: one break at a time.
       this.prepared.delete(id);
-      this.deps.onEvent?.(`break:${id}:superseded`);
+      this.deps.onEvent?.(`break:${id}:superseded`, { breakId: id });
       await entry.session.interrupt();
       return;
     }
@@ -522,7 +526,7 @@ export class AdManager {
       this.prepared.delete(id);
       this.trackBreak(id, 'error', VMAP_NO_PLAYABLE_AD);
       // No ad to play: an empty answer, a failed request, or every ad left out or failing.
-      this.deps.onEvent?.(`break:${id}:empty`);
+      this.deps.onEvent?.(`break:${id}:empty`, { breakId: id });
       if (this.isPostRoll(id)) {
         this.deps.onEvent?.('content:ended');
       } else if (!this.contentStarted) {
@@ -533,7 +537,7 @@ export class AdManager {
     this.active = entry.session;
     this.activeId = id;
     this.trackBreak(id, 'breakStart');
-    this.deps.onEvent?.('breakStart');
+    this.deps.onEvent?.('breakStart', { breakId: id });
     await entry.session.start({ resumeContent: !this.isPostRoll(id) });
   }
 

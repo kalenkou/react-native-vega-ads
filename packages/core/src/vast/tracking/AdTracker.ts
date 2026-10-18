@@ -32,7 +32,11 @@ export class AdTracker {
   // A copy: vast-client fills [ASSETURI] from the first media file, so playsFile() reorders it.
   private readonly mediaFiles: LinearAd['creative']['mediaFiles'];
 
-  constructor(linear: LinearAd, options: AdTrackerOptions = {}) {
+  constructor(
+    /** The ad this tracker reports on. */
+    readonly linear: LinearAd,
+    options: AdTrackerOptions = {},
+  ) {
     this.macros = options.macros ?? {};
     this.onEvent = options.onEvent ?? (() => undefined);
     this.skipAfter = linear.skipAfter;

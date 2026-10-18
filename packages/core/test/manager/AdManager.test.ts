@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { AdManager, AdManagerDeps, AdSchedule, AdTimeline, IDLE_SNAPSHOT } from '../../src/manager/AdManager';
 import { PreloadedAds, preloadAds } from '../../src/manager/preloadAds';
 import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
+import type { AdEventInfo } from '../../src/events';
 import { installImagePolyfill } from '../../src/vast';
 import { FakeClock } from '../fakes/FakeClock';
 import { FakeHttp } from '../fakes/FakeHttp';
@@ -36,6 +37,7 @@ function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avo
   const adPlayers: FakePlayer[] = [];
   const snapshots: SessionSnapshot[] = [];
   const events: string[] = [];
+  const details: Array<[string, AdEventInfo | undefined]> = [];
   const timelines: AdTimeline[] = [];
   const manager = new AdManager({
     http,
@@ -49,13 +51,16 @@ function setup(routes: Record<string, string>, options: Pick<AdManagerDeps, 'avo
       return player;
     },
     onChange: (snapshot) => snapshots.push(snapshot),
-    onEvent: (name) => events.push(name),
+    onEvent: (name, info) => {
+      events.push(name);
+      details.push([name, info]);
+    },
     onTimeline: (timeline) => timelines.push(timeline),
     ...options,
   });
   const lastAdPlayer = (): FakePlayer => adPlayers[adPlayers.length - 1] as FakePlayer;
   const last = (): SessionSnapshot | undefined => snapshots[snapshots.length - 1];
-  return { http, clock, content, adPlayers, snapshots, events, timelines, manager, lastAdPlayer, last };
+  return { http, clock, content, adPlayers, snapshots, events, details, timelines, manager, lastAdPlayer, last };
 }
 
 type Ctx = ReturnType<typeof setup>;
@@ -158,6 +163,43 @@ describe('AdManager', () => {
     await settle();
     expect(ctx.last()?.state).toBe('playing');
     expect(ctx.lastAdPlayer().deinitialized).toBe(false);
+  });
+
+  it('gives each break event its break id and each ad event its ad', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await playAdToEnd(ctx);
+    const info = (name: string): AdEventInfo | undefined => ctx.details.find(([n]) => n === name)?.[1];
+    const ad = { id: 'ad-1', creativeId: 'cr-1', title: 'Inline linear 10s', duration: 10, skipAfter: null };
+    expect(info('breakStart')).toEqual({ breakId: 'break-1' });
+    expect(info('impression')).toMatchObject({ breakId: 'break-1', ad });
+    expect(info('complete')).toMatchObject({ breakId: 'break-1', ad });
+    expect(info('breakEnd')).toEqual({ breakId: 'break-1' });
+  });
+
+  it('gives a failed ad its error code and the ad', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    ctx.lastAdPlayer().emitError();
+    await settle();
+    const failed = ctx.details.find(([name]) => name.startsWith('error:'));
+    expect(failed?.[1]).toMatchObject({ breakId: 'break-1', ad: { id: 'ad-1', creativeId: 'cr-1' } });
+  });
+
+  it('gives a break that has no ad its break id', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/empty.xml') });
+    await ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    expect(ctx.details).toContainEqual(['break:break-1:empty', { breakId: 'break-1' }]);
   });
 
   it('starts the content at once when there is no pre-roll', async () => {
