@@ -101,7 +101,7 @@ async function contentAt(content: FakePlayer, seconds: number): Promise<void> {
 const sent = (): string[] => pixels.requests.splice(0);
 const last = (states: SessionSnapshot[]): SessionSnapshot | undefined => states[states.length - 1];
 
-describe('AdBreakSession – loading (R10)', () => {
+describe('AdBreakSession: loading (R10)', () => {
   it('prebuffers the chosen file in a fresh ad player without playing it', async () => {
     const ctx = setup(fixture('inline.xml'));
     const player = await loadReady(ctx);
@@ -137,7 +137,7 @@ describe('AdBreakSession – loading (R10)', () => {
   });
 });
 
-describe('AdBreakSession – playing (R1, R2, R11, R12, R21)', () => {
+describe('AdBreakSession: playing (R1, R2, R11, R12, R21)', () => {
   it('pauses content, plays the ad, moves media controls to it and tracks the impression on the first frame', async () => {
     const ctx = setup(fixture('inline.xml'));
     await contentAt(ctx.content, 42.5);
@@ -216,7 +216,7 @@ describe('AdBreakSession – playing (R1, R2, R11, R12, R21)', () => {
   });
 });
 
-describe('AdBreakSession – pods (R17)', () => {
+describe('AdBreakSession: pods (R17)', () => {
   it('plays the pod in sequence order, one after another', async () => {
     const ctx = setup(fixture('pod-optimized.xml'));
     const player = await loadReady(ctx);
@@ -303,7 +303,7 @@ describe('AdBreakSession – pods (R17)', () => {
   });
 });
 
-describe('AdBreakSession – viewer actions (R8, R13, R23)', () => {
+describe('AdBreakSession: viewer actions (R8, R13, R23)', () => {
   it('skips only after the skip offset', async () => {
     const ctx = setup(fixture('pod-optimized.xml'));
     const player = await loadReady(ctx);
@@ -389,7 +389,7 @@ describe('AdBreakSession – viewer actions (R8, R13, R23)', () => {
   });
 });
 
-describe('AdBreakSession – back-to-back ads on two ad players', () => {
+describe('AdBreakSession: back-to-back ads on two ad players', () => {
   async function playFirst(ctx: ReturnType<typeof setup>): Promise<FakePlayer> {
     const first = await loadReady(ctx);
     await ctx.session.start();
@@ -612,7 +612,7 @@ describe('AdBreakSession – back-to-back ads on two ad players', () => {
   });
 });
 
-describe('AdBreakSession – remote play/pause from the app key handler', () => {
+describe('AdBreakSession: remote play/pause from the app key handler', () => {
   it('pauses and resumes the ad on togglePause, with pixels', async () => {
     const ctx = setup(fixture('inline.xml'));
     const player = await loadReady(ctx);
@@ -682,7 +682,7 @@ describe('AdBreakSession – remote play/pause from the app key handler', () => 
   });
 });
 
-describe('AdBreakSession – stuck players never keep the content paused (goal 7, R7)', () => {
+describe('AdBreakSession: stuck players never keep the content paused (goal 7, R7)', () => {
   it('sends 405 and returns to content when the ad shows no frame in time', async () => {
     const ctx = setup(fixture('inline.xml'));
     await contentAt(ctx.content, 42.5);
@@ -786,7 +786,7 @@ describe('AdBreakSession – stuck players never keep the content paused (goal 7
   });
 });
 
-describe('AdBreakSession – event order and stuck players', () => {
+describe('AdBreakSession: event order and stuck players', () => {
   const POD3 = (): string => fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">');
   const srcs = (p: FakePlayer): string[] => p.calls.filter((c) => c.startsWith('src:'));
 
@@ -1006,7 +1006,7 @@ describe('AdBreakSession – event order and stuck players', () => {
   });
 });
 
-describe('AdBreakSession – calls in the wrong state', () => {
+describe('AdBreakSession: calls in the wrong state', () => {
   it('cancel() before start() leaves the content alone (C3-6)', async () => {
     const ctx = setup(fixture('inline.xml'));
     await contentAt(ctx.content, 42);
@@ -1029,7 +1029,7 @@ describe('AdBreakSession – calls in the wrong state', () => {
   });
 });
 
-describe('AdBreakSession – ad request macros', () => {
+describe('AdBreakSession: ad request macros', () => {
   it('fills the app macros in the ad tag (C1-1)', async () => {
     const tag = 'https://ads.test/tag.xml?lat=[LIMITADTRACKING]&ifa=[IFA]';
     const http = new FakeHttp().on('https://ads.test/tag.xml?lat=1&ifa=', { body: fixture('inline.xml') });
@@ -1120,7 +1120,7 @@ describe('AdBreakSession loudness', () => {
   });
 });
 
-describe('AdBreakSession – why the break looks as it does', () => {
+describe('AdBreakSession: why the break looks as it does', () => {
   const NO_REASON = { blockedAfterScene: [], sceneSignals: [], repeatsLeftOut: 0, quieter: false };
 
   it('names the advertiser left out after the scene, and what the scene showed', async () => {
@@ -1176,7 +1176,7 @@ describe('AdBreakSession – why the break looks as it does', () => {
   });
 });
 
-describe('AdBreakSession – a player call that fails', () => {
+describe('AdBreakSession: a player call that fails', () => {
   const twoSkippable = (): string => {
     const ad = (n: number) => `<Ad id="a${n}" sequence="${n}"><InLine><AdSystem>x</AdSystem><AdTitle>t${n}</AdTitle>
       <Impression><![CDATA[https://t.test/imp-${n}]]></Impression>
@@ -1277,7 +1277,7 @@ describe('AdBreakSession – a player call that fails', () => {
   });
 });
 
-describe('AdBreakSession – captions from <ClosedCaptionFiles>', () => {
+describe('AdBreakSession: captions from <ClosedCaptionFiles>', () => {
   const VTT = 'https://cdn.test/ad.en.vtt';
   const withCaptions = (files: string): string =>
     fixture('inline.xml').replace('</MediaFiles>', `<ClosedCaptionFiles>${files}</ClosedCaptionFiles></MediaFiles>`);

@@ -123,7 +123,7 @@ async function report(day: string, deps: CollectorDeps): Promise<HttpResult> {
     .map(([ad, events]) => {
       const cells = REPORT_COLUMNS.map((name) => `<td>${events.get(name) ?? 0}</td>`).join('');
       const impressions = events.get('impression') ?? 0;
-      const completion = impressions > 0 ? `${Math.round(((events.get('complete') ?? 0) / impressions) * 100)}%` : '–';
+      const completion = impressions > 0 ? `${Math.round(((events.get('complete') ?? 0) / impressions) * 100)}%` : '-';
       const errors = [...events]
         .filter(([name]) => name.startsWith('error:'))
         .map(([name, count]) => `${name.slice('error:'.length)} × ${count}`)

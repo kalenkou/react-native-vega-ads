@@ -71,7 +71,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 
 `onEvent(name, info)` gets the event name and its details. `info` has:
 
-- `breakId`: the break of the event. It is the same id as in `break:<id>:…`.
+- `breakId`: the break of the event. It is the same id as in `break:<id>:...`.
 - `ad`: the ad of the event, for ad events such as `impression`, the quartiles, `skip` and `error:<code>`. It has `id`, `creativeId`, `universalAdId`, `title`, `advertiser`, `duration` (seconds), `sequence` (place in the pod) and `skipAfter` (seconds).
 
 ```tsx

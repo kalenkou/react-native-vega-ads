@@ -91,7 +91,7 @@ describe('PauseAdController', () => {
     expect(ctx.views).toEqual([]);
   });
 
-  it('shows nothing when the pause is not the viewer’s: a break, before the content or after its end', async () => {
+  it("shows nothing when the pause is not the viewer's: a break, before the content or after its end", async () => {
     let allowed = false;
     const ctx = await setup({ canShow: () => allowed });
     ctx.content.emitPause();

@@ -110,7 +110,7 @@ describe('VegaAdsPlayer', () => {
   });
 });
 
-describe('VegaAdsPlayer – customising', () => {
+describe('VegaAdsPlayer: customising', () => {
   it("plays through the app's own player and leaves it to the app", async () => {
     const own = new FakeW3cPlayer(600);
     await own.initialize();

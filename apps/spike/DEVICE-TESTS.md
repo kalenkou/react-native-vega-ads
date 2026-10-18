@@ -4,11 +4,11 @@ Device: Fire TV Stick 4K Select (armv7l). `/etc/os-release` on 11.10.2026: "OS 2
 
 | Gate | What | How | Result | Date |
 |---|---|---|---|---|
-| 6 | Runtime globals | first log lines `runtime: typeof …` | window=object, Image=undefined, DOMParser=undefined, AbortController=function, fetch=function, XMLHttpRequest=function → PASS (polyfill + xmldom needed, as expected) | 11.10.2026 |
-| 6 | VAST in Metro bundle | log `ad: ready in … ms` | 132-319 ms, VAST 35 KB in 64-238 ms → PASS | 11.10.2026 |
-| 1 | Content → ad without a visible black frame | log `SWITCH content->ad: … ms` (< 300) + phone video | 68 ms. Phone video: hard cut both ways, no dark frame at ~30 fps → PASS | 11.10.2026 |
-| 4 | Resume position ±1 s | log `RESUME drift: … s` | 0.00 s. Ad player released in 220 ms → PASS | 11.10.2026 |
-| 5 | Impression and quartile pixels | log `pixel: …` (5 lines per ad) | 1 impression + 5 interaction pixels (start, quartiles, complete), 2.5 s apart → PASS (all responses HTTP 200, checked 11.10.2026) | 11.10.2026 |
+| 6 | Runtime globals | first log lines `runtime: typeof ...` | window=object, Image=undefined, DOMParser=undefined, AbortController=function, fetch=function, XMLHttpRequest=function → PASS (polyfill + xmldom needed, as expected) | 11.10.2026 |
+| 6 | VAST in Metro bundle | log `ad: ready in ... ms` | 132-319 ms, VAST 35 KB in 64-238 ms → PASS | 11.10.2026 |
+| 1 | Content → ad without a visible black frame | log `SWITCH content->ad: ... ms` (< 300) + phone video | 68 ms. Phone video: hard cut both ways, no dark frame at ~30 fps → PASS | 11.10.2026 |
+| 4 | Resume position ±1 s | log `RESUME drift: ... s` | 0.00 s. Ad player released in 220 ms → PASS | 11.10.2026 |
+| 5 | Impression and quartile pixels | log `pixel: ...` (5 lines per ad) | 1 impression + 5 interaction pixels (start, quartiles, complete), 2.5 s apart → PASS (all responses HTTP 200, checked 11.10.2026) | 11.10.2026 |
 | 2 | 30+ min, 10 breaks, memory | button "10 breaks". `vega exec perf memory-monitor` PSS < 400 MiB, JS heap < 200 MB | 10/10 breaks, 11 min: PSS 32 → 109 MB peak, plateau 106-107 MB after break 7. Switch 68-151 ms. Drift 0.00 s every time. Ad player released in 220-378 ms → PASS (JS heap not measured. 30+ min run still to do) | 11.10.2026 |
 | - | Media Controls during ad | "Alexa, pause" / remote play-pause during the ad | Run 1: FAIL (no focus, no manifest entry). Run 2 (11.10.2026, keys injected with `inputd-cli button_press KEY_PLAYPAUSE`): `setMediaControlFocus` + manifest `interface.provider` / `IMediaPlaybackServer` → content pause/resume OK. During the ad focus moves in 197-217 ms, ad pauses and resumes, content stays paused → remote PASS. "Alexa, pause"/resume confirmed by hand on the device → PASS | 11.10.2026 |
 
@@ -38,7 +38,7 @@ Button "VMAP session": Google sample VMAP `premidpostoptimizedpod` → `BreakSch
 | Pre-roll | impression → start → quartiles → complete → resuming → finished. Content starts at 0.00 s → PASS |
 | Mid-roll prefetch | pod of 3 ready in 1615 ms, 15 s before the break → PASS |
 | Switch content → ad | 56 ms → PASS |
-| Optimized pod | "Ad 1 of 3" … "Ad 3 of 3", impression and quartiles per ad, all pixels 200 → PASS |
+| Optimized pod | "Ad 1 of 3" ... "Ad 3 of 3", impression and quartiles per ad, all pixels 200 → PASS |
 | Resume | content playing at 15.22 s (break at 15 s) → PASS |
 | Gap between pod ads | ~1 s from `complete` of ad 2 to impression of ad 3 (same player, new `src`) → **TO FIX**: prebuffer the next ad in a second ad player |
 | Gap between pod ads, two ad players (A/B surfaces, next ad prebuffered while the current plays) | `complete` → first frame of next ad: 412 ms, then 496 ms (was 1018 ms). The previous ad's last frame stays on screen until the next ad renders. The surface swaps on its first frame (log "@B" → "@A"). Phone video (11.10.2026): ~0.4-0.6 s of the paused **content frame** between pod ads: on Vega an ad surface turns empty after `ended`, so the content below shows through. |
@@ -84,7 +84,7 @@ Result: the key always reaches JS. Media controls act only with the manifest ent
 Hook demo, manifest without media controls entries, `mediaControls: false` (no `setMediaControlFocus` at all), app calls `ads.togglePause()` on `playpause` key down. Live system log (`loggingctl log -f`) during one press while the ad was paused:
 
 1. JS gets `playpause` down → `togglePause()` → `MediaPlayer: play`, ad plays (`hook event: resume`).
-2. `inputd` MediaController then checks the same key: `isSessionInForeground :0` → `:1` (the player now plays), "Intercepting key event … KEY_PLAYPAUSE state=down".
+2. `inputd` MediaController then checks the same key: `isSessionInForeground :0` → `:1` (the player now plays), "Intercepting key event ... KEY_PLAYPAUSE state=down".
 3. w3cmedia: "Player Session is performing pause operation on Media Player" → ad paused ~450 ms after it resumed.
 
 Result: without the manifest entries, w3cmedia's legacy player session still pauses a PLAYING player on the play/pause key, but does not resume a paused one. An app that handles the key itself races with it: pause looks fine, resume is undone at once. → FAIL for the "own handler, no manifest" mode. Use the manifest + media controls (one owner of the key, Alexa works) and do not handle `playpause` in the app while `ads.playing`.
@@ -169,7 +169,7 @@ Hook demo, Kettlo pre-roll (10 s, `skipoffset` 5 s), events mirrored to the loca
 
 ## Pre-roll after Play, with and without preloadVegaAds (11.10.2026)
 
-Demo app, release build, 10 cold launches each, 8 s on the movie page, then Play. `serve.mjs --latency 600`: every VMAP and VAST answer takes 600 ms, as from a real ad server (the media files are not delayed). Time from the app's `[demo] play` log line to the ad's `impression`, by the device clock. The system log dropped the impression line in 7 of 20 runs (FL-02). There the impression pixel's arrival on the server is used, shifted by the median device-minus-server offset of the other runs (−342 ms. Spread ±0.4 s).
+Demo app, release build, 10 cold launches each, 8 s on the movie page, then Play. `serve.mjs --latency 600`: every VMAP and VAST answer takes 600 ms, as from a real ad server (the media files are not delayed). Time from the app's `[demo] play` log line to the ad's `impression`, by the device clock. The system log dropped the impression line in 7 of 20 runs (FL-02). There the impression pixel's arrival on the server is used, shifted by the median device-minus-server offset of the other runs (-342 ms. Spread ±0.4 s).
 
 | | Median | Min | Max |
 |---|---|---|---|
@@ -417,7 +417,7 @@ Build with `cd341b7` (a seek over a break whose ads still load waits for them), 
 | Full demo run | 3/3 PASS |
 | Demo Skip button on `AdSkipButton` with the demo's styles | while waiting: grey "Skip in 3". Then blue "Skip Ad" with the D-pad focus. The badge "AD" and the clock "0:05" come from `ads.snapshot` and `ads.ui.timeLeft`. Same look as before |
 
-The first try at 01:05 did not start: `Unable to launch component … Display not available` (the TV was in standby and the stick had just rebooted). Not counted.
+The first try at 01:05 did not start: `Unable to launch component ... Display not available` (the TV was in standby and the stick had just rebooted). Not counted.
 
 
 ## react-native-video props and the empty break (17.10.2026, night)

@@ -22,7 +22,7 @@ export interface AdEventAd {
 
 /** Details of an event: the second argument of `onEvent`. */
 export interface AdEventInfo {
-  /** The break of the event: the same id as in the `break:<id>:…` events. */
+  /** The break of the event: the same id as in the `break:<id>:...` events. */
   breakId?: string;
   /** The ad of the event, for ad events such as `impression`, quartiles, `skip` and `error:<code>`. */
   ad?: AdEventAd;

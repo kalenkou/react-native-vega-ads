@@ -67,7 +67,7 @@ The server prints its address and serves:
 - `vmap/timer.xml`: the same with mid-rolls at fixed times, 2:00 and 6:00, to compare with
 - `vmap/classic.xml`: ads as usual, for the demo's "Compare" button: Kettlo as the pre-roll, then a mid-roll on a timer at 0:32 of Tears of Steel that cuts a line, with Kettlo again and Brewnord (`vast/classic-pre.xml`, `vast/classic-mid.xml`). The app plays it without the loudness guard and the no-repeat rules
 - `captions/<ad>.en.vtt`: the ads' WebVTT captions (VAST `<ClosedCaptionFiles>`): `[calm music]`, then the ad's on-screen line. The ads have music and no speech
-- `p?ad=…&e=…`: tracking pixels, logged to the console. `stats`: counts
+- `p?ad=...&e=...`: tracking pixels, logged to the console. `stats`: counts
 - any other file in `media/`, for example a `poster.jpg`.
 
 The mid-rolls of `vmap/movie.xml` are at 2:00 and 6:00 by default. To use the

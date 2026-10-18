@@ -24,7 +24,7 @@ describe('parseFfmpegLog', () => {
       8917, 13458, 200250,
     ]);
     const black = result.segments.filter((s) => s.TechnicalCueSegment?.Type === 'BlackFrames');
-    // 0–8.9 s overlaps silence, 300–301.2 s overlaps silence, 420 s has sound: not a quiet place for an ad.
+    // 0-8.9 s overlaps silence, 300-301.2 s overlaps silence, 420 s has sound: not a quiet place for an ad.
     expect(black.map((s) => [s.StartTimestampMillis, s.EndTimestampMillis])).toEqual([
       [0, 8917],
       [300000, 301200],

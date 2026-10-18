@@ -6,7 +6,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Task:** play a long public MP4 as content in a w3cmedia `VideoPlayer` on Fire TV Stick 4K Select (Vega OS 2.0).
 - **Steps:** `player.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'` (a Google sample bucket used in many player samples. In Amazon's `AmazonAppDev/vega-sports-app` it appears only as a commented-out option).
 - **Expected:** playback, or a JS `error` with a readable reason.
-- **Actual:** black screen. JS got `error` with `code = 4` and an empty `message`. The real cause (`souphttpsrc … Forbidden (403)`) was visible only in the system log at warning level.
+- **Actual:** black screen. JS got `error` with `code = 4` and an empty `message`. The real cause (`souphttpsrc ... Forbidden (403)`) was visible only in the system log at warning level.
 - **Severity:** medium (looks like a player or surface bug. Cost ~30 min).
 - **Workaround:** switched to an archive.org MP4. Checked URLs from the Mac with `curl -r 0-1000` first.
 - **Suggestion:** pass the HTTP status into `MediaError.message` (e.g. "HTTP 403 Forbidden") so the app can show and report the real cause.
@@ -89,7 +89,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 
 ## FL-10 · "Alexa, next" never reaches the app during an ad, even with "Next" in command_options (11.10.2026)
 - **Task:** let the viewer skip a skippable ad by voice, Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1, SDK 0.24.
-- **Steps:** manifest `IMediaPlaybackServer` with `command_options = ["Next"]` (the "Attributes and features" page says optional commands arrive only when listed). A `KeplerMediaControlHandler` subclass for the ad player with `handleNext` overridden. The ad player's published actions set to PLAY, PAUSE, TOGGLE_PLAY_PAUSE, STOP, NEXT before `setMediaControlFocus` (w3cmedia publishes SEEK, FAST_FORWARD, SKIP_FORWARD… but not NEXT by default). During a skippable ad, past its skip offset, say "Alexa, next" and "Alexa, skip". Every app event mirrored to a server log because the device log drops app lines.
+- **Steps:** manifest `IMediaPlaybackServer` with `command_options = ["Next"]` (the "Attributes and features" page says optional commands arrive only when listed). A `KeplerMediaControlHandler` subclass for the ad player with `handleNext` overridden. The ad player's published actions set to PLAY, PAUSE, TOGGLE_PLAY_PAUSE, STOP, NEXT before `setMediaControlFocus` (w3cmedia publishes SEEK, FAST_FORWARD, SKIP_FORWARD... but not NEXT by default). During a skippable ad, past its skip offset, say "Alexa, next" and "Alexa, skip". Every app event mirrored to a server log because the device log drops app lines.
 - **Expected:** `handleNext` is called, or a documented reason why not. A table of Alexa phrases → media control commands.
 - **Actual:** with the default actions Alexa answers "Next is not supported". With NEXT published Alexa says nothing, and `handleNext` is never called (no app event in four runs). No Vega page maps Alexa phrases to commands.
 - **Severity:** medium (voice skip of skippable ads is not possible. "multi-modal" ad UX limited to pause/play).
@@ -161,7 +161,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 
 ## FL-18 · The media controls manifest check gives different answers for the same manifest (11.10.2026)
 - **Task:** make remote and Alexa play/pause reach our players, Fire TV Stick 4K Select, Vega OS 2.0.
-- **Steps:** launch the same build with the same `manifest.toml` 13 times. Read `checkClientManifestForKMC: … has KMC:` in the system log.
+- **Steps:** launch the same build with the same `manifest.toml` 13 times. Read `checkClientManifestForKMC: ... has KMC:` in the system log.
 - **Expected:** the same answer each time.
 - **Actual:** `true` 9 times, `false` 4 times, with no reason logged.
 - **Severity:** unclear. If `false` turns media controls off, remote and voice stop working without any error.
@@ -235,7 +235,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Task:** read the viewer's Closed Captions setting and caption text size in the demo app, to show captions on ads, with `@amazon-devices/kepler-a11y-settings-interface-turbo` 1.0.0 on a Fire TV Stick 4K Select (Vega OS 2.0).
 - **Steps:** followed the package README (also on developer.amazon.com, vega-api 0.24): `import KeplerA11ySettingsInterface from '@amazon-devices/kepler-a11y-settings-interface-turbo'`, then `isClosedCaptioningEnabled()` and `getCaptionPreferences()`.
 - **Expected:** the README import works.
-- **Actual:** `dist/src/index.js` and `index.d.ts` export `KeplerA11ySettingsInterface` only as a named export. There is no default export. TypeScript stops with "has no default export". Plain JavaScript gets `undefined` and fails at the first call. With the named import, `import { KeplerA11ySettingsInterface } from '…'`, it works: on the stick the module auto-links (`Successfully v2 auto-linked libKeplerA11ySettingsInterfaceTurbo.so`) and returns the setting.
+- **Actual:** `dist/src/index.js` and `index.d.ts` export `KeplerA11ySettingsInterface` only as a named export. There is no default export. TypeScript stops with "has no default export". Plain JavaScript gets `undefined` and fails at the first call. With the named import, `import { KeplerA11ySettingsInterface } from '...'`, it works: on the stick the module auto-links (`Successfully v2 auto-linked libKeplerA11ySettingsInterfaceTurbo.so`) and returns the setting.
 - **Severity:** low (found at the first build), but every example in the README has it.
 - **Workaround:** the named import. The module also looks itself up with `TurboModuleRegistry.getEnforcing` when it is loaded, so on a device without it the import throws. We load it with `require` inside `try`, and captions stay off there.
 - **Suggestion:** fix the README examples (or add a default export), and say which Vega OS versions have the module.

@@ -32,7 +32,7 @@ async function loadAd(body = INLINE): Promise<LinearAd> {
   return result.ads[0];
 }
 
-/** Two 10 s ads stitched at 100 s (100–110, 110–120) and one at 300 s. */
+/** Two 10 s ads stitched at 100 s (100-110, 110-120) and one at 300 s. */
 async function setup(body = INLINE) {
   const events: string[] = [];
   const ads = [

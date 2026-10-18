@@ -12,7 +12,7 @@ function wrapperTo(next: string, id: string): string {
   return fixture('wrapper-to-inline.xml').replace(INLINE, next).replace(/w1/g, id);
 }
 
-/** w1 → w2 → … → wN → inline */
+/** w1 → w2 → ... → wN → inline */
 function wrapperChain(http: FakeHttp, length: number): string {
   http.on(INLINE, { body: fixture('inline.xml') });
   for (let i = length; i >= 1; i--) {
