@@ -40,6 +40,7 @@ export function useVideoPlayer(uri: string | null, options: UseVideoPlayerOption
       void created.deinitialize().catch(() => undefined);
     };
     // `create` is read once per source on purpose: a new function each render must not reload the movie.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
   }, [uri]);
 
   return player;

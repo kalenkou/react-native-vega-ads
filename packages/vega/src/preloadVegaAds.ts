@@ -107,6 +107,7 @@ export function useAdPlan(schedule: AdSchedule, options: PreloadVegaAdsOptions =
       live = false;
     };
     // The schedule is compared by its key; the options are read once per schedule, as by the player.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
   }, [key]);
   return plan?.key === key ? plan.plan : null;
 }

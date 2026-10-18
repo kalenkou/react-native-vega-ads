@@ -123,6 +123,7 @@ export function VegaAdsPlayer(props: VegaAdsPlayerProps): ReactElement {
   // The ID is read once per retriever and macro values: the user's choice does not change
   // during playback, and apps often pass `macros` as a new object on every render.
   const macrosKey = macros === undefined ? '' : JSON.stringify(macros);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `macros` is compared by `macrosKey`
   const allMacros = useMemo<Macros | undefined>(() => vegaMacros(adId, macros), [adId, macrosKey]);
   const ads = useVegaAds({
     ...options,
