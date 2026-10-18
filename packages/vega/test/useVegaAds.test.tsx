@@ -190,6 +190,7 @@ describe('useVegaAds', () => {
     const ctx = setup();
     await ctx.surfacesReady();
     expect(ctx.ads().playing).toBe(false);
+    expect(ctx.ads().ad).toBeNull();
     act(() => {
       ctx.lastAd().emit('canplay');
     });
@@ -199,6 +200,7 @@ describe('useVegaAds', () => {
     });
     await settle();
     expect(ctx.ads().playing).toBe(true);
+    expect(ctx.ads().ad).toMatchObject({ id: 'ad-1', creativeId: 'cr-1', title: 'Inline linear 10s' });
   });
 
   it('waits for a source', async () => {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler } from 'react-native';
 import { useKeplerAppStateManager } from '@amazon-devices/react-native-kepler';
 import {
+  AdEventAd,
   AdEventHandler,
   AdManager,
   AdSchedule,
@@ -121,6 +122,8 @@ export interface VegaAds {
   /** The content has ended and its post-roll (if any) is over: safe to close the player screen. */
   ended: boolean;
   snapshot: SessionSnapshot;
+  /** The ad on screen: ids, title, advertiser, duration. Null outside ads. The same as `snapshot.ad`. */
+  ad: AdEventAd | null;
   /** What AdOverlay shows. */
   ui: AdUiState;
   /** Mid-rolls to mark on your timeline, and the countdown to the next one (AdCountdown). */
@@ -313,5 +316,5 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     [inAd, snapshot.adSurface],
   );
 
-  return { playing: inAd, ended, snapshot, ui, timeline, surfaces, pauseAd, closePauseAd, skip, togglePause, back };
+  return { playing: inAd, ended, snapshot, ad: snapshot.ad, ui, timeline, surfaces, pauseAd, closePauseAd, skip, togglePause, back };
 }
