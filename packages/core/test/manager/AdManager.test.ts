@@ -201,8 +201,16 @@ describe('AdManager', () => {
     ctx.lastAdPlayer().emitCanPlay();
     await starting;
     await settle();
-    expect(ctx.last()?.ad).toMatchObject({ id: 'ad-1', creativeId: 'cr-1', title: 'Inline linear 10s', duration: 10 });
-    await playAdToEnd(ctx);
+    await ctx.lastAdPlayer().flush();
+    const ad = ctx.last()?.ad;
+    expect(ad).toMatchObject({ id: 'ad-1', creativeId: 'cr-1', title: 'Inline linear 10s', duration: 10 });
+    ctx.lastAdPlayer().emitTime(4);
+    expect(ctx.last()?.adTime).toBe(4);
+    expect(ctx.last()?.ad).toBe(ad); // the same object for the whole ad, so React effects do not rerun
+    await ctx.manager.back();
+    expect(
+      ctx.snapshots.filter((snapshot) => snapshot.state !== 'playing').every((snapshot) => snapshot.ad === null),
+    ).toBe(true);
     expect(ctx.last()?.ad).toBeNull();
   });
 

@@ -42,7 +42,7 @@ export interface SessionSnapshot {
   why?: BreakWhy;
   /** The ad's closed caption at `adTime` (VAST `<ClosedCaptionFiles>`, WebVTT); '' when there is none. */
   caption: string;
-  /** The ad on screen: its ids, title, advertiser and timing. Null between ads. */
+  /** The ad on screen: its ids, title, advertiser and timing. The same object for the whole ad. Null outside an ad. */
   ad: AdEventAd | null;
 }
 
@@ -199,6 +199,8 @@ export class AdBreakSession {
   private readonly turnedDown = new WeakMap<LinearAd, string>();
   /** Caption cues of each ad whose WebVTT file has arrived. */
   private readonly captions = new WeakMap<LinearAd, CaptionCue[]>();
+  /** The `snapshot.ad` of each ad, made once so the app sees the same object for the whole ad. */
+  private readonly adInfos = new WeakMap<LinearAd, AdEventAd>();
 
   constructor(deps: SessionDeps) {
     this.deps = deps;
@@ -982,8 +984,17 @@ export class AdBreakSession {
         quieter: this.player !== null && this.quieter.has(this.player),
       },
       caption: current ? captionAt(this.captions.get(current.item.ad) ?? [], this.player?.getCurrentTime() ?? 0) : '',
-      ad: current ? adEventAd(current.item.ad) : null,
+      ad: this.state === 'playing' && current ? this.adInfo(current.item.ad) : null,
     });
+  }
+
+  private adInfo(linear: LinearAd): AdEventAd {
+    let info = this.adInfos.get(linear);
+    if (!info) {
+      info = adEventAd(linear);
+      this.adInfos.set(linear, info);
+    }
+    return info;
   }
 }
 
