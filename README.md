@@ -152,7 +152,7 @@ The core talks to the player through a small `PlayerPort` interface. So it can d
 - [How the breaks are placed](docs/how-breaks-are-placed.md), with the blind-labelled eval of the vision model.
 - [The ad backend on AWS](docs/aws.md): S3, CloudFront, Lambda and DynamoDB from one script.
 - [Amazon requirements](docs/amazon-requirements.md) and [our requirements](docs/requirements.md).
-- [Friction log](docs/friction-log.md): 26 problems we hit on the Vega platform, with steps to repeat them and suggestions.
+- [Friction log](docs/friction-log.md): 32 problems we hit on the Vega platform, with steps to repeat them and suggestions.
 
 ## Tools
 

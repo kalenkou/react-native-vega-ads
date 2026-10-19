@@ -239,3 +239,57 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Severity:** low (found at the first build), but every example in the README has it.
 - **Workaround:** the named import. The module also looks itself up with `TurboModuleRegistry.getEnforcing` when it is loaded, so on a device without it the import throws. We load it with `require` inside `try`, and captions stay off there.
 - **Suggestion:** fix the README examples (or add a default export), and say which Vega OS versions have the module.
+
+## FL-27 · The headless playback sample service does not compile (2026-10-18)
+- **Task:** move ad playback into a headless JS service with "Implement Headless JavaScript Playback" (developer.amazon.com, Vega 0.24), section "Create the headless service file".
+- **Steps:** copied the sample service class into a TypeScript project and ran `tsc`.
+- **Expected:** the sample compiles.
+- **Actual:** `handleClearTextView(sessionId?)` calls `onCaptionViewDestroyed(handle.handle)`, but this method has no `handle` parameter. TypeScript stops with "Cannot find name 'handle'". Next to it, `handleSetTextView` logs "handleSetVideoView called". Still the same on 2026-10-19.
+- **Severity:** low (found at the first build).
+- **Workaround:** removed the argument.
+- **Suggestion:** compile the doc samples with `tsc` before publishing.
+
+## FL-28 · The RN 0.83 tab of the headless playback guide asks for versions that are not on npm (2026-10-18)
+- **Task:** install the headless playback packages for a React Native 0.83 Vega app with the same guide, tab "RN 0.83".
+- **Steps:** added the listed versions: `@amazon-devices/kepler-player-server` and `@amazon-devices/kepler-player-client` `~4.0.0`, `@amazon-devices/react-native-w3cmedia` `~4.0.0`. Ran `npm install`.
+- **Expected:** the install works.
+- **Actual:** `npm install` fails. On npm the player packages have only `latest` 2.2.14 and `rn83-alpha` 2.3.0-rn-83, and w3cmedia has 2.3.2 and 2.3.4-rn-83. There is no 4.x. Still the same on 2026-10-19.
+- **Severity:** medium (an RN 0.83 app cannot follow the guide).
+- **Workaround:** the `rn83-alpha` versions (`2.3.0-rn-83`), with the override from FL-29.
+- **Suggestion:** list the published versions or the dist tag in the guide.
+
+## FL-29 · The RN 0.83 builds of the player packages break the install and warn at build time (2026-10-18)
+- **Task:** use `@amazon-devices/kepler-player-client@2.3.0-rn-83` and `headless-task-manager@1.2.8-rn-83.1` in an RN 0.83 app, Vega SDK 0.24.
+- **Steps:** `npm install`, then `react-native build-vega`.
+- **Expected:** a clean install and build.
+- **Actual:** `kepler-player-client@2.3.0-rn-83` depends on `kepler-player-server@^2.3.0`. The prerelease `2.3.0-rn-83` does not match `^2.3.0`, so npm stops with `notarget No matching version found for @amazon-devices/kepler-player-server@^2.3.0`. With an override the build passes, but it prints "Validation errors … The version is set to 2.3.0-rn-83 but that value is not part of it's 'kepler-compatibility.json' file" for player-client, player-server and headless-task-manager.
+- **Severity:** medium (the install fails until you find the override. The warnings look like errors).
+- **Workaround:** `"overrides": { "@amazon-devices/kepler-player-server": "2.3.0-rn-83" }` in the app's `package.json`. Ignore the warnings: the modules are in the manifest.
+- **Suggestion:** depend on `2.3.0-rn-83` exactly, and add the rn83 versions to `kepler-compatibility.json`.
+
+## FL-30 · A seek on a new player before the media loads is lost without an error (2026-10-19)
+- **Task:** continue a movie at the same second after the app comes back from the background, with a new w3cmedia `VideoPlayer` (Fire TV Stick 4K Select, Vega OS 2.0).
+- **Steps:** `new VideoPlayer()`, `initialize()`, set `src`, then at once `currentTime = 10.97` and `play()`.
+- **Expected:** as in HTMLMediaElement, a position set before the media loads becomes the start position, and the movie starts at 10.97 s.
+- **Actual:** `readyState` is 0. `currentTime` reads 10.97 right away, but the movie plays from 0. No error, no event. The player log has `getI64 media.player.set.initial.seek.position: not found`.
+- **Severity:** medium (silent: "continue watching" starts from the beginning).
+- **Workaround:** seek again once, on `loadedmetadata` or `canplay`. Then the movie starts at the right second.
+- **Suggestion:** apply a seek made before loading as the start position, or document that the app must wait for `loadedmetadata`.
+
+## FL-31 · An app closed in the background for an open media player is logged as a low-memory kill (2026-10-19)
+- **Task:** find out why the demo app disappears after the Home button during a movie (Fire TV Stick 4K Select, Vega OS 2.0, 1 GB RAM).
+- **Steps:** movie plays, press Home, wait a few seconds, read the system log.
+- **Expected:** a log line that names the reason, for example "media player not released in the background".
+- **Actual:** the app is closed a few seconds after Home. The warning-level line reports it as `LowResourceKiller`, which reads like a memory problem. The reason is only in an info-level line just before it: `onBackground Kill <pid> for using session media-playback`. The rule to release media players in the background is on the media player requirements page, but the CSAI guide and the sample apps do not link it to this kill.
+- **Severity:** medium (the viewer loses the app and the place in the movie, and the log points the developer to memory first).
+- **Workaround:** release the players when the app goes to the background, create them again when it is active, and continue at the saved position (with the seek from FL-30).
+- **Suggestion:** name the media session in the kill reason, and link the requirement from the CSAI and media player guides.
+
+## FL-32 · The Vega Virtual Device refuses http media that the device plays (2026-10-19)
+- **Task:** run the same demo build on the Vega Virtual Device (VVD, SDK 0.24.12112) and on the stick, with media from a local server.
+- **Steps:** `MEDIA_BASE = 'http://<LAN IP>:8080/'` and `[network-traffic-policy.cleartext] allowed-domains = ["<LAN IP>"]` in the manifest. The same aarch64 `.vpkg` on both.
+- **Expected:** the same result on the VVD and on the device.
+- **Actual:** the stick plays the movie and the ads. On the VVD every player fails at once with `MEDIA_ERR` 4. The system log says `isUriSchemeSecure Got an insecure protocol/scheme http, return error` and `openMedia Invalid URI`. The app sees only `error`, so every ad looks like a broken VAST. With https (CloudFront) the VVD plays the pre-roll to the end.
+- **Severity:** medium (a local media server does not work on the VVD, and the reason is only in the system log).
+- **Workaround:** serve media over https for VVD tests.
+- **Suggestion:** apply the same cleartext rule on the VVD as on devices, or say in the VVD docs that it plays https only.
