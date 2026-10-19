@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useKeplerAppStateManager } from '@amazon-devices/react-native-kepler';
 import { VideoPlayer } from '@amazon-devices/react-native-w3cmedia';
 import type { W3cVideoPlayer } from './W3cPlayerAdapter';
+import { detachSurface } from './contentSurface';
 
 export interface UseVideoPlayerOptions {
   /** For tests or a custom player; default `new VideoPlayer()` from w3cmedia. */
@@ -62,6 +63,7 @@ export function useVideoPlayer(uri: string | null, options: UseVideoPlayerOption
         return 0;
       }
       const position = released.currentTime;
+      detachSurface(released); // Amazon's order: the surface first, then deinitialize()
       void released.deinitialize().catch(() => undefined);
       return position;
     };

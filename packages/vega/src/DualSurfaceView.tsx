@@ -3,6 +3,7 @@ import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { KeplerVideoSurfaceView } from '@amazon-devices/react-native-w3cmedia';
 import type { AdSurfaces } from './useVegaAds';
 import { AdLayers } from './AdSurfaceLayers';
+import { attachSurface, detachSurface, type SurfacePlayer } from './contentSurface';
 
 export interface DualSurfaceViewProps {
   surfaces: AdSurfaces;
@@ -10,7 +11,7 @@ export interface DualSurfaceViewProps {
    * Your content `VideoPlayer`. The view gives it the content surface, whichever
    * of the two is ready first. Leave it out to connect the surface yourself.
    */
-  contentPlayer?: { setSurfaceHandle(handle: string): void; clearSurfaceHandle(handle: string): void } | null;
+  contentPlayer?: SurfacePlayer | null;
   onContentSurfaceCreated?: (handle: string) => void;
   onContentSurfaceDestroyed?: (handle: string) => void;
   /** w3cmedia scaling mode for all three surfaces. Default 'fit'. */
@@ -29,14 +30,9 @@ export function DualSurfaceView(props: DualSurfaceViewProps): ReactElement {
     if (!contentPlayer || !contentSurface) {
       return undefined;
     }
-    contentPlayer.setSurfaceHandle(contentSurface);
-    return () => {
-      try {
-        contentPlayer.clearSurfaceHandle(contentSurface);
-      } catch {
-        // The app may have released its player first; the surface is gone anyway.
-      }
-    };
+    attachSurface(contentPlayer, contentSurface);
+    // A no-op when useVideoPlayer released the player (and cleared the surface) first.
+    return () => detachSurface(contentPlayer);
   }, [contentPlayer, contentSurface]);
 
   return (
