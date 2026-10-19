@@ -467,3 +467,14 @@ Muted demo, `resume-run.sh`. Before the fix the system ended the app about 2 s a
 | Same, before the seek fix | FAIL: the movie started at 0:00. A log in the app showed the seek to 10.97 s on the new player with `readyState 0`, and Vega dropped it. The adapter now seeks again on `loadedmetadata` or `canplay` |
 | Home during the pre-roll, back after 15 s | PASS: no kill. The pre-roll was on screen, so it is not shown again: the movie starts at 0:00 with no new ad pixel |
 
+
+## Surface cleared before deinitialize() (19.10.2026, late evening)
+
+Muted demo with `751f6d7`, `resume-run.sh`, Home after about 11 s of the movie, back after 15 s.
+
+| Check | Result |
+|---|---|
+| Release order, before the fix (the demo still had the old package) | FAIL: `MediaPlayer: deinitialize` at 23.547, then `clearSurfaceHandle` at 23.583, and Vega logged `+ClearSurface: ERROR: meContext is null or not valid` |
+| Release order, with the fix, 4 runs | PASS 4 of 4: `clearSurfaceHandle` 14-15 ms before `MediaPlayer: deinitialize`, no ClearSurface error |
+| Continue at the same place, with the fix | PASS 3 of 4: the same process comes back. The frames 15 s after the return are at 0:24.5, 0:25 and 0:24.5, so the movie continued at about 0:11. One impression per run: no ad again |
+| The 4th run | FAIL: the system ended the app 0.69 s after Home (`onBackground Kill <pid> for using session media-playback`), 31 ms after the player was destroyed. The app opened again on the movie page. The player was released at once in every run. Closing it took 0.42-0.87 s (GStreamer to NULL takes about 0.5 s), and the system checked 0.65-1.27 s after Home. The old order showed the same close time (0.53 s) |
