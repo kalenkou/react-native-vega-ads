@@ -5,6 +5,7 @@ import {adPlanLabel, useAdPlan, type AdPlan} from 'react-native-vega-ads';
 import type {Movie} from '../catalog';
 import {BreakMap} from '../components/BreakMap';
 import {colors, fonts} from '../theme';
+import {formatTime} from '../time';
 
 export interface DetailsScreenProps {
   movie: Movie;
@@ -13,6 +14,8 @@ export interface DetailsScreenProps {
   /** What the last watch of this title showed and spared the viewer; null before one. */
   lastWatch?: string | null;
   onPlay: () => void;
+  /** Where the viewer was when the system ended the app: Play continues there. */
+  resumeAt?: number | null;
   /** Plays the movie with ads as usual; no button without it or without a classic schedule. */
   onCompare?: () => void;
   onNext: () => void;
@@ -37,6 +40,7 @@ export const DetailsScreen = ({
   next,
   lastWatch = null,
   onPlay,
+  resumeAt = null,
   onCompare,
   onNext,
   onDrawn,
@@ -84,7 +88,11 @@ export const DetailsScreen = ({
             hasTVPreferredFocus
             activeOpacity={1}
             accessibilityRole="button"
-            accessibilityLabel={`Play ${movie.title}`}
+            accessibilityLabel={
+              resumeAt === null
+                ? `Play ${movie.title}`
+                : `Continue ${movie.title} at ${formatTime(resumeAt)}`
+            }
             onPress={onPlay}
             onFocus={() => setFocused('play')}
             onBlur={() => setFocused(null)}
@@ -94,7 +102,9 @@ export const DetailsScreen = ({
                 styles.buttonText,
                 focused === 'play' && styles.buttonTextFocused,
               ]}>
-              Play
+              {resumeAt === null
+                ? 'Play'
+                : `Continue at ${formatTime(resumeAt)}`}
             </Text>
           </TouchableOpacity>
           {onCompare && movie.classicVmapUrl && (

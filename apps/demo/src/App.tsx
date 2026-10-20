@@ -1,8 +1,9 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {watchReport, watchReportLabel} from 'react-native-vega-ads';
 import {MOVIES} from './catalog';
 import {useLaunchReady} from './launch';
+import {deviceResume} from './resume';
 import {colors} from './theme';
 import {DetailsScreen} from './screens/DetailsScreen';
 import {PlayerScreen} from './screens/PlayerScreen';
@@ -25,13 +26,35 @@ export const App = () => {
   const events = useRef<string[]>([]);
   const movie = MOVIES[index];
   const next = MOVIES[(index + 1) % MOVIES.length];
-  const start = useCallback((asUsual: boolean) => {
-    console.log(asUsual ? '[demo] play, ads as usual' : '[demo] play');
+  // Left on the device when the system ended the app during the movie; cleared after a watch.
+  const [resumeAt, setResumeAt] = useState<number | null>(null);
+  const [startAt, setStartAt] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    let current = true;
+    setResumeAt(null);
+    deviceResume
+      .read(movie.uri)
+      .then((at) => current && setResumeAt(at))
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [movie.uri]);
+  const start = useCallback((asUsual: boolean, at?: number) => {
+    console.log(
+      asUsual
+        ? '[demo] play, ads as usual'
+        : `[demo] play${at === undefined ? '' : ` from ${at.toFixed(1)}`}`,
+    );
     events.current = [];
     setClassic(asUsual);
+    setStartAt(at);
     setPlaying(true);
   }, []);
-  const play = useCallback(() => start(false), [start]);
+  const play = useCallback(
+    () => start(false, resumeAt ?? undefined),
+    [start, resumeAt],
+  );
   const compare = useCallback(() => start(true), [start]);
   const onEvent = useCallback((name: string) => {
     events.current.push(name);
@@ -41,8 +64,10 @@ export const App = () => {
     const report = watchReport(events.current);
     console.log(`[demo] report ${JSON.stringify(report)}`);
     setLastWatch({index, classic, label: watchReportLabel(report)});
+    deviceResume.clear(movie.uri).catch(() => undefined);
+    setResumeAt(null);
     setPlaying(false);
-  }, [index, classic]);
+  }, [index, classic, movie.uri]);
   const showNext = useCallback(
     () => setIndex((current) => (current + 1) % MOVIES.length),
     [],
@@ -53,6 +78,7 @@ export const App = () => {
         <PlayerScreen
           movie={movie}
           classic={classic}
+          startAt={startAt}
           onClose={close}
           onEvent={onEvent}
         />
@@ -68,6 +94,7 @@ export const App = () => {
               : null
           }
           onPlay={play}
+          resumeAt={resumeAt}
           onCompare={compare}
           onNext={showNext}
           onDrawn={onFirstScreenDrawn}

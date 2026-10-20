@@ -13,6 +13,7 @@ import {systemCaptionSettings, useCaptionSettings} from '../captionSettings';
 import type {Movie} from '../catalog';
 import {PlayerChrome} from '../components/PlayerChrome';
 import {MUTED} from '../media.local';
+import {deviceResume, useSaveResume} from '../resume';
 import {colors} from '../theme';
 
 /** Content and ad players that stay muted: set again on every play, in case a new source resets it. */
@@ -35,7 +36,23 @@ export interface PlayerScreenProps {
   onClose: () => void;
   /** IAB events and errors, for the on-screen log in the demo video. */
   onEvent?: (name: string) => void;
+  /** Continue here, in seconds: no pre-roll and no earlier breaks. */
+  startAt?: number;
 }
+
+/** Keeps the movie position on the device, in case the system ends the app in the background. */
+const ResumeSaver = ({
+  player,
+  adsPlaying,
+  uri,
+}: {
+  player: W3cVideoPlayer | null;
+  adsPlaying: boolean;
+  uri: string;
+}) => {
+  useSaveResume(player, adsPlaying, uri, deviceResume);
+  return null;
+};
 
 /**
  * Back closes the player, also during an ad (VegaAdsPlayer's default `backDuringAd: 'app'`, so an
@@ -72,6 +89,7 @@ export const PlayerScreen = ({
   classic = false,
   onClose,
   onEvent,
+  startAt,
 }: PlayerScreenProps) => {
   useBackToClose(onClose);
   const mode = adsMode(movie, classic, AVOID_REPEATS);
@@ -97,11 +115,17 @@ export const PlayerScreen = ({
       countdown={mode.countdown}
       onEnd={onClose}
       onEvent={onEvent}
+      startAt={startAt}
       createVideoPlayer={MUTED ? createMutedPlayer : undefined}
       // The ad overlay is the demo's own (PlayerChrome → AdLayer).
       renderOverlay={() => null}>
       {({player, ads}) => (
         <>
+          <ResumeSaver
+            player={player}
+            adsPlaying={ads.playing}
+            uri={movie.uri}
+          />
           <PlayerChrome
             title={movie.title}
             player={player}
