@@ -23,7 +23,7 @@ Measured on that stick: the switch from the movie to an ad takes 56-151 ms. Memo
 - Ads before, during and after the movie (pre-, mid- and post-rolls). The break times come from a VMAP file or from your own list of ad URLs (VAST tags).
 - VAST 4 wrappers (one ad server passes the request on to another), ad pods (several ads in one break) and skippable ads.
 - No black frame between the movie and the ads. The movie resumes where it stopped.
-- Home and Back: in the background the library releases every video player, as Amazon requires. So Fire TV does not close the app. Back in the app, the movie continues at the same second. Ads already shown do not come again.
+- Home and Back: in the background the library releases every video player at once, as Amazon requires. Back in the app, the movie continues at the same second. Ads already shown do not come again. A player takes about 0.5 s to close, and in 1 of 6 runs on our stick the system ended the app before that. For that case the demo keeps the position on the device, and its movie page offers Continue.
 - The remote and Alexa pause and play the ads. The Skip button gets the remote's focus. VoiceView, the Fire TV screen reader, reads out each ad.
 - IAB tracking: the ad server learns when an ad was shown, each quarter of it, pause, skip and errors. It also learns when a break starts and ends.
 - No repeats. The same ad does not come back within 30 minutes. A break has one ad per advertiser. With `avoidRepeats.memory` the app remembers the shown ads across movies and launches.
@@ -173,7 +173,7 @@ npm run check   # lint, format, types and the tests of the packages and tools
 cd apps/demo && npm ci && cp src/media.example.ts src/media.local.ts && npm run use-core && npm test
 ```
 
-Before a pull request run `npm run format` and `npm run check`. See [CONTRIBUTING.md](CONTRIBUTING.md). The demo app's 22 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
+Before a pull request run `npm run format` and `npm run check`. See [CONTRIBUTING.md](CONTRIBUTING.md). The demo app's 29 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
 
 ## Credits
 

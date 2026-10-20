@@ -280,10 +280,10 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Task:** find out why the demo app disappears after the Home button during a movie (Fire TV Stick 4K Select, Vega OS 2.0, 1 GB RAM).
 - **Steps:** movie plays, press Home, wait a few seconds, read the system log.
 - **Expected:** a log line that names the reason, for example "media player not released in the background".
-- **Actual:** the app is closed a few seconds after Home. The warning-level line reports it as `LowResourceKiller`, which reads like a memory problem. The reason is only in an info-level line just before it: `onBackground Kill <pid> for using session media-playback`. The rule to release media players in the background is on the media player requirements page, but the CSAI guide and the sample apps do not link it to this kill.
+- **Actual:** the app is closed a few seconds after Home. The warning-level line reports it as `LowResourceKiller`, which reads like a memory problem. The reason is only in an info-level line just before it: `onBackground Kill <pid> for using session media-playback`. Releasing at once does not always prevent it: with `deinitialize()` called on the background event, the system still ended the app in 1 of 6 runs, 0.69 s after Home. Closing the player took 0.42-0.87 s (GStreamer needs about 0.5 s to stop), and the system checked 0.65-1.27 s after Home. The rule to release media players in the background is on the media player requirements page, but the CSAI guide and the sample apps do not link it to this kill.
 - **Severity:** medium (the viewer loses the app and the place in the movie, and the log points the developer to memory first).
 - **Workaround:** release the players when the app goes to the background, create them again when it is active, and continue at the saved position (with the seek from FL-30).
-- **Suggestion:** name the media session in the kill reason, and link the requirement from the CSAI and media player guides.
+- **Suggestion:** name the media session in the kill reason, and link the requirement from the CSAI and media player guides. Give apps a documented time to release, or check after a released player has finished closing.
 
 ## FL-32 · The Vega Virtual Device refuses http media that the device plays (2026-10-19)
 - **Task:** run the same demo build on the Vega Virtual Device (VVD, SDK 0.24.12112) and on the stick, with media from a local server.
