@@ -69,12 +69,20 @@ export class HtmlVideoPort implements PlayerPort {
     this.video.volume = volume;
   }
 
-  /** Browsers may refuse sound before the viewer has used the page: then the video plays muted. */
+  /**
+   * Browsers may refuse sound before the viewer has used the page: then the video plays muted.
+   * The browser's promise waits for playback and rejects with AbortError when a pause or a new
+   * source comes first. The command was accepted then, which is all PlayerPort.play() promises.
+   */
   async play(): Promise<void> {
     try {
       await this.video.play();
     } catch (error) {
-      if ((error as { name?: string }).name !== 'NotAllowedError' || this.video.muted) {
+      const name = (error as { name?: string }).name;
+      if (name === 'AbortError') {
+        return;
+      }
+      if (name !== 'NotAllowedError' || this.video.muted) {
         throw error;
       }
       this.video.muted = true;

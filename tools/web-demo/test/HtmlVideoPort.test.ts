@@ -141,6 +141,17 @@ describe('HtmlVideoPort', () => {
     expect(blocked).toHaveBeenCalledTimes(1);
   });
 
+  it('counts a play cut off by a pause or a new source as accepted, as PlayerPort.play() promises', async () => {
+    const video = new FakeVideo();
+    video.playResult = () => Promise.reject(Object.assign(new Error('interrupted'), { name: 'AbortError' }));
+    const blocked = jest.fn();
+    const port = new HtmlVideoPort(video, undefined, blocked);
+    await expect(port.play()).resolves.toBeUndefined();
+    expect(video.played).toBe(1);
+    expect(video.muted).toBe(false);
+    expect(blocked).not.toHaveBeenCalled();
+  });
+
   it('passes other play errors on', async () => {
     const video = new FakeVideo();
     video.playResult = () => Promise.reject(Object.assign(new Error('bad file'), { name: 'NotSupportedError' }));
