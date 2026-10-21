@@ -171,7 +171,7 @@ To build vega-ads, I fixed gaps in libraries that Vega apps use. I sent each fix
 | `react-native-vega-ads` | Install this one. The player component, the `useVegaAds` hook, the ad overlay, the remote and media controls on Vega. |
 | `react-native-ads-core` | Comes with it. VAST and VMAP requests, the break schedule, pods and IAB tracking in plain TypeScript, with no React Native or Vega code. |
 
-The core talks to the player through a small `PlayerPort` interface. So it can drive a player on another platform, but I tested it on a device only with Vega. See [Architecture](docs/architecture.md).
+The core talks to the player through a small `PlayerPort` interface. So it can drive a player on another platform. On a device I tested it only with Vega. The [web demo](tools/web-demo) runs the same core in a browser with an HTML video element. See [Architecture](docs/architecture.md).
 
 ## Docs
 
