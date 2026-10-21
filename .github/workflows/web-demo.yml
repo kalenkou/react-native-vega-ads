@@ -2,7 +2,13 @@ name: Web demo
 on:
   push:
     branches: [main]
-    paths: ['tools/web-demo/**', 'packages/core/src/**']
+    paths:
+      - 'tools/web-demo/**'
+      - 'packages/core/src/**'
+      - 'packages/core/package.json'
+      - 'package-lock.json'
+      - 'tsconfig.base.json'
+      - '.github/workflows/web-demo.yml'
   workflow_dispatch:
 permissions:
   contents: read
