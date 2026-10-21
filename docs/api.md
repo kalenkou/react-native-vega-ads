@@ -37,7 +37,7 @@ Amazon requires an app to release its media players in the background, or the sy
 | `startAt` | Continue a viewing here, in seconds: no pre-roll and no earlier breaks. The content player is moved there first. In core: `AdManager.start(schedule, { resumeAt })`. |
 | `macros` | Ad tag macros, for example `adIdMacros(source)` for `IFA` and `LIMITADTRACKING`. |
 | `prefetchSeconds` | How early a break is loaded and buffered. Default 15. |
-| `maxRedirects` | How many VAST wrappers to follow before the ad is left out with VAST error 302. Default 5, as the IAB recommends. Raise it if your demand chains more wrappers. A whole number from 0; a negative or non-finite value (such as `Infinity`) keeps the default. The same as `maxRedirects` in Google IMA. |
+| `maxRedirects` | How many VAST wrappers to follow before the ad is left out with VAST error 302. Default 5, as the IAB recommends. Raise it if your demand chains more wrappers. A whole number from 0; a negative or non-finite value (such as `Infinity`) keeps the default. The same option as `maxRedirects` in Google IMA, where the default is 4. |
 | `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |
 | `pauseAdUrl`, `pauseAdDelayMs` | VAST tag of a pause ad (`<NonLinear>` image), and how long the content stays paused before it shows. Default 1500 ms. |
 | `contentLoudness` | The content's integrated loudness in LUFS, for example from `ffmpeg -i movie.mp4 -af ebur128 -f null -`. Ads with a louder `loudness` creative extension are turned down to it. |

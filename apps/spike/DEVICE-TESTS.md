@@ -221,7 +221,7 @@ Not checked yet: the pause ad with VoiceView on (the announcement), and Back whi
 | 1 | Kettlo: impression, complete | Kettlo `notUsed`, then Ferntop: impression, complete |
 | 2 (a minute later) | Kettlo again: impression, complete | the same as run 1 |
 
-So AsyncStorage works on Vega OS 1.2 from React Native, the memory survives a cold start, and `vega run-app` (a reinstall) clears it. Gate runs, which reinstall each time, stay alike.
+So AsyncStorage works on the stick (Vega OS 2.0) from React Native, the memory survives a cold start, and `vega run-app` (a reinstall) clears it. Gate runs, which reinstall each time, stay alike.
 
 ## Loudness guard: an ad louder than the movie is turned down (12.10.2026)
 

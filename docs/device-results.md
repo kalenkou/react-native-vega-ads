@@ -7,7 +7,7 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11 to 18.10.2026. Details: [`apps/spike/DE
 | Switch from content to ad | 56-151 ms, no dark frame on video at ~30 fps |
 | Content resume position | where it paused, within 0.25 s. A seek back only above that, because a seek re-buffers |
 | Mid-roll prefetch | pod of 3 ads ready in 1.6 s, 15 s before the break |
-| Gap between ads in a pod | next ad's first frame 64-85 ms before the previous ad ends |
+| Gap between ads in a pod | next ad's first frame 85 ms before the previous ad ends; late in an 11-minute run, 64 ms after it |
 | Tracking pixels | impression + 5 events per ad, all HTTP 200 |
 | Memory, 9 breaks × 3 ads in 11 min | PSS peak 91 MB, then flat at 65-68 MB (Amazon KPI: < 400 MiB) |
 | Demo app, a whole film with no key pressed (Tears of Steel and Sintel, 5 ads each), 16.10 | every ad to the end, the player closes by itself. PSS peak 95-116 MB |
@@ -30,4 +30,4 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11 to 18.10.2026. Details: [`apps/spike/DE
 | 0.24 | 0.72 | Verified on the same device (`apps/demo`, built with SDK 0.24.12112) |
 | 0.24 | 0.83 | Verified on the same device in Amazon's vega-video-sample with Shaka (`examples/vega-video-sample`) |
 
-The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read on 11.10.2026). The Vega Virtual Device of SDK 0.24 runs Vega OS 1.2.
+The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read on 11.10.2026). The Vega Virtual Device of SDK 0.24 runs Vega OS 1.2 (`/etc/os-release`, read on 22.10.2026).

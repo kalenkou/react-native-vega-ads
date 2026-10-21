@@ -73,7 +73,7 @@ if (vast.status === 'ok') {
 | Export | What it does |
 |---|---|
 | `requestVmap(url, deps)` | VMAP 1 → breaks (`start`, seconds, `end`), pods grouped by offset, VMAP error codes |
-| `requestVast(urlOrXml, deps)` | VAST 4 InLine/Wrapper (up to 5 wrappers), pods by `sequence`, `[CACHEBUSTING]` and app macros, VAST error codes |
+| `requestVast(urlOrXml, deps)` | VAST 4 InLine/Wrapper (up to 5 wrappers by default, `maxRedirects`), pods by `sequence`, `[CACHEBUSTING]` and app macros, VAST error codes |
 | `selectMediaFile(files, options)` | H.264 MP4 or HLS that fits the screen and bitrate. 403 if none |
 | `AdTracker` | impression, start, quartiles, complete, pause, resume, skip, error |
 | `adIdMacros(source)` | `IFA`, `IFATYPE`, `LIMITADTRACKING` from the Fire TV advertising ID |
