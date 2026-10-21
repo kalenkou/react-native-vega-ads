@@ -139,7 +139,7 @@ VMAP only, not from SCTE-35 or HLS/DASH ad markers.
 
 Checked on a Fire TV Stick 4K Select (muted), a 110 s stream with a 10 s pre-roll and a 10 s
 mid-roll at 1:10: impression, start, quartiles and skip of the pre-roll (skip at 5 s moved the
-player to 0:10), the full mid-roll to `complete`. In 4 of 5 runs all 11 pixels reached the ad server; 1 run sent no event after Skip, and the cause is not known.
+player to 0:10), the full mid-roll to `complete`. In 4 of 5 runs all 11 pixels reached the ad server. One run sent no event after Skip. The cause is not known.
 
 
 ## License

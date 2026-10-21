@@ -37,7 +37,7 @@ Amazon requires an app to release its media players in the background, or the sy
 | `startAt` | Continue a viewing here, in seconds: no pre-roll and no earlier breaks. The content player is moved there first. In core: `AdManager.start(schedule, { resumeAt })`. |
 | `macros` | Ad tag macros, for example `adIdMacros(source)` for `IFA` and `LIMITADTRACKING`. |
 | `prefetchSeconds` | How early a break is loaded and buffered. Default 15. |
-| `maxRedirects` | How many VAST wrappers to follow before the ad is left out with VAST error 302. Default 5, as the IAB recommends. Raise it if your demand chains more wrappers. A whole number from 0; a negative or non-finite value (such as `Infinity`) keeps the default. The same option as `maxRedirects` in Google IMA, where the default is 4. |
+| `maxRedirects` | How many VAST wrappers to follow before the ad is left out with VAST error 302. Default 5, as the IAB recommends. Raise it if your demand chains more wrappers. A whole number from 0. A negative or non-finite value (such as `Infinity`) keeps the default. The same option as `maxRedirects` in Google IMA, where the default is 4. |
 | `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |
 | `pauseAdUrl`, `pauseAdDelayMs` | VAST tag of a pause ad (`<NonLinear>` image), and how long the content stays paused before it shows. Default 1500 ms. |
 | `contentLoudness` | The content's integrated loudness in LUFS, for example from `ffmpeg -i movie.mp4 -af ebur128 -f null -`. Ads with a louder `loudness` creative extension are turned down to it. |
@@ -122,7 +122,7 @@ The type of `name` is `AdEventName`, so your editor completes the names. It stil
 | You want | Use | You also need |
 |---|---|---|
 | Everything: content, ads, surfaces and ad UI | `<VegaAdsPlayer>` | nothing |
-| Your own screen and controls, our ad logic | `useVegaAds` + `DualSurfaceView` (or `AdSurfaceLayers` over your content surface) | your controls; add `AdOverlay`, `AdCountdown`, `PauseAd` or your own UI |
+| Your own screen and controls, our ad logic | `useVegaAds` + `DualSurfaceView` (or `AdSurfaceLayers` over your content surface) | your controls. Add `AdOverlay`, `AdCountdown`, `PauseAd` or your own UI |
 | Your own player (Shaka, react-native-video v7) | `player` / `contentPlayer`: its w3cmedia `VideoPlayer`, `rnvPlayerPort(player)` or any `PlayerPort` | the ad surfaces above your content (`contentSurface={false}` or `AdSurfaceLayers`) |
 | Your own ad UI | `renderOverlay`, or the hook's `ads.ui`, `ads.snapshot`, `ads.ad` | `AdSkipButton` keeps the D-pad focus right, `useAdAnnouncements(ads.ui)` keeps VoiceView |
 | Only VAST/VMAP parsing and IAB tracking, any platform | `react-native-ads-core`: `requestVast`, `requestVmap`, `AdTracker` | no React, no Vega |
