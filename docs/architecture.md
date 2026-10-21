@@ -30,7 +30,7 @@ Two packages, each for its own user:
 
 `core` never imports a player SDK, `fetch` or timers. It talks to the platform through ports: `PlayerPort`, `HttpPort` and `ClockPort`.
 
-Only the Vega adapter (`W3cPlayerAdapter`, w3cmedia) exists today, and only it is tested on a device. The core tests run against a fake player that follows w3cmedia's behaviour as measured on the stick. To try another player or platform, implement `PlayerPort`:
+Two adapters exist. `W3cPlayerAdapter` (w3cmedia) ships in `react-native-vega-ads` and is tested on a Fire TV Stick. `HtmlVideoPort` in [`tools/web-demo`](../tools/web-demo) drives an HTML video element in a browser. It is not published as a package, and we tested it only in Chrome. The core tests run against a fake player that follows w3cmedia's behaviour as measured on the stick. To try another player or platform, implement `PlayerPort`:
 
 ```ts
 interface PlayerPort {
