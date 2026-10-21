@@ -349,6 +349,9 @@ async function load(): Promise<void> {
 }
 
 function start(): void {
+  if (manager) {
+    return; // one viewing at a time: a second click while the ad plan loads must not start another
+  }
   el.start.hidden = true;
   el.content.muted = false;
   const created = new AdManager({
@@ -362,19 +365,23 @@ function start(): void {
     captionLanguage: 'en',
     pauseAdUrl: classic() ? undefined : `${CDN}vast/pause.xml`,
     onChange: (next) => {
+      if (manager !== created) return; // a viewing that was stopped
       snapshot = next;
       render();
     },
     onTimeline: (next) => {
+      if (manager !== created) return;
       timeline = next;
       renderMarks();
       render();
     },
     onPauseAd: (view) => {
+      if (manager !== created) return;
       pauseAd = view;
       render();
     },
     onEvent: (name, info) => {
+      if (manager !== created) return;
       events.push(name);
       const ad = info.ad ? ` · ${info.ad.title ?? info.ad.id ?? 'ad'}` : '';
       const where = info.breakId && !name.startsWith('break:') ? ` · ${info.breakId}` : '';
