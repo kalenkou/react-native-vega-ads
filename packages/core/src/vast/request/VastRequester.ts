@@ -8,8 +8,8 @@ import { createUrlHandler, describeFailure, LoadFailure, parseXml, UrlHandler, X
 export const MAX_REDIRECTS = 5;
 
 /**
- * vast-client counts documents, not wrappers: with `wrapperLimit: N` it follows
- * N - 1 wrappers. 6 lets a chain of 5 wrappers reach its InLine ad (R3).
+ * The vast-client `wrapperLimit` for the default `MAX_REDIRECTS` (it counts documents, not
+ * wrappers). The library no longer reads it: the limit comes from `maxRedirects`.
  * @deprecated Use `MAX_REDIRECTS`.
  */
 export const WRAPPER_LIMIT = MAX_REDIRECTS + 1;
