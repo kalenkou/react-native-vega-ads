@@ -1,0 +1,14 @@
+{
+  "name": "@vega-ads/web-demo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The ad logic of react-native-ads-core in a web page, with an HTML video element as the player",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
