@@ -28,8 +28,45 @@ export interface AdEventInfo {
   ad?: AdEventAd;
 }
 
-/** `onEvent` callback: the event name and its details. `info` is `{}` for an event without a break or ad. */
-export type AdEventHandler = (name: string, info: AdEventInfo) => void;
+/** The names `onEvent` gets. What each one means: docs/api.md, "Events (`onEvent`)". */
+export type AdEventName =
+  | 'impression'
+  | 'start'
+  | 'firstQuartile'
+  | 'midpoint'
+  | 'thirdQuartile'
+  | 'complete'
+  | 'pause'
+  | 'resume'
+  | 'skip'
+  | `loudness:${number}`
+  | 'skipped:repeat'
+  | 'skipped:advertiser'
+  | 'skipped:category'
+  | 'skipped:budget'
+  | 'notUsed'
+  | 'pauseAd:impression'
+  | 'pauseAd:creativeView'
+  | 'pauseAd:overlayViewDuration'
+  | 'pauseAd:close'
+  | `error:${number}`
+  | 'error:start'
+  | 'breakStart'
+  | 'breakEnd'
+  | 'content:ended'
+  | `vmap:error:${number}`
+  | `break:${string}:late`
+  | `break:${string}:empty`
+  | `break:${string}:interrupted`
+  | `break:${string}:superseded`
+  | 'standby:unavailable'
+  | 'standby:error';
+
+/**
+ * `onEvent` callback: the event name and its details. `info` is `{}` for an event without a break or ad.
+ * `name` is typed as `AdEventName` for autocompletion, and stays open to names a newer version adds.
+ */
+export type AdEventHandler = (name: AdEventName | (string & {}), info: AdEventInfo) => void;
 
 /** @internal The details of a VAST ad for `onEvent`. */
 export function adEventAd(linear: LinearAd): AdEventAd {

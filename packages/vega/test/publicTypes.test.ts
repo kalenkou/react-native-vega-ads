@@ -1,4 +1,6 @@
 import type {
+  AdEventHandler,
+  AdEventName,
   AdIdSource,
   AdMediaControlOptions,
   AdSchedule,
@@ -37,5 +39,23 @@ describe('public types', () => {
       | undefined
     > = [];
     expect([schedule, macros, media, port, used]).toHaveLength(5);
+  });
+
+  it('names the ad events for autocompletion, and the handler still takes any string', () => {
+    const names: AdEventName[] = [
+      'impression',
+      'error:405',
+      'break:break-1:late',
+      'loudness:-3.5',
+      'pauseAd:close',
+      'vmap:error:1009',
+      'skipped:category',
+    ];
+    // @ts-expect-error a typo is not an event name
+    const typo: AdEventName = 'impresion';
+    const seen: string[] = [];
+    const handler: AdEventHandler = (name) => seen.push(name);
+    handler('an event from a newer version', {});
+    expect([names.length, typo, seen]).toEqual([7, 'impresion', ['an event from a newer version']]);
   });
 });

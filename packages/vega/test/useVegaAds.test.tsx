@@ -418,6 +418,53 @@ describe('useVegaAds', () => {
     expect(ctx.http.requests).toEqual(['https://ads.test/pre.xml?ads=2&dur=90']);
   });
 
+  describe('a screen without the ad surfaces', () => {
+    let warn: jest.SpyInstance;
+    const dev = globalThis as { __DEV__?: boolean };
+    beforeEach(() => {
+      jest.useFakeTimers();
+      warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    });
+    afterEach(() => {
+      warn.mockRestore();
+      jest.useRealTimers();
+      delete dev.__DEV__;
+    });
+
+    it('gets one warning when the surfaces are still missing after 3 s', () => {
+      setup();
+      act(() => {
+        jest.advanceTimersByTime(2_999);
+      });
+      expect(warn).not.toHaveBeenCalled();
+      act(() => {
+        jest.advanceTimersByTime(10_000);
+      });
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]?.[0])).toMatch(/DualSurfaceView.*AdSurfaceLayers/);
+    });
+
+    it('gets no warning when the surfaces come in time', async () => {
+      const ctx = setup();
+      await ctx.surfacesReady();
+      await act(async () => {
+        jest.advanceTimersByTime(10_000);
+      });
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('gets no warning without a source or a player, or in a release build', () => {
+      setup({ source: null });
+      setup({ contentPlayer: null });
+      dev.__DEV__ = false;
+      setup();
+      act(() => {
+        jest.advanceTimersByTime(10_000);
+      });
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
+
   it('follows no more wrappers than maxRedirects', async () => {
     const W = 'https://ads.test/w.xml';
     const ctx = setup({ source: { breaks: [{ offset: 'start', vastUrl: W }] }, maxRedirects: 0 });

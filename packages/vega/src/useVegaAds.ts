@@ -155,6 +155,11 @@ export interface VegaAds {
 
 const NO_TIMELINE: AdTimeline = Object.freeze({ marks: [], nextBreakIn: null });
 
+/** How long the hook waits for its surfaces before it warns that the screen has none. */
+const SURFACE_WARNING_MS = 3_000;
+/** React Native sets `__DEV__`; elsewhere (tests, other runtimes) the warnings stay on. */
+const isDev = (): boolean => (globalThis as { __DEV__?: boolean }).__DEV__ !== false;
+
 export const isPlayerPort = (player: W3cVideoPlayer | PlayerPort): player is PlayerPort =>
   'takeMediaControlFocus' in player;
 
@@ -191,6 +196,23 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
   // render, so a port change alone does not restart the ads (change `source` to start over).
   const contentKey =
     options.contentPlayer === null ? null : isPlayerPort(options.contentPlayer) ? 'port' : options.contentPlayer;
+
+  // The ads start only on the three surfaces. A screen without them would wait without a sign.
+  const waitingForSurfaces =
+    sourceKey !== null && contentKey !== null && !(contentSurface && adSurface && standbySurface);
+  useEffect(() => {
+    if (!waitingForSurfaces || !isDev()) {
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      console.warn(
+        'react-native-vega-ads: the ads and the content wait for their video surfaces. ' +
+          'Render <DualSurfaceView surfaces={ads.surfaces} /> or, over your own content surface, ' +
+          '<AdSurfaceLayers surfaces={ads.surfaces} />.',
+      );
+    }, SURFACE_WARNING_MS);
+    return () => clearTimeout(timer);
+  }, [waitingForSurfaces]);
 
   useEffect(() => {
     const source = latest.current.source;

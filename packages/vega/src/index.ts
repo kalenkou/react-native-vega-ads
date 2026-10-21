@@ -21,6 +21,8 @@ export type { AdStyles } from './AdStyles';
 export { useVegaAds } from './useVegaAds';
 export type { AdSurfaces, UseVegaAdsOptions, VegaAds } from './useVegaAds';
 export { useVideoPlayer } from './useVideoPlayer';
+/** `useVideoPlayer` under a name that does not clash with react-native-video's hook. */
+export { useVideoPlayer as useVegaVideoPlayer } from './useVideoPlayer';
 export type { UseVideoPlayerOptions } from './useVideoPlayer';
 export { preloadVegaAds, useAdPlan } from './preloadVegaAds';
 export type { PreloadVegaAdsOptions } from './preloadVegaAds';
@@ -56,6 +58,7 @@ export type {
   AdEventAd,
   AdEventHandler,
   AdEventInfo,
+  AdEventName,
   AdIdSource,
   AdPlan,
   AdPlanMark,

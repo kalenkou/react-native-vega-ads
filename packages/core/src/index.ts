@@ -2,7 +2,7 @@ export const VERSION = '0.1.0';
 
 // Everything from the VAST layer, so apps get VAST and the break logic from one package.
 export * from './vast';
-export type { AdEventAd, AdEventHandler, AdEventInfo } from './events';
+export type { AdEventAd, AdEventHandler, AdEventInfo, AdEventName } from './events';
 export { installDOMParser } from './xml';
 export type { PlayerEventName, PlayerPort } from './ports';
 export { BreakScheduler } from './schedule/BreakScheduler';
