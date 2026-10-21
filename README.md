@@ -4,9 +4,9 @@
 
 License: [Apache-2.0](LICENSE).
 
-Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, the IAB standards for video ads and ad breaks. It plays the ads on Vega's video player (w3cmedia) and sends the IAB tracking pixels: the requests that tell the ad server an ad was seen. It is for apps that have their own ad server. Open source, Apache-2.0.
+Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, the IAB standards for video ads and ad breaks. It plays the ads on Vega's video player (w3cmedia) and sends the IAB tracking pixels: the requests that tell the ad server an ad was seen. It is for apps that have their own ad server.
 
-To our knowledge, Vega has no other open library that plays VAST or VMAP ads in the app. [Why this library](docs/why.md) compares the options.
+Why it is needed: Vega has no client-side IMA SDK. Amazon's guide shows how to switch between a movie player and an ad player, and leaves the rest to each app: ad requests, VAST parsing, tracking, ad pods, Skip, the remote and Alexa. To our knowledge, no other open library does this on Vega. [Why this library](docs/why.md) compares the options.
 
 An optional AI tool places the breaks between lines of dialogue and leaves out ads that do not fit the scene. See [AI break placement](#ai-break-placement-optional).
 
@@ -16,16 +16,27 @@ An optional AI tool places the breaks between lines of dialogue and leaves out a
 
 Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Foundation, CC BY 3.0. Ads: invented brands.
 
+## Try it
+
+- **On a Fire TV Stick:** download `demo_armv7.vpkg` from [release 0.1.0](https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.0) and install it with `vega device install-app -p demo_armv7.vpkg -d <device>`. The demo plays two films with ads, streamed over HTTPS. Its "Compare: ads as usual" button plays the same film with ads on a timer, for comparison. On the Vega Virtual Device of an Apple silicon Mac, use `demo_aarch64.vpkg`. The demo's source is in [`apps/demo`](apps/demo).
+- **In your app:** `npm install react-native-vega-ads`, then
+
+  ```tsx
+  <VegaAdsPlayer source={{ uri: movieUrl }} ads={{ vmapUrl }} onEnd={onClose} />
+  ```
+
+  The [Quick start](#quick-start) has the manifest entries and a public test VMAP.
+
 > Tested on a Fire TV Stick 4K Select (Vega OS 2.0). The API can change before 1.0.
 
-Measured on that stick: the switch from the movie to an ad takes 56-151 ms. Memory peaks at 91 MB with 27 ads in 11 minutes. The demo app shows its first frame in 1.09 s (P90 of 30 cold launches). More: [device results](docs/device-results.md). To try it, build the demo app in [`apps/demo`](apps/demo). It plays two films with ads. Its "Compare: ads as usual" button plays the same film with ads on a timer, for comparison.
+Measured on that stick: the switch from the movie to an ad takes 56-151 ms. Memory peaks at 91 MB with 27 ads in 11 minutes. More: [device results](docs/device-results.md).
 
 ## Features
 
 - Ads before, during and after the movie (pre-, mid- and post-rolls). The break times come from a VMAP file or from your own list of ad URLs (VAST tags).
 - VAST 4 wrappers (one ad server passes the request on to another), ad pods (several ads in one break) and skippable ads.
 - No black frame between the movie and the ads. The movie resumes where it stopped.
-- Home and Back: in the background the library releases every video player at once, as Amazon requires. Back in the app, the movie continues at the same second. Ads already shown do not come again. A player takes about 0.5 s to close, and in 1 of 6 runs on our stick the system ended the app before that. For that case the demo keeps the position on the device, and its movie page offers Continue.
+- Home and Back: in the background the library releases every video player, as Amazon requires. Back in the app, the movie continues at the same second, and ads already shown do not come again. [Details](docs/features.md), including the rare case when the system closes the app first.
 - The remote and Alexa pause and play the ads. The Skip button gets the remote's focus. VoiceView, the Fire TV screen reader, reads out each ad.
 - IAB tracking: the ad server learns when an ad was shown, each quarter of it, pause, skip and errors. It also learns when a break starts and ends.
 - No repeats. The same ad does not come back within 30 minutes. A break has one ad per advertiser. With `avoidRepeats.memory` the app remembers the shown ads across movies and launches.
@@ -72,7 +83,7 @@ Everything runs on your computer. No cloud, no cost, no viewer data. On an Apple
 npm install react-native-vega-ads
 ```
 
-This also installs `react-native-ads-core`. Your Vega app already has the peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia` and `@amazon-devices/react-native-kepler`. For the Fire TV advertising ID, add `@amazon-devices/kepler-adid-retriever`.
+This also installs `react-native-ads-core`. Your Vega app already has the peer dependencies: `react` 18.2 or later, `react-native` 0.72 or later, `@amazon-devices/react-native-w3cmedia` 2.1 or later and `@amazon-devices/react-native-kepler` 2.0 or later. Babel and Metro need no changes. For the Fire TV advertising ID, also run `npm install @amazon-devices/kepler-adid-retriever`.
 
 ### 2. Add entries to `manifest.toml`
 
@@ -85,11 +96,12 @@ id = "com.example.app.main"
 # Media category: lets Vega media controls (remote, Alexa) reach your players.
 categories = ["com.amazon.category.main", "com.amazon.category.kepler.media"]
 
-# Advertising ID service: without it the ID service reports "do not track" for every user.
+# Advertising ID service (only with `adId`): without it the ID service reports "do not track" for every user.
 [[wants.service]]
 id = "com.amazon.admanager.service.main"
 
 # Media playback server: without it media controls commands are not delivered.
+# component-id is the id of your interactive component above.
 [[extras]]
 key = "interface.provider"
 component-id = "com.example.app.main"
@@ -133,6 +145,7 @@ export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: 
 - `onEvent` gets every ad event, such as `impression`, the quartiles, `skip`, `breakStart`, `breakEnd` and `error:<code>`. The second argument tells which break and which ad. All events: [API reference](docs/api.md#events-onevent).
 - `onEnd` runs when the movie and its post-roll are over.
 - `adId` is optional. Without it, no advertising ID is sent.
+- No ad server yet? Google's public IMA sample VMAP has a pre-roll, a mid-roll and a post-roll: `https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/vmap_ad_samples&sz=640x480&cust_params=sample_ar%3Dpremidpost&ciu_szs=300x250&gdfp_req=1&ad_rule=1&output=vmap&unviewed_position_start=1&env=vp&impl=s&cmsid=496&vid=short_onecue&correlator=[CACHEBUSTING]`. The player fills `[CACHEBUSTING]` itself.
 
 Your own controls, ad overlay or player (Shaka, react-native-video v7) and ads loaded on the title page: see the [Guide](docs/guide.md).
 

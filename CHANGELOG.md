@@ -7,6 +7,15 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 ### Added
 
 - `maxRedirects`: how many VAST wrappers to follow before VAST error 302, as in Google IMA. Default 5, as before. For `useVegaAds`, `VegaAdsPlayer`, `preloadVegaAds`, `useStitchedAds`, `AdManager`, `preloadAds` and `requestVast`. `MAX_REDIRECTS` is the default. `WRAPPER_LIMIT` is deprecated.
+- `AdEventName`: the event names of `onEvent`, so editors complete them. The handler still accepts any string.
+- `useVegaVideoPlayer`: `useVideoPlayer` under a name that does not clash with react-native-video's hook.
+- `useVegaAds` warns in development when its video surfaces are still missing after 3 s. Before, the screen waited without a sign.
+
+### Documentation
+
+- README: why the library is needed, "Try it" with the release builds, a public test VMAP, the peer versions.
+- API reference: the parts you can use alone, pitfalls, all hook options, the `strings` keys, `ui.visible`.
+- Guide: the hook example continues at the same place after Home and draws "Ad in 5" and the pause ad. Code samples have their imports.
 
 ## [0.1.0] - 2026-10-21
 

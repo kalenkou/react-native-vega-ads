@@ -9,6 +9,7 @@ Part of [react-native-vega-ads](https://github.com/kalenkou/react-native-vega-ad
 The shortest way: one component plays the content with its ads.
 
 ```tsx
+import { AdIdRetriever } from '@amazon-devices/kepler-adid-retriever';
 import { VegaAdsPlayer } from 'react-native-vega-ads';
 
 <VegaAdsPlayer source={{ uri }} ads={{ vmapUrl }} adId={AdIdRetriever} onEnd={onClose} />;

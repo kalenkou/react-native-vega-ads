@@ -22,6 +22,8 @@
 
 ## `useVideoPlayer(uri, options?)`
 
+Also exported as `useVegaVideoPlayer`, for files that also use react-native-video's `useVideoPlayer`.
+
 Returns the content `VideoPlayer` for `uri` once it is initialized (`autoplay` off), `null` before that or while `uri` is `null`. Releases it on unmount or when `uri` changes.
 
 Amazon requires an app to release its media players in the background, or the system ends the app. So in the background the hook releases the player and returns `null`. Back in front, it returns a new player for the same `uri`. `options.onRelease(position)` gets the position the viewer had. Pass it to `useVegaAds({ startAt })` to continue there. `VegaAdsPlayer` does this for you.
@@ -43,12 +45,15 @@ Amazon requires an app to release its media players in the background, or the sy
 | `maxBreakAds`, `maxBreakSeconds` | Caps for every break, also sent as `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. Preloaded pre-roll requests use the macros you pass to `preloadVegaAds`. |
 | `avoidRepeats` | `{ withinMs, memory }`: how long a shown creative is not shown again (default 30 minutes), and where to remember it across titles and launches: `{ read, write }` of one string, for example `{ read: () => AsyncStorage.getItem('vega-ads.seen'), write: (v) => AsyncStorage.setItem('vega-ads.seen', v) }` with `@amazon-devices/react-native-async-storage__async-storage`. At most 500 creatives are kept. `false` turns the no-repeat rules off. |
 | `mediaFile` | Media file choice: `maxHeight`, `targetBitrateKbps`, or your own `select`. |
-| `strings` | Overlay texts. English by default. |
+| `strings` | The texts of the ad UI and of VoiceView, for your language (`AdUiStrings`, English by default). Pass only the keys you change: `ad`, `adOf`, `skip`, `skipIn`, `seconds`, `announceSkipIn`, `announceCanSkip`, `adIn`, `announceAdIn`, `pauseAdHint`, `scanQr`, `announcePauseAd`, `whyLeftOut`, `whyRepeats`, `whyQuieter`, `adPlan`, `watchReport`. Some are functions, for example `adOf: (position, total) => ...`. |
 | `backDuringAd` | What Back does during an ad. `'app'` (default): Back goes to your app, which usually closes the player. `'content'`: the break ends and the movie plays on, without skip or close pixels. |
 | `adPause` | The viewer may pause ads (remote, voice). Default `true`. With `false`, pause and "Alexa, stop" are ignored and play/pause only plays. A system pause (TV off) still pauses. |
 | `mediaControls` | Ad and content players take media controls focus. Default `true`. Keep it on Vega. |
 | `contentMediaControlHandler` | Your content media controls handler. It is restored after each break. |
 | `onEvent` | Called with IAB events and errors, for logs and analytics. See [Events](#events-onevent). |
+| `createAdPlayer` | Ad players as any `PlayerPort` instead of w3cmedia players, for example a `HeadlessPlayerAdapter` session. Each call returns a new player. |
+| `componentInstance` | Your app's component instance, for media controls. Defaults to the app's own. |
+| `createVideoPlayer`, `http`, `clock` | For tests and other runtimes. |
 
 ## Returned object
 
@@ -58,7 +63,7 @@ Amazon requires an app to release its media players in the background, or the sy
 | `ended` | `true` after the content ended and the post-roll, if any, is over. |
 | `snapshot` | Current break state: `position` and `total` in the pod, `adTime` and `adDuration` in seconds, `canSkip` and `skipIn`, and `ad`, the ad on screen (`id`, `creativeId`, `title`, `advertiser`, `duration` and more, or `null`). Enough for your own ad label, counter or progress bar. |
 | `ad` | The ad on screen, the same as `snapshot.ad`: `id`, `creativeId`, `universalAdId`, `title`, `advertiser`, `duration`, `sequence`, `skipAfter`. `null` outside ads. For example `renderOverlay={(ads) => <Text>{ads.ad?.advertiser}</Text>}`. |
-| `ui` | Data for an ad overlay: `label` ("Ad 1 of 3 · 0:12") and its parts `name` and `timeLeft`, `skip`, `why`, `caption`, the VoiceView texts. |
+| `ui` | Data for an ad overlay: `visible` (draw the overlay only when `true`), `label` ("Ad 1 of 3 · 0:12") and its parts `name` and `timeLeft`, `skip`, `why`, `caption`, the VoiceView texts. |
 | `timeline` | `marks`: the mid-rolls (`id`, `time` in seconds, `done`) for your timeline. `nextBreakIn`: whole seconds to the next mid-roll in its last `countdownSeconds`, only once its ads are loaded. Otherwise `null`. |
 | `surfaces` | Pass to `DualSurfaceView` or `AdSurfaceLayers`. |
 | `pauseAd` | The pause ad to draw with `<PauseAd view={ads.pauseAd} />`, or `null`. Back closes it. |
@@ -88,7 +93,7 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 />
 ```
 
-`info` is `{}` for events without a break or ad: `vmap:error:<code>`, `error:start`, `content:ended` and the `pauseAd:*` events. In `useStitchedAds` (preview) `info` is always `{}`. The types are `AdEventHandler`, `AdEventInfo` and `AdEventAd`.
+The type of `name` is `AdEventName`, so your editor completes the names. It still accepts any string, for events that a newer version adds. `info` is `{}` for events without a break or ad: `vmap:error:<code>`, `error:start`, `content:ended` and the `pauseAd:*` events. In `useStitchedAds` (preview) `info` is always `{}`. The types are `AdEventHandler`, `AdEventInfo` and `AdEventAd`.
 
 | Event | When | react-native-video `AdEvent` |
 |---|---|---|
@@ -111,6 +116,26 @@ Requests the VMAP (or the manual schedule) and the pre-roll VAST before the play
 | `break:<id>:superseded` | a later seek started another break while this one still loaded. Only the last break plays, and this one's ad player is released | none |
 | `standby:unavailable`, `standby:error` | the second ad player could not start. One player is used | none |
 | `error:start` | the ad schedule could not be started. The content plays without ads | none |
+
+## Use only the parts you need
+
+| You want | Use | You also need |
+|---|---|---|
+| Everything: content, ads, surfaces and ad UI | `<VegaAdsPlayer>` | nothing |
+| Your own screen and controls, our ad logic | `useVegaAds` + `DualSurfaceView` (or `AdSurfaceLayers` over your content surface) | your controls; add `AdOverlay`, `AdCountdown`, `PauseAd` or your own UI |
+| Your own player (Shaka, react-native-video v7) | `player` / `contentPlayer`: its w3cmedia `VideoPlayer`, `rnvPlayerPort(player)` or any `PlayerPort` | the ad surfaces above your content (`contentSurface={false}` or `AdSurfaceLayers`) |
+| Your own ad UI | `renderOverlay`, or the hook's `ads.ui`, `ads.snapshot`, `ads.ad` | `AdSkipButton` keeps the D-pad focus right, `useAdAnnouncements(ads.ui)` keeps VoiceView |
+| Only VAST/VMAP parsing and IAB tracking, any platform | `react-native-ads-core`: `requestVast`, `requestVmap`, `AdTracker` | no React, no Vega |
+| Ad timing without our players | `AdManager` from `react-native-ads-core` with your own `PlayerPort` | your players and surfaces |
+
+## Pitfalls
+
+- `null` means different things. `ads={null}` on `<VegaAdsPlayer>` plays the content without ads. `source: null` in `useVegaAds` waits and starts nothing. To play without ads through the hook, pass `source: { breaks: [] }`.
+- `source` means the content on `<VegaAdsPlayer>` (`{ uri }`, as in react-native-video), but the ad schedule in `useVegaAds` (`{ vmapUrl }`).
+- The hook waits for its three surfaces. Without `DualSurfaceView` or `AdSurfaceLayers` neither the ads nor the content start. In development it warns after 3 s.
+- Mount `AdSurfaceLayers` after your content surface exists: on Vega a video surface created later is drawn on top, whatever the `zIndex`.
+- Do not call `play()` on the content player yourself: the ads start the content after the pre-roll.
+- Media must be HTTPS, or its host must be in the manifest's cleartext list. Otherwise the player gives only a generic error.
 
 ## Components
 

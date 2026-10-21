@@ -22,14 +22,17 @@ Mid-rolls are marked for your timeline (`ads.timeline.marks`), and "Ad in 5" sho
 Start the ad requests on the title's page, so after Play the pre-roll only has to buffer:
 
 ```tsx
+import { useEffect } from 'react';
+import { AdIdRetriever } from '@amazon-devices/kepler-adid-retriever';
 import { preloadVegaAds } from 'react-native-vega-ads';
 
+// in the title page component:
 useEffect(() => preloadVegaAds({ vmapUrl }, { adId: AdIdRetriever }), [vmapUrl]);
 ```
 
 The player with the same `ads` uses the answers once, within five minutes. Otherwise it asks the ad server itself. Later breaks are requested during playback, as before.
 
-`useAdPlan(ads, options)` preloads the same way and returns what the viewer can know before Play: the number of breaks, the pre-roll (ads, seconds, skip after) and `marks`, where each break is (`start`, `end`, a time or a percent) with the scene signals from the VMAP context. The demo draws its break map from it. `adPlanLabel(plan)` gives one line: "4 ad breaks · first: 1 ad, 10 s".
+`useAdPlan(ads, options)` preloads the same way and returns what the viewer can know before Play: the number of breaks, the pre-roll (ads, seconds, skip after) and `marks`. Each mark has `at`, where the break is (`{ kind: 'start' }`, `{ kind: 'end' }`, `{ kind: 'time', seconds }` or `{ kind: 'percent', percent }`), and `sceneSignals` from the VMAP context. The demo draws its break map from it. `adPlanLabel(plan)` gives one line: "4 ad breaks · first: 1 ad, 10 s".
 
 ## Customise any part
 
@@ -76,6 +79,9 @@ Your fonts and colours on the built-in ad UI, with no own overlay: `adStyles` ad
 Your own ad overlay, laid out as you like: `renderOverlay={(ads) => <MyAdOverlay ads={ads} />}`. `ads.ui` gives the text parts (`name` "Ad 1 of 3", `timeLeft` "0:12", `why`) and `ads.snapshot` the numbers (`position`, `total`, `adTime`, `adDuration`, `skipIn`). `ads.ad` is the ad on screen: `id`, `title`, `advertiser` and more. Put `<AdSkipButton ui={ads.ui} onSkip={ads.skip} styles={...} />` in it: the button takes the D-pad focus, ignores presses until Skip is allowed, and during a non-skippable ad holds the focus so the remote does not reach the screen behind the ad. Call `useAdAnnouncements(ads.ui)` in it: VoiceView then announces each ad and the moment Skip opens, as with the built-in overlay.
 
 ```tsx
+import { StyleSheet, Text, View } from 'react-native';
+import { AdSkipButton, useAdAnnouncements, type VegaAds } from 'react-native-vega-ads';
+
 function MyAdOverlay({ ads }: { ads: VegaAds }) {
   useAdAnnouncements(ads.ui);
   if (!ads.ui.visible) return null;
@@ -94,23 +100,32 @@ function MyAdOverlay({ ads }: { ads: VegaAds }) {
 When your screen has its own controls, use the hook and the components. `useVideoPlayer` creates the content `VideoPlayer` (initialized, `autoplay` off). It releases the player when the screen closes and in the background, as Amazon requires. Pass `onRelease` to `useVideoPlayer` and the position to `useVegaAds({ startAt })` to continue at the same place:
 
 ```tsx
-import { AdOverlay, DualSurfaceView, useVegaAds, useVideoPlayer } from 'react-native-vega-ads';
+import { useRef } from 'react';
+import { AdCountdown, AdOverlay, DualSurfaceView, PauseAd, useVegaAds, useVideoPlayer } from 'react-native-vega-ads';
 
 export function PlayerScreen({ uri, vmapUrl }: { uri: string; vmapUrl: string }) {
-  const player = useVideoPlayer(uri);
-  const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player });
+  // Where the movie was when the app went to the background, to continue there.
+  const resumeAt = useRef<number | undefined>(undefined);
+  const player = useVideoPlayer(uri, {
+    onRelease: (position) => {
+      resumeAt.current = position > 0 ? position : undefined;
+    },
+  });
+  const ads = useVegaAds({ source: { vmapUrl }, contentPlayer: player, startAt: resumeAt.current });
 
   return (
     <>
       <DualSurfaceView surfaces={ads.surfaces} contentPlayer={player} />
       {!ads.playing && <YourControls player={player} />}
+      {!ads.playing && <AdCountdown nextBreakIn={ads.timeline.nextBreakIn} />}
+      <PauseAd view={ads.pauseAd} />
       <AdOverlay ui={ads.ui} onSkip={ads.skip} />
     </>
   );
 }
 ```
 
-The hook starts the content after the pre-roll, or at once if there is none. Hide your controls while `ads.playing` is true.
+The hook starts the content after the pre-roll, or at once if there is none. Hide your controls while `ads.playing` is true. The hook waits for its three surfaces: without `DualSurfaceView` (or `AdSurfaceLayers` over your own content surface) nothing starts. `AdCountdown` ("Ad in 5") and `PauseAd` are drawn by `VegaAdsPlayer` itself. With the hook, add them as above.
 
 Without VMAP, pass a list of breaks (`ads={...}` on the component, `source:` in the hook):
 
@@ -157,16 +172,23 @@ Pass the `VideoPlayer` that Shaka plays through as `contentPlayer`.
 `rnvPlayerPort(player)` turns a react-native-video v7 `VideoPlayer` into the content player for the ads, through its public API (no dependency on react-native-video). Your `<VideoView>` shows the content. The component adds the ad surfaces and the overlay:
 
 ```tsx
+import { useMemo } from 'react';
+import { StyleSheet } from 'react-native';
 import { useVideoPlayer, VideoView } from 'react-native-video';
 import { rnvPlayerPort, VegaAdsPlayer } from 'react-native-vega-ads';
 
-const player = useVideoPlayer({ uri }); // do not call play() here: the ads start the content
-const content = useMemo(() => rnvPlayerPort(player), [player]);
-
-<VegaAdsPlayer player={content} ads={{ vmapUrl }} adId={AdIdRetriever}>
-  {({ ads }) => <VideoView player={player} style={StyleSheet.absoluteFill} />}
-</VegaAdsPlayer>
+export function PlayerScreen({ uri, vmapUrl }: { uri: string; vmapUrl: string }) {
+  const player = useVideoPlayer({ uri }); // do not call play() here: the ads start the content
+  const content = useMemo(() => rnvPlayerPort(player), [player]);
+  return (
+    <VegaAdsPlayer player={content} ads={{ vmapUrl }}>
+      <VideoView player={player} style={StyleSheet.absoluteFill} />
+    </VegaAdsPlayer>
+  );
+}
 ```
+
+Both libraries export a hook named `useVideoPlayer`. Here it is the one from react-native-video. If you need ours in the same file, import it as `useVegaVideoPlayer`.
 
 Hide your controls while `ads.playing`: react-native-video reports `readyToPlay` during the pre-roll. react-native-video needs a Vega backend for this. We tested it on a Fire TV Stick with a prototype backend (pre-roll, pod, seek and events after the breaks).
 
