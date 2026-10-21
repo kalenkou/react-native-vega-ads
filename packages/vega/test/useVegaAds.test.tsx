@@ -453,6 +453,18 @@ describe('useVegaAds', () => {
       expect(warn).not.toHaveBeenCalled();
     });
 
+    it('gets no warning when the surfaces go away after they were there (the app in the background)', async () => {
+      const ctx = setup();
+      await ctx.surfacesReady();
+      act(() => ctx.ads().surfaces.onContentSurface(null));
+      act(() => ctx.ads().surfaces.onAdSurface(null));
+      act(() => ctx.ads().surfaces.onStandbySurface(null));
+      await act(async () => {
+        jest.advanceTimersByTime(10_000);
+      });
+      expect(warn).not.toHaveBeenCalled();
+    });
+
     it('gets no warning without a source or a player, or in a release build', () => {
       setup({ source: null });
       setup({ contentPlayer: null });

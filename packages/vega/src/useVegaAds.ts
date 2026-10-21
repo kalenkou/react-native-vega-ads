@@ -198,8 +198,11 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     options.contentPlayer === null ? null : isPlayerPort(options.contentPlayer) ? 'port' : options.contentPlayer;
 
   // The ads start only on the three surfaces. A screen without them would wait without a sign.
-  const waitingForSurfaces =
-    sourceKey !== null && contentKey !== null && !(contentSurface && adSurface && standbySurface);
+  const allSurfaces = Boolean(contentSurface && adSurface && standbySurface);
+  // Surfaces that go away later (the app in the background) are not a screen without them.
+  const hadSurfaces = useRef(false);
+  hadSurfaces.current ||= allSurfaces;
+  const waitingForSurfaces = sourceKey !== null && contentKey !== null && !allSurfaces && !hadSurfaces.current;
   useEffect(() => {
     if (!waitingForSurfaces || !isDev()) {
       return undefined;
