@@ -478,3 +478,14 @@ Muted demo with `751f6d7`, `resume-run.sh`, Home after about 11 s of the movie, 
 | Release order, with the fix, 4 runs | PASS 4 of 4: `clearSurfaceHandle` 14-15 ms before `MediaPlayer: deinitialize`, no ClearSurface error |
 | Continue at the same place, with the fix | PASS 3 of 4: the same process comes back. The frames 15 s after the return are at 0:24.5, 0:25 and 0:24.5, so the movie continued at about 0:11. One impression per run: no ad again |
 | The 4th run | FAIL: the system ended the app 0.69 s after Home (`onBackground Kill <pid> for using session media-playback`), 31 ms after the player was destroyed. The app opened again on the movie page. The player was released at once in every run. Closing it took 0.42-0.87 s (GStreamer to NULL takes about 0.5 s), and the system checked 0.65-1.27 s after Home. The old order showed the same close time (0.53 s) |
+
+## Continue after the system ends the app (21.10.2026)
+
+Muted demo with `7e771f5`, `kill-resume-run.sh`: Play, the pre-roll, about 11 s of the movie, Home, then `vlcm terminate-app --force` (the system ending the app), launch again.
+
+| Check | Result |
+|---|---|
+| Movie page after the launch | PASS: the first button reads "Continue at 0:11" |
+| Continue | PASS: the app log says `play from 11.6`. The frame 15 s later is at 0:24.5, and no ad impression came after Continue |
+| Back from the player | PASS: the page shows "Play" again (the saved place is cleared) |
+| Regression, `gate-run.sh` 3 runs | PASS 3 of 3: pre-roll, movie, the mid-roll pod without the repeated ad (`notUsed`), movie after the pod, no errors |
