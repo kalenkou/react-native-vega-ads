@@ -67,6 +67,62 @@ describe('resumeStore', () => {
     await store.save(URI, 8);
     expect(await store.read(URI)).toBe(8);
   });
+
+  /** Storage that answers reads only when the test says so, in the given order. */
+  function slowStorage() {
+    const storage = memoryStorage();
+    const reads: Array<() => void> = [];
+    return {
+      ...storage,
+      getItem: (key: string) =>
+        new Promise<string | null>((resolve) => {
+          reads.push(() => resolve(storage.data.get(key) ?? null));
+        }),
+      async answerAll(order: 'newest first' | 'oldest first') {
+        const tick = () =>
+          new Promise<void>((resolve) => setTimeout(() => resolve(), 0));
+        await tick();
+        while (reads.length > 0) {
+          (order === 'newest first' ? reads.pop() : reads.shift())?.();
+          await tick();
+        }
+      },
+    };
+  }
+
+  it('a save still in flight does not bring back a position cleared after it', async () => {
+    const storage = slowStorage();
+    const store = resumeStore(storage);
+    const saving = store.save(URI, 12);
+    const clearing = store.clear(URI);
+    await storage.answerAll('newest first');
+    await Promise.all([saving, clearing]);
+    expect(storage.data.get('vega-ads-demo.resume')).toBe('{}');
+  });
+
+  it('a read waits for the save before it', async () => {
+    const storage = slowStorage();
+    const store = resumeStore(storage);
+    const saving = store.save(URI, 8);
+    const reading = store.read(URI);
+    await storage.answerAll('oldest first');
+    await saving;
+    expect(await reading).toBe(8);
+  });
+
+  it('goes on after a write fails', async () => {
+    const storage = memoryStorage();
+    const store = resumeStore({
+      getItem: storage.getItem,
+      setItem: jest
+        .fn()
+        .mockRejectedValueOnce(new Error('disk full'))
+        .mockImplementation(storage.setItem),
+    });
+    await expect(store.save(URI, 5)).rejects.toThrow('disk full');
+    await store.save(URI, 9);
+    expect(await store.read(URI)).toBe(9);
+  });
 });
 
 describe('useSaveResume', () => {

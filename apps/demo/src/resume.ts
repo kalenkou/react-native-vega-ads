@@ -18,6 +18,13 @@ const EVERY = 5;
  * offers to continue from here.
  */
 export function resumeStore(storage: ResumeStorage = AsyncStorage) {
+  // One call at a time, in the order asked: a save still in flight cannot undo a later clear.
+  let last: Promise<unknown> = Promise.resolve();
+  const inOrder = <T>(task: () => Promise<T>): Promise<T> => {
+    const run = last.then(task);
+    last = run.catch(() => undefined);
+    return run;
+  };
   const readAll = async (): Promise<Record<string, number>> => {
     try {
       const value = JSON.parse((await storage.getItem(KEY)) ?? '{}');
@@ -26,16 +33,18 @@ export function resumeStore(storage: ResumeStorage = AsyncStorage) {
       return {};
     }
   };
-  const update = async (change: (all: Record<string, number>) => void) => {
-    const all = await readAll();
-    change(all);
-    await storage.setItem(KEY, JSON.stringify(all));
-  };
+  const update = (change: (all: Record<string, number>) => void) =>
+    inOrder(async () => {
+      const all = await readAll();
+      change(all);
+      await storage.setItem(KEY, JSON.stringify(all));
+    });
   return {
-    read: async (uri: string): Promise<number | null> => {
-      const at = (await readAll())[uri];
-      return typeof at === 'number' && at > 0 ? at : null;
-    },
+    read: (uri: string): Promise<number | null> =>
+      inOrder(async () => {
+        const at = (await readAll())[uri];
+        return typeof at === 'number' && at > 0 ? at : null;
+      }),
     save: (uri: string, at: number) =>
       update((all) => {
         all[uri] = at;
