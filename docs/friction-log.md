@@ -286,8 +286,8 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Suggestion:** name the media session in the kill reason, and link the requirement from the CSAI and media player guides. Give apps a documented time to release, or check after a released player has finished closing.
 
 ## FL-32 · The Vega Virtual Device refuses http media that the device plays (2026-10-19)
-- **Task:** run the same demo build on the Vega Virtual Device (VVD, SDK 0.24.12112) and on the stick. Use media from a local server.
-- **Steps:** `MEDIA_BASE = 'http://<LAN IP>:8080/'` and `[network-traffic-policy.cleartext] allowed-domains = ["<LAN IP>"]` in the manifest. The same aarch64 `.vpkg` on both.
+- **Task:** run the same demo on the Vega Virtual Device (VVD, SDK 0.24.12112) and on the stick. Use media from a local server.
+- **Steps:** `MEDIA_BASE = 'http://<LAN IP>:8080/'` and `[network-traffic-policy.cleartext] allowed-domains = ["<LAN IP>"]` in the manifest. The same source and manifest: the armv7 build on the stick, the aarch64 build on the VVD.
 - **Expected:** the same result on the VVD and on the device.
 - **Actual:** the stick plays the movie and the ads. On the VVD every player fails at once with `MEDIA_ERR` 4. The system log says `isUriSchemeSecure Got an insecure protocol/scheme http, return error` and `openMedia Invalid URI`. The app sees only `error`, so every ad looks like a broken VAST. With https (CloudFront) the VVD plays the pre-roll to the end.
 - **Severity:** medium (a local media server does not work on the VVD, and the reason is only in the system log).
