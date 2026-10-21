@@ -1,5 +1,7 @@
 # react-native-vega-ads
 
+[![CI](https://github.com/kalenkou/react-native-vega-ads/actions/workflows/ci.yml/badge.svg)](https://github.com/kalenkou/react-native-vega-ads/actions/workflows/ci.yml)
+
 License: [Apache-2.0](LICENSE).
 
 Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, the IAB standards for video ads and ad breaks. It plays the ads on Vega's video player (w3cmedia) and sends the IAB tracking pixels: the requests that tell the ad server an ad was seen. It is for apps that have their own ad server. Open source, Apache-2.0.
