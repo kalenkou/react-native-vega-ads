@@ -53,7 +53,7 @@ export { vegaAdIdSource } from './vegaAdIdSource';
 export type { VegaAdIdRetriever } from './vegaAdIdSource';
 
 // From react-native-ads-core, so an app needs no direct dependency on it.
-export { adIdMacros, adPlanLabel, watchReport, watchReportLabel } from 'react-native-ads-core';
+export { adIdMacros, adPlanLabel, MAX_REDIRECTS, watchReport, watchReportLabel } from 'react-native-ads-core';
 export type {
   AdEventAd,
   AdEventHandler,

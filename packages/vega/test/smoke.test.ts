@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { useVegaVideoPlayer, useVideoPlayer, VERSION } from '../src';
+import { MAX_REDIRECTS, useVegaVideoPlayer, useVideoPlayer, VERSION } from '../src';
 
 describe('package smoke test', () => {
   it('exposes the version from package.json', () => {
@@ -10,5 +10,9 @@ describe('package smoke test', () => {
 
   it("also exports useVideoPlayer as useVegaVideoPlayer, apart from react-native-video's hook", () => {
     expect(useVegaVideoPlayer).toBe(useVideoPlayer);
+  });
+
+  it('exports the default maxRedirects, so an app can raise it without a direct dependency on core', () => {
+    expect(MAX_REDIRECTS).toBe(5);
   });
 });
