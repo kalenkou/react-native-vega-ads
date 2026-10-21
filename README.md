@@ -1,6 +1,6 @@
 # react-native-vega-ads
 
-[![CI](https://github.com/kalenkou/react-native-vega-ads/actions/workflows/ci.yml/badge.svg)](https://github.com/kalenkou/react-native-vega-ads/actions/workflows/ci.yml)
+[![CI](https://github.com/kalenkou/react-native-vega-ads/actions/workflows/ci.yml/badge.svg)](https://github.com/kalenkou/react-native-vega-ads/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/react-native-vega-ads)](https://www.npmjs.com/package/react-native-vega-ads)
 
 License: [Apache-2.0](LICENSE).
 
