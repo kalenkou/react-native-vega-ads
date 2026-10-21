@@ -1,0 +1,35 @@
+name: Web demo
+on:
+  push:
+    branches: [main]
+    paths: ['tools/web-demo/**', 'packages/core/src/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      # The page, its script and a copy of the demo CDN's VAST, VMAP and WebVTT files.
+      - run: npm run build -w tools/web-demo
+      - uses: actions/upload-pages-artifact@v5
+        with: { path: tools/web-demo/dist }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
