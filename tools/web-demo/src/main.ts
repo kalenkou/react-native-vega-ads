@@ -10,6 +10,7 @@ import {
   watchReportLabel,
 } from 'react-native-ads-core';
 import type {
+  AdPlanMark,
   AdSchedule,
   AdTimeline,
   ClockPort,
@@ -85,6 +86,8 @@ const el = {
   movie: $<HTMLSelectElement>('movie'),
   mode: $<HTMLSelectElement>('mode'),
   plan: $('plan'),
+  breaks: $('breaks'),
+  announce: $('announce'),
   report: $('report'),
   sound: $('sound'),
   soundOn: $<HTMLButtonElement>('sound-on'),
@@ -182,6 +185,10 @@ let timeline: AdTimeline = { marks: [], nextBreakIn: null };
 let pauseAd: PauseAdView | null = null;
 let events: string[] = [];
 let preload: Promise<PreloadedAds> | null = null;
+/** The breaks of the VMAP before Play, as on the title's page of the TV app. */
+let planMarks: AdPlanMark[] = [];
+let said = '';
+let countdownShown = false;
 
 function movie(): Movie {
   return MOVIES[el.movie.value] ?? MOVIES.tears!;
@@ -205,6 +212,32 @@ function clockText(seconds: number): string {
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
 }
 
+function planTime(mark: AdPlanMark): number {
+  switch (mark.at.kind) {
+    case 'start':
+      return 0;
+    case 'end':
+      return duration();
+    case 'percent':
+      return (mark.at.percent / 100) * duration();
+    default:
+      return mark.at.seconds;
+  }
+}
+
+function planLabel(mark: AdPlanMark): string {
+  const at = mark.at.kind === 'start' ? 'pre-roll' : mark.at.kind === 'end' ? 'post-roll' : clockText(planTime(mark));
+  return mark.sceneSignals.length > 0 ? `${at} after: ${mark.sceneSignals.join(', ')}` : at;
+}
+
+/** Says a line once to a screen reader, as VoiceView does on the TV. */
+function announce(text: string): void {
+  if (text !== '' && text !== said) {
+    said = text;
+    el.announce.textContent = text;
+  }
+}
+
 // ---- Drawing.
 
 function render(): void {
@@ -220,10 +253,14 @@ function render(): void {
   el.skip.textContent = ui.skip.label;
   el.caption.textContent = ui.caption;
   el.caption.hidden = ui.caption === '';
+  if (ui.visible) announce(ui.skipAnnouncement || ui.announcement);
 
   const countdown = adCountdownState(classic() ? null : timeline.nextBreakIn);
   el.countdown.hidden = adOn || !countdown.visible;
   el.countdown.textContent = countdown.label;
+  if (!el.countdown.hidden && !countdownShown) announce(countdown.announcement);
+  countdownShown = !el.countdown.hidden;
+  if (!adOn && !countdown.visible) said = ''; // the next break is announced again
 
   el.pauseAd.hidden = pauseAd === null;
   if (pauseAd) {
@@ -243,13 +280,17 @@ function render(): void {
 }
 
 function renderMarks(): void {
+  const marks =
+    timeline.marks.length > 0
+      ? timeline.marks.map((mark) => ({ time: mark.time, done: mark.done, title: clockText(mark.time) }))
+      : planMarks.map((mark) => ({ time: planTime(mark), done: false, title: planLabel(mark) }));
   el.marks.replaceChildren(
-    ...timeline.marks.map((mark) => {
+    ...marks.map((mark) => {
       const dot = document.createElement('span');
       const at = Number.isFinite(mark.time) ? Math.min(mark.time / duration(), 1) : 1;
       dot.style.left = `${100 * at}%`;
       dot.className = mark.done ? 'done' : '';
-      dot.title = `Ad break at ${clockText(Math.min(mark.time, duration()))}`;
+      dot.title = `Ad break: ${mark.title}`;
       return dot;
     }),
   );
@@ -288,6 +329,8 @@ async function load(): Promise<void> {
   el.report.textContent = '';
   events = [];
   el.plan.textContent = 'Loading the ad plan…';
+  el.breaks.textContent = '';
+  planMarks = [];
   log('event', `${m.title}, ${classic() ? 'ads as usual' : 'vega-ads'}`);
   // As on the title's page of the TV app: the VMAP and the pre-roll are asked for before Play.
   const ready = preloadAds(schedule(), { http, clock });
@@ -295,6 +338,8 @@ async function load(): Promise<void> {
   const plan = adPlan(await ready);
   if (preload === ready) {
     el.plan.textContent = plan ? adPlanLabel(plan) : 'The ad plan could not be loaded';
+    planMarks = plan?.marks ?? [];
+    el.breaks.textContent = planMarks.length > 0 ? `Breaks: ${planMarks.map(planLabel).join(' · ')}` : '';
   }
   renderMarks();
   render();
