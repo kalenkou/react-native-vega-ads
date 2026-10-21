@@ -74,6 +74,8 @@ export interface SessionDeps {
    */
   standbySurface?: string;
   macros?: Macros;
+  /** How many wrappers to follow before giving up with VAST error 302. Default 5 (R3). */
+  maxRedirects?: number;
   mediaFile?: MediaFileOptions;
   budgetMs?: number;
   /**
@@ -227,6 +229,7 @@ export class AdBreakSession {
               http: this.deps.http,
               clock: this.deps.clock,
               macros: withBlockedCategories(this.deps.macros, this.deps.blockedAdCategories),
+              maxRedirects: this.deps.maxRedirects,
             });
       if (this.state !== 'loading') {
         return 'empty'; // interrupted while the ad server answered

@@ -74,6 +74,40 @@ describe('requestVast', () => {
     expect(pixels.requests.some((url) => url.includes('code=302'))).toBe(true);
   });
 
+  it('follows as many wrappers as maxRedirects allows', async () => {
+    const http = new FakeHttp();
+    const result = await requestVast(wrapperChain(http, 7), { http, clock: new FakeClock(), maxRedirects: 7 });
+    expect(result.status).toBe('ok');
+  });
+
+  it('stops after maxRedirects wrappers with error 302', async () => {
+    const http = new FakeHttp();
+    const result = await requestVast(wrapperChain(http, 2), { http, clock: new FakeClock(), maxRedirects: 1 });
+    expect(result).toEqual({ status: 'empty', errorCodes: [302] });
+    expect(http.requests).toEqual(['https://ads.test/w1', 'https://ads.test/w2']);
+  });
+
+  it('with maxRedirects 0 plays InLine ads and follows no wrapper', async () => {
+    const inline = await requestVast(INLINE, {
+      http: new FakeHttp().on(INLINE, { body: fixture('inline.xml') }),
+      clock: new FakeClock(),
+      maxRedirects: 0,
+    });
+    expect(inline.status).toBe('ok');
+    const http = new FakeHttp();
+    const wrapped = await requestVast(wrapperChain(http, 1), { http, clock: new FakeClock(), maxRedirects: 0 });
+    expect(wrapped).toEqual({ status: 'empty', errorCodes: [302] });
+  });
+
+  it.each([-1, Number.NaN, Number.POSITIVE_INFINITY])('keeps 5 wrappers for maxRedirects %p', async (maxRedirects) => {
+    const five = new FakeHttp();
+    const ok = await requestVast(wrapperChain(five, 5), { http: five, clock: new FakeClock(), maxRedirects });
+    expect(ok.status).toBe('ok');
+    const six = new FakeHttp();
+    const stopped = await requestVast(wrapperChain(six, 6), { http: six, clock: new FakeClock(), maxRedirects });
+    expect(stopped).toEqual({ status: 'empty', errorCodes: [302] });
+  });
+
   it('treats an empty VAST as no ads with 303 and fires its Error URL (R5)', async () => {
     const result = await load(new FakeHttp().on(INLINE, { body: fixture('empty.xml') }), INLINE);
     expect(result).toEqual({ status: 'empty', errorCodes: [303] });

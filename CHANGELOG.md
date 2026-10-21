@@ -2,6 +2,12 @@
 
 All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The two packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `maxRedirects`: how many VAST wrappers to follow before VAST error 302, as in Google IMA. Default 5, as before. For `useVegaAds`, `VegaAdsPlayer`, `preloadVegaAds`, `useStitchedAds`, `AdManager`, `preloadAds` and `requestVast`. `MAX_REDIRECTS` is the default. `WRAPPER_LIMIT` is deprecated.
+
 ## [0.1.0] - 2026-10-21
 
 First release.

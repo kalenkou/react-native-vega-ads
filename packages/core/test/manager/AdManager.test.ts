@@ -40,6 +40,7 @@ function setup(
     | 'contentLoudness'
     | 'macros'
     | 'captionLanguage'
+    | 'maxRedirects'
   > = {},
 ) {
   const http = new FakeHttp();
@@ -461,6 +462,51 @@ describe('AdManager', () => {
     await settle();
     await ctx.lastAdPlayer().flush();
     expect(ctx.last()).toMatchObject({ position: 1, total: 2 });
+  });
+
+  describe('maxRedirects', () => {
+    const W = 'https://ads.test/w.xml';
+    const INLINE = 'https://ads.test/inline.xml';
+    const PAUSE = 'https://ads.test/pause.xml';
+    const PAUSE_W = 'https://ads.test/pause-w.xml';
+    const wrapperTo = (url: string): string => fixture('vast/wrapper-to-inline.xml').replace(INLINE, url);
+
+    it.each([
+      [undefined, true],
+      [0, false],
+    ])('maxRedirects %p: the wrapper of a break is followed: %p', async (maxRedirects, followed) => {
+      const ctx = setup({ [W]: wrapperTo(INLINE), [INLINE]: fixture('vast/inline.xml') }, { maxRedirects });
+      void ctx.manager.start(manual([{ offset: 'start', vastUrl: W }]));
+      await settle();
+      expect(ctx.http.requests.includes(INLINE)).toBe(followed);
+    });
+
+    it.each([
+      [undefined, true],
+      [0, false],
+    ])('maxRedirects %p: the wrapper of a pause ad is followed: %p', async (maxRedirects, followed) => {
+      const ctx = setup(
+        { [PAUSE_W]: wrapperTo(PAUSE), [PAUSE]: fixture('vast/pause.xml'), [W]: fixture('vast/inline.xml') },
+        { maxRedirects, pauseAdUrl: PAUSE_W, onPauseAd: () => undefined },
+      );
+      await ctx.manager.start(manual([{ offset: 30, vastUrl: W }]));
+      await ctx.content.flush();
+      await settle();
+      ctx.content.emitTime(5);
+      ctx.content.emitPause();
+      ctx.clock.advance(1_500);
+      await settle();
+      expect(ctx.http.requests.includes(PAUSE)).toBe(followed);
+    });
+
+    it.each([
+      [undefined, true],
+      [0, false],
+    ])('maxRedirects %p: preloadAds follows the wrapper of the pre-roll: %p', async (maxRedirects, followed) => {
+      const http = new FakeHttp().on(W, { body: wrapperTo(INLINE) }).on(INLINE, { body: fixture('vast/inline.xml') });
+      await preloadAds(manual([{ offset: 'start', vastUrl: W }]), { http, clock: new FakeClock(), maxRedirects });
+      expect(http.requests.includes(INLINE)).toBe(followed);
+    });
   });
 
   describe('pause ads', () => {

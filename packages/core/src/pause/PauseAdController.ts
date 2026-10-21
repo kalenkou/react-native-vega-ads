@@ -19,6 +19,8 @@ export interface PauseAdDeps {
   /** VAST tag of the pause ad (a `<NonLinear>` image). */
   source: string;
   macros?: Macros;
+  /** How many wrappers to follow before giving up with VAST error 302. Default 5 (R3). */
+  maxRedirects?: number;
   /** How long the content stays paused before the ad shows. Default 1500 ms. */
   delayMs?: number;
   /** False while a break plays, before the content started and after it ended. */
@@ -88,8 +90,8 @@ export class PauseAdController {
       return;
     }
     this.loading = true;
-    const { http, clock, macros, source } = this.deps;
-    void requestPauseAd(source, { http, clock, macros }).then((result) => {
+    const { http, clock, macros, maxRedirects, source } = this.deps;
+    void requestPauseAd(source, { http, clock, macros, maxRedirects }).then((result) => {
       this.loading = false;
       this.next = result;
     });

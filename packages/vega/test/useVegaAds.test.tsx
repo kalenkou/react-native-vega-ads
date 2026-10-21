@@ -418,6 +418,14 @@ describe('useVegaAds', () => {
     expect(ctx.http.requests).toEqual(['https://ads.test/pre.xml?ads=2&dur=90']);
   });
 
+  it('follows no more wrappers than maxRedirects', async () => {
+    const W = 'https://ads.test/w.xml';
+    const ctx = setup({ source: { breaks: [{ offset: 'start', vastUrl: W }] }, maxRedirects: 0 });
+    ctx.http.on(W, { body: readFileSync(`${__dirname}/../../core/fixtures/vast/wrapper-to-inline.xml`, 'utf8') });
+    await ctx.surfacesReady();
+    expect(ctx.http.requests).toEqual([W, 'https://t.test/error-w1?code=302']);
+  });
+
   it('turns ads louder than the content down to its loudness', async () => {
     const loud = readFileSync(`${__dirname}/../../core/fixtures/vast/inline-loud.xml`, 'utf8');
     const ctx = setup({

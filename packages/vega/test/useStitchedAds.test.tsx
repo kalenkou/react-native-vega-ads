@@ -199,3 +199,15 @@ it('the end of the stream completes the ad that ends with it, and clears the lab
   expect(ads().ad).toBeNull();
   act(() => renderer.unmount());
 });
+
+it('follows no more wrappers than maxRedirects', async () => {
+  const http = new FakeHttp()
+    .on(VMAP_URL, { body: fixture('vmap/pre-mid-post.xml') })
+    .on('https://ads.test/pre.xml', { body: fixture('vast/wrapper-to-inline.xml') })
+    .on('https://ads.test/mid1.xml', { body: INLINE })
+    .on('https://ads.test/post.xml', { body: INLINE })
+    .on('https://ads.test/inline.xml', { body: INLINE });
+  await setup({ http, maxRedirects: 0 });
+  expect(http.requests).toContain('https://ads.test/pre.xml');
+  expect(http.requests).not.toContain('https://ads.test/inline.xml');
+});

@@ -28,6 +28,8 @@ export interface UseStitchedAdsOptions {
    */
   streamSeconds?: number;
   macros?: Macros;
+  /** How many wrappers to follow before giving up with VAST error 302. Default 5. */
+  maxRedirects?: number;
   /** IAB event names after their pixels are sent: impression, start, quartiles, complete, skip. `info` is `{}` in this preview. */
   onEvent?: AdEventHandler;
   http?: HttpPort;
@@ -71,11 +73,11 @@ export function useStitchedAds(options: UseStitchedAdsOptions): StitchedAds {
     if (vmapUrl === null || port === null) {
       return undefined;
     }
-    const { http = fetchHttp, clock = systemClock, macros } = latest.current;
+    const { http = fetchHttp, clock = systemClock, macros, maxRedirects } = latest.current;
     installImagePolyfill(http);
     let live = true;
     const offs: Array<() => void> = [];
-    void loadStitchedBreaks(vmapUrl, { http, clock, macros }).then((loaded) => {
+    void loadStitchedBreaks(vmapUrl, { http, clock, macros, maxRedirects }).then((loaded) => {
       if (!live) return;
       const created = new StitchedAdTracker(placeStitchedBreaks(loaded, latest.current.streamSeconds ?? NaN), {
         macros,

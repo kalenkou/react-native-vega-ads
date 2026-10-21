@@ -4,11 +4,20 @@ import type { Macros } from '../tracking/AdTracker';
 import type { AdSourceRef, VastAd, VastLinearCreative } from './types';
 import { createUrlHandler, describeFailure, LoadFailure, parseXml, UrlHandler, XmlParser } from './urlHandler';
 
+/** Wrappers followed by default before VAST error 302 (R3). `maxRedirects` changes it. */
+export const MAX_REDIRECTS = 5;
+
 /**
  * vast-client counts documents, not wrappers: with `wrapperLimit: N` it follows
  * N - 1 wrappers. 6 lets a chain of 5 wrappers reach its InLine ad (R3).
+ * @deprecated Use `MAX_REDIRECTS`.
  */
-export const WRAPPER_LIMIT = 6;
+export const WRAPPER_LIMIT = MAX_REDIRECTS + 1;
+
+/** A whole number of wrappers from 0 up; anything else keeps the default. */
+function redirectsOf(value: number | undefined): number {
+  return value !== undefined && Number.isFinite(value) && value >= 0 ? Math.floor(value) : MAX_REDIRECTS;
+}
 
 export interface LinearAd {
   ad: VastAd;
@@ -35,6 +44,8 @@ export interface VastRequestDeps {
   parseXml?: XmlParser;
   /** App macros for the ad tag and every wrapper URL, for example from adIdMacros() (R15). */
   macros?: Macros;
+  /** How many wrappers to follow before giving up with VAST error 302. Default 5 (R3). */
+  maxRedirects?: number;
 }
 
 const XML_PARSING_ERROR = 100;
@@ -143,7 +154,7 @@ export async function loadVast(
     response = await client.get(url, {
       urlHandler,
       timeout: deps.timeoutMs,
-      wrapperLimit: WRAPPER_LIMIT,
+      wrapperLimit: redirectsOf(deps.maxRedirects) + 1,
       resolveAll: true,
     });
   } catch (error) {

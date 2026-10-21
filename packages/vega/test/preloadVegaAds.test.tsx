@@ -109,6 +109,16 @@ describe('preloadVegaAds', () => {
     expect(http.requests).toEqual([url.replace('[BREAKMAXADS]', '2').replace('[BREAKMAXDURATION]', '45')]);
   });
 
+  it('follows no more wrappers than maxRedirects, as the player does', async () => {
+    const { url, schedule } = fresh();
+    const http = new FakeHttp().on(url, {
+      body: readFileSync(`${__dirname}/../../core/fixtures/vast/wrapper-to-inline.xml`, 'utf8'),
+    });
+    preloadVegaAds(schedule, { http, clock: new FakeClock(1_000_000), maxRedirects: 0 });
+    await settle();
+    expect(http.requests).toEqual([url, 'https://t.test/error-w1?code=302']);
+  });
+
   it('a second call within a minute keeps the first preload', async () => {
     const { url, schedule } = fresh();
     const http = new FakeHttp().on(url, { body: inline });

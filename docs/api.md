@@ -35,6 +35,7 @@ Amazon requires an app to release its media players in the background, or the sy
 | `startAt` | Continue a viewing here, in seconds: no pre-roll and no earlier breaks. The content player is moved there first. In core: `AdManager.start(schedule, { resumeAt })`. |
 | `macros` | Ad tag macros, for example `adIdMacros(source)` for `IFA` and `LIMITADTRACKING`. |
 | `prefetchSeconds` | How early a break is loaded and buffered. Default 15. |
+| `maxRedirects` | How many VAST wrappers to follow before the ad is left out with VAST error 302. Default 5, as the IAB recommends. Raise it if your demand chains more wrappers. The same as `maxRedirects` in Google IMA. |
 | `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |
 | `pauseAdUrl`, `pauseAdDelayMs` | VAST tag of a pause ad (`<NonLinear>` image), and how long the content stays paused before it shows. Default 1500 ms. |
 | `contentLoudness` | The content's integrated loudness in LUFS, for example from `ffmpeg -i movie.mp4 -af ebur128 -f null -`. Ads with a louder `loudness` creative extension are turned down to it. |
@@ -68,7 +69,7 @@ Amazon requires an app to release its media players in the background, or the sy
 
 ## `preloadVegaAds(ads, options)`
 
-Requests the VMAP (or the manual schedule) and the pre-roll VAST before the player exists. `options`: `adId`, `macros`, `maxBreakAds` and `maxBreakSeconds`, the same as the player's. The next `VegaAdsPlayer` or `useVegaAds` with an equal `ads` object uses the answers once, if they are at most five minutes old. A failed early request is made again. Up to four titles wait at a time. In core, `preloadAds(schedule, { http, clock, macros, maxBreakAds, maxBreakSeconds })` returns the same data for `AdManager.start(schedule, { preloaded })`.
+Requests the VMAP (or the manual schedule) and the pre-roll VAST before the player exists. `options`: `adId`, `macros`, `maxBreakAds`, `maxBreakSeconds` and `maxRedirects`, the same as the player's. The next `VegaAdsPlayer` or `useVegaAds` with an equal `ads` object uses the answers once, if they are at most five minutes old. A failed early request is made again. Up to four titles wait at a time. In core, `preloadAds(schedule, { http, clock, macros, maxBreakAds, maxBreakSeconds })` returns the same data for `AdManager.start(schedule, { preloaded })`.
 
 ## Events (`onEvent`)
 

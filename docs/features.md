@@ -1,7 +1,7 @@
 # Features
 
 - VMAP 1, or your own list of VAST tags with times (`start`, seconds, `end`).
-- VAST 4 InLine and Wrapper (up to 5 levels), ad pods, skippable ads.
+- VAST 4 InLine and Wrapper (up to 5 levels by default, `maxRedirects` to change it), ad pods, skippable ads.
 - Two ad players: the next ad is prebuffered while the current one plays.
 - No black frame on content → ad → content. The content resumes at the same position.
 - No repeats, on by default: a creative is not shown again within 30 minutes, and a break has one copy of each creative and one ad per advertiser. The same creative is found by its Universal Ad ID or by its media file URLs, also when it comes from another ad source under another ad id. A dropped ad sends its `notUsed` pixels (VAST 4.1), so the ad server can use it elsewhere. Without more setup the rules hold for one piece of content. With `avoidRepeats.memory` (one AsyncStorage key, for example) they hold for the household across titles and app launches. Only creative ids, media URLs and times are stored, on the device. No viewer ID is needed.

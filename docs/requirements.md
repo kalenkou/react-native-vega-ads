@@ -8,7 +8,7 @@ The rules the library was built against. Code comments and test names refer to t
 |---|---|---|
 | R1 | The impression is sent on the ad's first frame, all `<Impression>` URLs at once, and only for an ad that is on screen. | `core/src/machine/AdBreakSession.ts`, `AdTracker`. Device |
 | R2 | Quartiles come from the ad player's `currentTime` (25, 50, 75 %). `complete` comes from `ended`. | `core/src/vast/tracking/AdTracker.ts`. Device |
-| R3 | More than 5 wrappers: VAST error 302, the ad is skipped. | `core/src/vast/request/VastRequester.ts` (`WRAPPER_LIMIT`, counts documents) |
+| R3 | More wrappers than `maxRedirects` (default 5): VAST error 302, the ad is skipped. | `core/src/vast/request/VastRequester.ts` (`MAX_REDIRECTS`, `maxRedirects`) |
 | R4 | A VAST request times out after 4 s: error 301, the ad is skipped. | `core/src/vast/request/urlHandler.ts` (`DEFAULT_VAST_TIMEOUT_MS`) |
 | R5 | An empty VAST is skipped without an error. Error 303 goes only to an `<Error>` URL if there is one. | `VastRequester.ts` |
 | R6 | Media file: a playable type (MP4 H.264 or HLS), no taller than the screen, bitrate closest to the target. None fits: error 403. | `core/src/vast/request/mediaFileSelector.ts` |

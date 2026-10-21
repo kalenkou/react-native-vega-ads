@@ -22,6 +22,8 @@ export interface PreloadDeps {
   /** The same break limits as the player's, sent as `[BREAKMAXADS]` and `[BREAKMAXDURATION]`. */
   maxBreakAds?: number;
   maxBreakSeconds?: number;
+  /** How many wrappers to follow before giving up with VAST error 302. Default 5 (R3). */
+  maxRedirects?: number;
 }
 
 export const positive = (value: number | undefined): number | undefined =>
@@ -94,6 +96,7 @@ export async function preloadAds(schedule: AdSchedule, deps: PreloadDeps): Promi
               http: deps.http,
               clock: deps.clock,
               macros: withBlockedCategories(macros, pre.blockedAdCategories),
+              maxRedirects: deps.maxRedirects,
             }),
           ),
         )

@@ -22,6 +22,8 @@ export interface PreloadVegaAdsOptions {
   /** Pass the same break limits as to the player: the early request tells them to the ad server. */
   maxBreakAds?: number;
   maxBreakSeconds?: number;
+  /** Pass the same `maxRedirects` as to the player. */
+  maxRedirects?: number;
   /** For tests and other runtimes. */
   http?: HttpPort;
   clock?: ClockPort;
@@ -64,6 +66,7 @@ export function preloadVegaAds(schedule: AdSchedule, options: PreloadVegaAdsOpti
       macros: vegaMacros(options.adId, options.macros),
       maxBreakAds: options.maxBreakAds,
       maxBreakSeconds: options.maxBreakSeconds,
+      maxRedirects: options.maxRedirects,
     }),
     at: clock.now(),
   });

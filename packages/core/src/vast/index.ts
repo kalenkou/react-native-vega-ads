@@ -2,7 +2,7 @@ export * from './ports';
 export { installImagePolyfill } from './polyfill/image';
 export { createUrlHandler, describeFailure, parseXml, DEFAULT_VAST_TIMEOUT_MS } from './request/urlHandler';
 export type { LoadFailure, UrlHandler, UrlHandlerDeps, UrlHandlerResult, XmlParser } from './request/urlHandler';
-export { requestVast, WRAPPER_LIMIT } from './request/VastRequester';
+export { MAX_REDIRECTS, requestVast, WRAPPER_LIMIT } from './request/VastRequester';
 export type { LinearAd, LoadedVast, VastResult, VastRequestDeps } from './request/VastRequester';
 export { requestPauseAd } from './request/PauseAdRequester';
 export type { PauseAd, PauseAdResult } from './request/PauseAdRequester';

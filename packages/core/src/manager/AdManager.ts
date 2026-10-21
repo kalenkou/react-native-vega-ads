@@ -28,6 +28,8 @@ export interface AdManagerDeps {
   adSurface: string;
   standbySurface?: string;
   macros?: Macros;
+  /** How many wrappers to follow before giving up with VAST error 302. Default 5 (R3). */
+  maxRedirects?: number;
   mediaFile?: MediaFileOptions;
   prefetchSeconds?: number;
   /** The snapshot of the break on screen, or IDLE_SNAPSHOT between breaks. */
@@ -341,6 +343,7 @@ export class AdManager {
       content: this.deps.content,
       source: pauseAdUrl,
       macros: this.macros,
+      maxRedirects: this.deps.maxRedirects,
       delayMs: this.deps.pauseAdDelayMs,
       // Only a pause by the viewer: not while a break plays, not before or after the content
       // (a break waits for its ads only before the content started).
@@ -460,6 +463,7 @@ export class AdManager {
       adSurface: this.deps.adSurface,
       standbySurface: this.deps.standbySurface,
       macros: this.macros,
+      maxRedirects: this.deps.maxRedirects,
       mediaFile: this.deps.mediaFile,
       budgetMs: this.maxSeconds === undefined ? undefined : this.maxSeconds * 1000,
       maxAds: this.maxAds === undefined ? undefined : Math.floor(this.maxAds),

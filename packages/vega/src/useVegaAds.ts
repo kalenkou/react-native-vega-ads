@@ -57,6 +57,8 @@ export interface UseVegaAdsOptions {
   mediaControls?: boolean;
   /** Ad tag macros, for example from `adIdMacros()` (IFA, LIMITADTRACKING). */
   macros?: Macros;
+  /** How many wrappers to follow before giving up with VAST error 302. Default 5. */
+  maxRedirects?: number;
   /** How early a break is loaded and buffered. Default 15 s. */
   prefetchSeconds?: number;
   /** How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. */
@@ -230,6 +232,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
       adSurface,
       standbySurface,
       macros: o.macros,
+      maxRedirects: o.maxRedirects,
       mediaFile: o.mediaFile,
       prefetchSeconds: o.prefetchSeconds,
       countdownSeconds: o.countdownSeconds,
