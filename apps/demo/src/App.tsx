@@ -51,10 +51,13 @@ export const App = () => {
     setStartAt(at);
     setPlaying(true);
   }, []);
-  const play = useCallback(
-    () => start(false, resumeAt ?? undefined),
-    [start, resumeAt],
-  );
+  // Reads the saved place again: Play can come before the page has it.
+  const play = useCallback(() => {
+    deviceResume
+      .read(movie.uri)
+      .catch(() => null)
+      .then((at) => start(false, at ?? undefined));
+  }, [start, movie.uri]);
   const compare = useCallback(() => start(true), [start]);
   const onEvent = useCallback((name: string) => {
     events.current.push(name);
