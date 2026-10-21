@@ -1,0 +1,22 @@
+name: Feature request
+description: Ask for something the library does not do yet.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you need
+      description: What your app or ad server needs from the library.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: What you do now without it.
+  - type: input
+    id: spec
+    attributes:
+      label: Spec or ad server
+      description: The VAST or VMAP section, or the ad server that needs it.
+      placeholder: VAST 4.1, section 3.9 (Icons)
