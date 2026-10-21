@@ -19,6 +19,7 @@ import type {
   PreloadedAds,
   SessionSnapshot,
 } from 'react-native-ads-core';
+import { AdTag, isHttpUrl, SAMPLE_TAGS, scheduleFor, tagFromQuery, tagQuery } from './adTag';
 import { HtmlVideoPort, VideoElement } from './HtmlVideoPort';
 import { mirrorHttp } from './mirrorHttp';
 
@@ -85,6 +86,11 @@ const el = {
   time: $('time'),
   movie: $<HTMLSelectElement>('movie'),
   mode: $<HTMLSelectElement>('mode'),
+  classicOption: $<HTMLOptionElement>('classic-option'),
+  tagBox: $('tag-box'),
+  tagKind: $<HTMLSelectElement>('tag-kind'),
+  tagUrl: $<HTMLInputElement>('tag-url'),
+  tagLoad: $<HTMLButtonElement>('tag-load'),
   plan: $('plan'),
   breaks: $('breaks'),
   announce: $('announce'),
@@ -103,7 +109,9 @@ function log(kind: 'event' | 'request' | 'pixel', text: string): void {
   item.className = kind;
   const time = document.createElement('span');
   time.textContent = `${((performance.now() - pageStart) / 1000).toFixed(1)} s`;
-  item.append(time, ` ${text}`);
+  // Ad server URLs can be very long: the line shows the start, the tooltip all of it.
+  item.append(time, ` ${text.length > 140 ? `${text.slice(0, 139)}…` : text}`);
+  item.title = text;
   el.log.append(item);
   while (el.log.children.length > 400) {
     el.log.firstElementChild?.remove();
@@ -200,8 +208,22 @@ function classic(): boolean {
   return el.mode.value === 'classic' && movie().classicVmapUrl !== undefined;
 }
 
+/** The viewer's own VAST or VMAP tag instead of the demo's. */
+function tagMode(): boolean {
+  return el.mode.value === 'tag';
+}
+
+function currentTag(): AdTag | null {
+  const url = el.tagUrl.value.trim();
+  return isHttpUrl(url) ? { kind: el.tagKind.value === 'vast' ? 'vast' : 'vmap', url } : null;
+}
+
 function schedule(): AdSchedule {
   const m = movie();
+  const tag = tagMode() ? currentTag() : null;
+  if (tag) {
+    return scheduleFor(tag);
+  }
   return { vmapUrl: classic() ? m.classicVmapUrl! : m.vmapUrl };
 }
 
@@ -321,8 +343,15 @@ async function stop(): Promise<void> {
 async function load(): Promise<void> {
   await stop();
   const m = movie();
-  el.mode.disabled = m.classicVmapUrl === undefined;
-  if (el.mode.disabled) el.mode.value = 'vega-ads';
+  el.classicOption.disabled = m.classicVmapUrl === undefined;
+  if (el.mode.value === 'classic' && el.classicOption.disabled) el.mode.value = 'vega-ads';
+  el.tagBox.hidden = !tagMode();
+  if (tagMode() && !currentTag()) {
+    el.tagKind.value = SAMPLE_TAGS.googleVmap.kind;
+    el.tagUrl.value = SAMPLE_TAGS.googleVmap.url;
+  }
+  const tag = tagMode() ? currentTag() : null;
+  history.replaceState(null, '', tag ? tagQuery(tag) : location.pathname);
   el.content.pause();
   el.content.poster = m.poster;
   el.content.src = m.uri;
@@ -334,13 +363,17 @@ async function load(): Promise<void> {
   el.plan.textContent = 'Loading the ad plan…';
   el.breaks.textContent = '';
   planMarks = [];
-  log('event', `${m.title}, ${classic() ? 'ads as usual' : 'vega-ads'}`);
+  log('event', `${m.title}, ${tag ? `your ${tag.kind.toUpperCase()} tag` : classic() ? 'ads as usual' : 'vega-ads'}`);
   // As on the title's page of the TV app: the VMAP and the pre-roll are asked for before Play.
   const ready = preloadAds(schedule(), { http, clock });
   preload = ready;
   const plan = adPlan(await ready);
   if (preload === ready) {
-    el.plan.textContent = plan ? adPlanLabel(plan) : 'The ad plan could not be loaded';
+    el.plan.textContent = plan
+      ? adPlanLabel(plan)
+      : tag
+        ? 'The tag could not be read. Check the URL and the CORS headers of the ad server.'
+        : 'The ad plan could not be loaded';
     planMarks = plan?.marks ?? [];
     el.breaks.textContent = planMarks.length > 0 ? `Breaks: ${planMarks.map(planLabel).join(' · ')}` : '';
   }
@@ -363,7 +396,7 @@ function start(): void {
     contentLoudness: classic() ? undefined : movie().loudness,
     avoidRepeats: classic() ? false : undefined,
     captionLanguage: 'en',
-    pauseAdUrl: classic() ? undefined : `${CDN}vast/pause.xml`,
+    pauseAdUrl: classic() || tagMode() ? undefined : `${CDN}vast/pause.xml`,
     onChange: (next) => {
       if (manager !== created) return; // a viewing that was stopped
       snapshot = next;
@@ -448,6 +481,28 @@ el.soundOn.addEventListener('click', () => {
 });
 el.movie.addEventListener('change', () => void load());
 el.mode.addEventListener('change', () => void load());
+el.tagLoad.addEventListener('click', () => {
+  if (currentTag()) {
+    // A shared link: ?vmap=URL or ?vast=URL opens the page with that tag.
+    const shared = tagFromQuery(location.search);
+    if (shared) {
+      el.mode.value = 'tag';
+      el.tagKind.value = shared.kind;
+      el.tagUrl.value = shared.url;
+    }
+    void load();
+  } else {
+    el.plan.textContent = 'Enter an http or https URL of a VAST or VMAP tag.';
+  }
+});
+el.tagBox.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((button) =>
+  button.addEventListener('click', () => {
+    const sample = SAMPLE_TAGS[button.dataset.sample as keyof typeof SAMPLE_TAGS];
+    el.tagKind.value = sample.kind;
+    el.tagUrl.value = sample.url;
+    void load();
+  }),
+);
 el.content.addEventListener('timeupdate', render);
 el.content.addEventListener('play', render);
 el.content.addEventListener('pause', render);
@@ -457,6 +512,10 @@ el.content.addEventListener('loadedmetadata', () => {
 });
 
 document.addEventListener('keydown', (event) => {
+  if (event.target instanceof HTMLInputElement) {
+    if (event.key === 'Enter') el.tagLoad.click();
+    return; // typing a URL, not controlling the player
+  }
   const onControl = event.target instanceof HTMLButtonElement || event.target instanceof HTMLSelectElement;
   if (event.key === ' ' && !onControl) {
     event.preventDefault();
