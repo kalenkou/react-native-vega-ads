@@ -2,7 +2,7 @@
 
 All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The two packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.1] - 2026-10-22
 
 ### Added
 
@@ -52,4 +52,5 @@ First release.
 - `vegaAdIdSource` for the Fire TV advertising ID. `preloadVegaAds` and `useAdPlan` for the title page. `rnvPlayerPort` for react-native-video v7.
 - Preview: `useStitchedAds` (IAB tracking of ads stitched into the stream by a server). `HeadlessPlayerService` and `HeadlessPlayerAdapter` (Amazon's headless player approach). `createAdPlayer` for ad players that are any `PlayerPort`.
 
+[0.1.1]: https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.1
 [0.1.0]: https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.0

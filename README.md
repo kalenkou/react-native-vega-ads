@@ -18,7 +18,7 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 
 ## Try it
 
-- **On a Fire TV Stick:** download `demo_armv7.vpkg` from [release 0.1.0](https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.0) and install it with `vega device install-app -p demo_armv7.vpkg -d <device>`. The demo plays two films with ads, streamed over HTTPS. Its "Compare: ads as usual" button plays the same film with ads on a timer, for comparison. On the Vega Virtual Device of an Apple silicon Mac, use `demo_aarch64.vpkg`. The demo's source is in [`apps/demo`](apps/demo).
+- **On a Fire TV Stick:** download `demo_armv7.vpkg` from the [latest release](https://github.com/kalenkou/react-native-vega-ads/releases/latest) and install it with `vega device install-app -p demo_armv7.vpkg -d <device>`. The demo plays two films with ads, streamed over HTTPS. Its "Compare: ads as usual" button plays the same film with ads on a timer, for comparison. On the Vega Virtual Device of an Apple silicon Mac, use `demo_aarch64.vpkg`. The demo's source is in [`apps/demo`](apps/demo).
 - **In your app:** `npm install react-native-vega-ads`, then
 
   ```tsx
