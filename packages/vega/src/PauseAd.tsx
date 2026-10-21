@@ -15,6 +15,7 @@ export interface PauseAdProps {
 /** The largest side card, as in the IAB CTV Ad Portfolio partial pause ad (600×600 at 1080p). */
 const MAX_HEIGHT = 600;
 const QR_SIZE = 180;
+const QR_QUIET_ZONE = 14;
 
 /**
  * A pause ad (IAB CTV Ad Portfolio): a still image beside the paused picture, without sound.
@@ -48,7 +49,9 @@ export function PauseAd({ view, strings, style, styles: app = {} }: PauseAdProps
         <Image source={{ uri: view.imageUrl }} style={size} resizeMode="contain" />
         {view.qr?.imageUrl ? (
           <View style={styles.qr}>
-            <Image source={{ uri: view.qr.imageUrl }} style={styles.qrImage} />
+            <View style={styles.qrTile}>
+              <Image source={{ uri: view.qr.imageUrl }} style={styles.qrImage} />
+            </View>
             <Text style={[styles.hint, styles.qrHint, app.pauseAdHint]}>{s.scanQr}</Text>
           </View>
         ) : null}
@@ -79,7 +82,20 @@ const styles = StyleSheet.create({
   // The QR code stands left of the image, at its bottom: the card is no taller than the image.
   row: { flexDirection: 'row-reverse', alignItems: 'flex-end' },
   qr: { alignItems: 'center', marginRight: 16 },
+  // A white tile with a quiet zone: a phone reads the code on a bright or busy picture too.
+  qrTile: { backgroundColor: '#fff', padding: QR_QUIET_ZONE, borderRadius: 12 },
   qrImage: { width: QR_SIZE, height: QR_SIZE },
-  qrHint: { width: QR_SIZE, textAlign: 'center' },
-  hint: { color: '#fff', fontSize: 26, marginTop: 8, textShadowColor: '#000', textShadowRadius: 4 },
+  // A long hint wraps under the tile instead of widening the card.
+  qrHint: { maxWidth: QR_SIZE + 2 * QR_QUIET_ZONE, fontSize: 22, textAlign: 'center' },
+  // The hints sit on the same dark backing as the "Ad" label, so they read on a bright picture.
+  hint: {
+    color: '#fff',
+    fontSize: 26,
+    marginTop: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
 });

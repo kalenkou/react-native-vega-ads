@@ -79,6 +79,33 @@ describe('PauseAd', () => {
     expect(row[0]?.findAll((n) => (n.type as unknown) === 'Image')).toHaveLength(2);
   });
 
+  it('keeps the QR code readable on a bright picture: a white tile with a quiet zone around it', () => {
+    const view = render(VIEW);
+    const qr = view.images().find((i) => i.props.source.uri === 'https://cdn.test/qr.png');
+    const tile = StyleSheet.flatten(qr?.parent?.props.style) ?? {};
+    expect(tile.backgroundColor).toBe('#fff');
+    expect(tile.padding).toBeGreaterThanOrEqual(12);
+  });
+
+  it('wraps a long scan hint to the width of the QR tile, so the card does not grow sideways', () => {
+    const view = render(VIEW);
+    const qr = view.images().find((i) => i.props.source.uri === 'https://cdn.test/qr.png');
+    const tile = StyleSheet.flatten(qr?.parent?.props.style) ?? {};
+    const tileWidth = Number(qr?.props.style.width) + 2 * Number(tile.padding);
+    const hint = view.renderer.root.find(
+      (n) => (n.type as unknown) === 'Text' && n.props.children === 'Scan to learn more',
+    );
+    expect(StyleSheet.flatten(hint.props.style).maxWidth).toBe(tileWidth);
+  });
+
+  it('puts the hints on a dark backing, so they read on a bright picture', () => {
+    const view = render(VIEW);
+    for (const hint of ['Scan to learn more', 'Back closes the ad']) {
+      const text = view.renderer.root.find((n) => (n.type as unknown) === 'Text' && n.props.children === hint);
+      expect(StyleSheet.flatten(text.props.style).backgroundColor).toBe('rgba(0,0,0,0.6)');
+    }
+  });
+
   it('scales a large image down to fit the side of the screen, keeping its shape', () => {
     const view = render({ ...VIEW, width: 1200, height: 900, qr: null });
     expect(view.images()[0]?.props.style).toMatchObject({ width: 800, height: 600 });
