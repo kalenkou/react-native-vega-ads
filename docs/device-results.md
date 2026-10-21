@@ -7,7 +7,7 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11 to 18.10.2026. Details: [`apps/spike/DE
 | Switch from content to ad | 56-151 ms, no dark frame on video at ~30 fps |
 | Content resume position | where it paused, within 0.25 s. A seek back only above that, because a seek re-buffers |
 | Mid-roll prefetch | pod of 3 ads ready in 1.6 s, 15 s before the break |
-| Gap between ads in a pod | next ad's first frame 85 ms before the previous ad ends; late in an 11-minute run, 64 ms after it |
+| Gap between ads in a pod | next ad's first frame 85 ms before the previous ad ends. Late in an 11-minute run: 64 ms after it |
 | Tracking pixels | impression + 5 events per ad, all HTTP 200 |
 | Memory, 9 breaks × 3 ads in 11 min | PSS peak 91 MB, then flat at 65-68 MB (Amazon KPI: < 400 MiB) |
 | Demo app, a whole film with no key pressed (Tears of Steel and Sintel, 5 ads each), 16.10 | every ad to the end, the player closes by itself. PSS peak 95-116 MB |
