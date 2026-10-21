@@ -149,6 +149,20 @@ export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: 
 
 Your own controls, ad overlay or player (Shaka, react-native-video v7) and ads loaded on the title page: see the [Guide](docs/guide.md).
 
+## Fixes we sent upstream
+
+To build vega-ads, we fixed gaps in libraries that Vega apps use. We sent each fix to the library itself. All are open pull requests. None is merged or reviewed yet.
+
+| Pull request | What it does |
+|---|---|
+| [react-native-video #5171](https://github.com/TheWidlarzGroup/react-native-video/pull/5171) | Adds Vega OS to v7: `VideoPlayer` and `VideoView` on w3cmedia. Without it, v7 crashes a Vega app about 1 s after launch. 30 new tests, all 105 pass. |
+| [@react-native-community/slider #839](https://github.com/callstack/react-native-slider/pull/839) | Vega support: D-pad focus, Left and Right, VoiceView. Before, Vega showed "Unimplemented component". 32 tests, 16 of them new. |
+| [react-native-keyevent #92](https://github.com/kevinejohn/react-native-keyevent/pull/92) | Vega support with the same API. React Native Directory marks it Vega-compatible, but on Vega it got no key events. 19 tests. On the stick: 10 of 10 events, before 0. |
+| [vast-client-js #512](https://github.com/dailymotion/vast-client-js/pull/512) | `trackingHandler`: send tracking pixels with your own function. React Native has no `Image`, so tracking threw an error. With tests. |
+| [vast-client-js #513](https://github.com/dailymotion/vast-client-js/pull/513) | Keeps the `[ASSETURI]` macro that the player gives. With a test. |
+| [vega-video-sample #14](https://github.com/AmazonAppDev/vega-video-sample/pull/14) | A title with `secure: true` now gets hardware DRM. 3 new tests. |
+| [react-native-multi-tv-app-sample #139](https://github.com/AmazonAppDev/react-native-multi-tv-app-sample/pull/139) | Optional client-side ads on the Vega player screen, with this library. Off by default. |
+
 ## Packages
 
 | Package | What it is |
