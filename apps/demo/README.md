@@ -20,7 +20,7 @@ The ads are invented brands drawn by [`tools/demo-ads`](../../tools/demo-ads).
 You need:
 
 - Node.js 22
-- the Vega SDK (we test with 0.24.12112, `vega sdk list` shows yours)
+- the Vega SDK (I test with 0.24.12112, `vega sdk list` shows yours)
 - a Fire TV device on the same network as your computer
 - the media from [`tools/demo-ads`](../../tools/demo-ads)
 
