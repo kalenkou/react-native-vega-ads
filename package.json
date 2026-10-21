@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "typecheck": "tsc -b packages/core packages/vega && tsc -p tools/make-vmap --noEmit && tsc -p tools/make-vmap/tsconfig.test.json && tsc -p tools/pixel-collector --noEmit && tsc -p tools/pixel-collector/tsconfig.test.json",
+    "typecheck": "tsc -b packages/core packages/vega && tsc -p tools/make-vmap --noEmit && tsc -p tools/make-vmap/tsconfig.test.json && tsc -p tools/pixel-collector --noEmit && tsc -p tools/pixel-collector/tsconfig.test.json && tsc -p tools/web-demo && tsc -p tools/web-demo/tsconfig.test.json",
     "test": "npm run test --workspaces --if-present",
     "format": "prettier --write packages tools apps/demo .github eslint.config.mjs tsconfig.base.json package.json .prettierrc.json",
     "format:check": "prettier --check packages tools apps/demo .github eslint.config.mjs tsconfig.base.json package.json .prettierrc.json",

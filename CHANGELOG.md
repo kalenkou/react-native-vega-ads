@@ -2,6 +2,12 @@
 
 All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The two packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Tools
+
+- `tools/web-demo`: a web page that runs `react-native-ads-core` with an HTML video element as the player (`HtmlVideoPort`). It plays the demo's movies and ads and logs the ad requests, events and tracking pixels. No change in the packages.
+
 ## [0.1.1] - 2026-10-22
 
 ### Added

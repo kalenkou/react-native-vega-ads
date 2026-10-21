@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "lib": ["ES2020", "DOM"],
+    "composite": false,
+    "declaration": false,
+    "noEmit": true,
+    "paths": { "react-native-ads-core": ["../../packages/core/src/index.ts"] }
+  },
+  "include": ["src"]
+}

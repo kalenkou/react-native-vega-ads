@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>vega-ads web demo</title>
+    <meta
+      name="description"
+      content="The ad logic of react-native-vega-ads in a web page: VAST and VMAP ads, ad pods, pause ads and tracking pixels." />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>vega-ads in your browser</h1>
+      <p>
+        This page runs <code>react-native-ads-core</code>, the ad logic of the Fire TV library
+        <a href="https://github.com/kalenkou/react-native-vega-ads">react-native-vega-ads</a>. A web video element
+        stands in for the Vega player. The movies, ads and ad tags are the ones the Fire TV build uses.
+      </p>
+    </header>
+
+    <main>
+      <section class="picker">
+        <label
+          >Movie
+          <select id="movie">
+            <option value="tears">Tears of Steel (12 min)</option>
+            <option value="sintel">Sintel (15 min)</option>
+          </select>
+        </label>
+        <label
+          >Ads
+          <select id="mode">
+            <option value="vega-ads">vega-ads</option>
+            <option value="classic">Ads as usual, to compare</option>
+          </select>
+        </label>
+        <p id="plan" class="plan"></p>
+      </section>
+
+      <section class="player">
+        <video id="content" playsinline></video>
+        <div id="ad-surface" class="surface" hidden></div>
+        <div id="ad-bar" class="ad-bar" hidden>
+          <span id="ad-label"></span>
+          <span id="ad-why" class="why" hidden></span>
+        </div>
+        <div id="countdown" class="countdown" hidden></div>
+        <div id="caption" class="caption" hidden></div>
+        <button id="skip" class="skip" type="button" hidden></button>
+        <div id="pause-ad" class="pause-ad" hidden>
+          <span class="tag">Ad</span>
+          <div class="pause-row">
+            <div id="pause-qr" class="pause-qr" hidden>
+              <div class="qr-tile"><img id="pause-qr-image" alt="QR code of the ad" width="180" height="180" /></div>
+              <span class="hint">Scan to learn more</span>
+            </div>
+            <img id="pause-image" alt="Pause ad" />
+          </div>
+          <span class="hint">Back closes the ad</span>
+        </div>
+        <button id="start" class="start" type="button">Play</button>
+      </section>
+
+      <section class="controls">
+        <button id="play" type="button">Play</button>
+        <button id="back" type="button" title="Escape key">Back</button>
+        <div id="bar" class="bar" title="Click to seek">
+          <div id="progress" class="progress"></div>
+          <div id="marks" class="marks"></div>
+        </div>
+        <span id="time" class="time"></span>
+        <button id="next" type="button" title="Jump to 12 seconds before the next mid-roll">Next break</button>
+      </section>
+      <p id="sound" class="sound" hidden>
+        The browser started the video without sound. <button id="sound-on" type="button">Turn sound on</button>
+      </p>
+      <p id="report" class="report"></p>
+
+      <section class="log-box">
+        <h2>What the library does</h2>
+        <p class="legend">
+          <span class="request">ad request</span> <span class="event">ad event</span>
+          <span class="pixel">tracking pixel</span>
+        </p>
+        <ol id="log" class="log"></ol>
+      </section>
+
+      <section class="notes">
+        <h2>Try this</h2>
+        <ol>
+          <li>Press Play. A pre-roll plays first. Skip shows after 5 seconds.</li>
+          <li>
+            Press Next break. "Ad in 5" shows before the break. Then a pod of ads plays. Kettlo is left out, because you
+            saw it in the pre-roll.
+          </li>
+          <li>Pause the movie. After 1.5 seconds a pause ad shows. Back closes it.</li>
+          <li>
+            Pick Sintel. Its first mid-roll comes after a scene with an injury. The ad bar says which ad was left out.
+          </li>
+          <li>Pick "Ads as usual" to see the same movie with a timer break and repeats.</li>
+        </ol>
+        <h2>How this differs from the TV</h2>
+        <ul>
+          <li>On Fire TV the player is the w3cmedia <code>VideoPlayer</code>. Here it is a web video element.</li>
+          <li>The TV prebuffers the next ad of a pod on a second surface. This page uses one surface.</li>
+          <li>The keys are Space (play and pause), Escape (Back) and the arrows (10 seconds).</li>
+          <li>
+            The ad CDN sends no CORS headers, so the page reads its own copy of the VAST and VMAP files. The videos,
+            images and pixels go to the same servers as on the TV.
+          </li>
+        </ul>
+        <p>
+          Code: <a href="https://github.com/kalenkou/react-native-vega-ads">GitHub</a> ·
+          <a href="https://www.npmjs.com/package/react-native-vega-ads">npm</a> · Fire TV build:
+          <a href="https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.1">release 0.1.1</a>
+        </p>
+        <p class="credits">
+          Tears of Steel: (CC) Blender Foundation | mango.blender.org, CC BY 3.0. Sintel: © copyright Blender Foundation
+          | durian.blender.org, CC BY 3.0. The ads are made up brands, drawn for this project.
+        </p>
+      </section>
+    </main>
+    <script src="main.js"></script>
+  </body>
+</html>
