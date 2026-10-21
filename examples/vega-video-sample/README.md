@@ -23,7 +23,7 @@ The sample's `manifest.toml` already declares media controls, so the remote and 
    git checkout ef8e4da
    ```
 2. Follow the sample's README to set up Shaka and install dependencies.
-3. Install the library: `npm install react-native-vega-ads`. Before it is published on npm, build and pack it from this repository (`npm pack ./packages/core ./packages/vega`) and install the two `.tgz` files with `npm install --no-save`.
+3. Install the library: `npm install react-native-vega-ads`.
 4. Apply the patch from this folder: `git apply path/to/vega-ads.patch`
 5. Build and run with Vega SDK 0.24: `npm run build:release`, then `vega run-app <path to the .vpkg> -d <device>`.
 
