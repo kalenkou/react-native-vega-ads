@@ -1,0 +1,50 @@
+name: Bug report
+description: Something does not work as the docs say.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected to see.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest steps or code that show the problem.
+      placeholder: |
+        1. Start the demo with the movie VMAP.
+        2. Seek past the first midroll.
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Package versions, Vega SDK version, React Native version.
+      placeholder: react-native-vega-ads 0.1.1, Vega SDK 0.24, React Native 0.72
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Fire TV model and OS version, or the Vega Virtual Device.
+      placeholder: Fire TV Stick 4K Select, Vega OS 2.0
+    validations:
+      required: true
+  - type: textarea
+    id: tag
+    attributes:
+      label: Ad tag
+      description: The VAST or VMAP response, or a public URL to it. Remove private URLs and tokens first.
+      render: xml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The ad events from onEvent, or the app log around the problem.
+      render: shell

@@ -27,3 +27,5 @@ The demo app has its own steps: [apps/demo](apps/demo/README.md).
 - Docs: short sentences in plain English.
 
 Security problems: please report them privately, see [SECURITY.md](SECURITY.md).
+
+Everyone in this project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
