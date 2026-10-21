@@ -188,6 +188,8 @@ let preload: Promise<PreloadedAds> | null = null;
 /** The breaks of the VMAP before Play, as on the title's page of the TV app. */
 let planMarks: AdPlanMark[] = [];
 let said = '';
+/** The movie and its post-roll are over: Play starts a new viewing. */
+let ended = false;
 let countdownShown = false;
 
 function movie(): Movie {
@@ -327,6 +329,7 @@ async function load(): Promise<void> {
   el.content.preload = 'metadata';
   el.start.hidden = false;
   el.report.textContent = '';
+  ended = false;
   events = [];
   el.plan.textContent = 'Loading the ad plan…';
   el.breaks.textContent = '';
@@ -377,6 +380,7 @@ function start(): void {
       const where = info.breakId && !name.startsWith('break:') ? ` · ${info.breakId}` : '';
       log('event', `${name}${ad}${where}`);
       if (name === 'content:ended') {
+        ended = true;
         el.report.textContent = watchReportLabel(watchReport(events));
       }
     },
@@ -388,6 +392,10 @@ function start(): void {
 // ---- Controls.
 
 function togglePlay(): void {
+  if (ended) {
+    void load().then(start);
+    return;
+  }
   if (!manager) {
     start();
     return;
