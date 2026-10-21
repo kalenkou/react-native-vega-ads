@@ -33,12 +33,29 @@
           >Ads
           <select id="mode">
             <option value="vega-ads">vega-ads</option>
-            <option value="classic">Ads as usual, to compare</option>
+            <option id="classic-option" value="classic">Ads as usual, to compare</option>
+            <option value="tag">Your ad tag (VAST or VMAP)</option>
           </select>
         </label>
         <p id="plan" class="plan"></p>
       </section>
 
+      <section id="tag-box" class="tag-box" hidden>
+        <div class="tag-row">
+          <select id="tag-kind" aria-label="Tag type">
+            <option value="vmap">VMAP</option>
+            <option value="vast">VAST, as a pre-roll</option>
+          </select>
+          <input id="tag-url" type="url" placeholder="https://your-ad-server.example/tag" aria-label="Ad tag URL" />
+          <button id="tag-load" type="button">Load</button>
+        </div>
+        <p class="hint">
+          Google's sample tags: <button type="button" data-sample="googleVmap">VMAP with three breaks</button>
+          <button type="button" data-sample="googleVast">one VAST ad</button>. Your ad server must send CORS headers, as
+          for the IMA SDK for HTML5. The log shows every request, event and pixel. The address of the page now holds the
+          tag, so you can share the test as a link.
+        </p>
+      </section>
       <p id="breaks" class="breaks"></p>
       <div id="announce" class="sr-only" aria-live="polite"></div>
       <section class="player">
@@ -102,6 +119,7 @@
             Pick Sintel. Its first mid-roll comes after a scene with an injury. The ad bar says which ad was left out.
           </li>
           <li>Pick "Ads as usual" to see the same movie with a timer break and repeats.</li>
+          <li>Pick "Your ad tag" and paste a VAST or VMAP URL of your ad server.</li>
         </ol>
         <h2>How this differs from the TV</h2>
         <ul>

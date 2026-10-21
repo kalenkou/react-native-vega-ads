@@ -97,6 +97,36 @@ select:focus-visible {
   margin: 0;
 }
 
+.tag-box {
+  margin-bottom: 12px;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-row input {
+  flex: 1 1 260px;
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.tag-box .hint {
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+
+.tag-box .hint button {
+  padding: 2px 8px;
+}
+
 .breaks {
   color: var(--muted);
   margin: 0 0 12px;
