@@ -4,7 +4,7 @@
 
 Please report security problems privately through GitHub: the repository's **Security** tab → **Report a vulnerability**. Do not open a public issue for them.
 
-Include the package and version, what an attacker can do and the steps to reproduce. We aim to answer within 7 days.
+Include the package and version, what an attacker can do and the steps to reproduce. I aim to answer within 7 days.
 
 ## Supported versions
 

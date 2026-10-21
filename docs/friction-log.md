@@ -100,9 +100,9 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Task:** keep an ad playing correctly while the viewer talks to Alexa, Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1.
 - **Steps:** during an ad, say "Alexa, next" (or any request). Watch the ad's `timeupdate`, `pause`, `playing`, `waiting` events and its tracking pixels.
 - **Expected:** a `pause` (or an audio focus / interruption event) when the system takes over, and `playing` when it gives the player back.
-- **Actual:** the ad stops advancing for 6-13 s (quartile pixels 6 s and 16 s apart instead of 2.5 s). There is no `pause`, `waiting` or `playing` event. An app cannot tell this from a stalled stream: our 10 s stall watchdog ended one ad with VAST error 405 after a voice request. Also, "Alexa, pause" on the content then reaches the media controls handler, but the player sends no `pause` event: it was already frozen, so its state does not change. Anything that waits for `pause` (a pause ad, an analytics event) misses a voice pause.
+- **Actual:** the ad stops advancing for 6-13 s (quartile pixels 6 s and 16 s apart instead of 2.5 s). There is no `pause`, `waiting` or `playing` event. An app cannot tell this from a stalled stream: my 10 s stall watchdog ended one ad with VAST error 405 after a voice request. Also, "Alexa, pause" on the content then reaches the media controls handler, but the player sends no `pause` event: it was already frozen, so its state does not change. Anything that waits for `pause` (a pause ad, an analytics event) misses a voice pause.
 - **Severity:** medium (ads cut short after a voice request. Wrong error reporting to ad servers).
-- **Workaround:** two stall timeouts: 10 s after a `waiting` event (real buffering), 30 s when the time stops with no event at all (voice request). For pause ads we listen to the `pause` event and also to the pause command in the content's media controls handler.
+- **Workaround:** two stall timeouts: 10 s after a `waiting` event (real buffering), 30 s when the time stops with no event at all (voice request). For pause ads I listen to the `pause` event and also to the pause command in the content's media controls handler.
 - **Suggestion:** emit `pause`/`playing` (or a documented interruption event) when Alexa takes and returns the media session.
 
 ## FL-12 · The video sample's DRM title never asks for the hardware-secure path (2026-10-11)
@@ -147,7 +147,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Expected:** a way to run a `.vpkg` on Amazon-hosted Fire TV Stick 4K Select devices.
 - **Actual:** both services take Fire OS APKs only. An Amazon reply on the forum (https://community.amazondeveloper.com/t/can-t-we-test-vega-apps-on-appstore-quality-center/28258): "There is no VPKG/Vega OS support at this time". The Fire TV Stick 4K Select is not in Live Device Interaction.
 - **Severity:** medium (a Vega developer without a stick cannot check the app on hardware before submitting. The docs say "you must test your app on a Fire TV Stick before submitting").
-- **Workaround:** test on our own stick against the Vega KPI targets with `vega exec perf kpi-visualizer --certification` and the list in "Test before submission".
+- **Workaround:** test on my own stick against the Vega KPI targets with `vega exec perf kpi-visualizer --certification` and the list in "Test before submission".
 - **Suggestion:** add Vega devices to Appstore Quality Central and Live Device Interaction.
 
 ## FL-17 · A default release build fails `vpt validate` (build number 0) (2026-10-12)
@@ -160,12 +160,12 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Suggestion:** start the template's build number at 1, or make `build-vega --build-type Release` warn when it is 0.
 
 ## FL-18 · The media controls manifest check gives different answers for the same manifest (2026-10-11)
-- **Task:** make remote and Alexa play/pause reach our players, Fire TV Stick 4K Select, Vega OS 2.0.
+- **Task:** make remote and Alexa play/pause reach my players, Fire TV Stick 4K Select, Vega OS 2.0.
 - **Steps:** launch the same build with the same `manifest.toml` 13 times. Read `checkClientManifestForKMC: ... has KMC:` in the system log.
 - **Expected:** the same answer each time.
 - **Actual:** `true` 9 times, `false` 4 times, with no reason logged.
 - **Severity:** unclear. If `false` turns media controls off, remote and voice stop working without any error.
-- **Workaround:** none. We look for this line when a media control test fails.
+- **Workaround:** none. I look for this line when a media control test fails.
 - **Suggestion:** log why the check returns `false`, and document what it reads.
 
 ## FL-19 · A video surface created later is drawn on top, whatever its zIndex (2026-10-15)
@@ -181,7 +181,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Task:** measure the demo's cold launch on a Fire TV Stick 4K Select, Vega OS 2.0, with `vega exec perf kpi-visualizer --kpi cool-start-latency --certification` (Perf CLI 0.24.0). Then follow Amazon's slow-launch workflow.
 - **Steps:** run 30 cold launches of an app that does not call `useReportFullyDrawn()` (no `@amazon-devices/kepler-performance-api` in the app). Read the report, then the Perfetto trace of an iteration.
 - **Expected:** no "fully drawn" value, or a clear note that the marker is missing. Amazon's TTFD workflow says: "If TTFD KPI values are null/undefined, this indicates missing or incorrect `useReportFullyDrawn()` API usage."
-- **Actual:** the report showed "Application launch to fully drawn" for 29 of 30 launches, marked statistically sound (√). The values were almost equal to first frame (mean 2398.2 ms vs 2393.4 ms, max 4243.8 ms vs 4243.7 ms). In the two traces we read, a `fully_drawn` slice from the `stem-init` process comes 67-87 ms before the app's `gwsi_firstFrame`, although the app never asked for one. After we added the hook, the trace has two `fully_drawn` slices per launch. The tool reported fully drawn at mean 2129 ms, P90 2494 ms.
+- **Actual:** the report showed "Application launch to fully drawn" for 29 of 30 launches, marked statistically sound (√). The values were almost equal to first frame (mean 2398.2 ms vs 2393.4 ms, max 4243.8 ms vs 4243.7 ms). In the two traces I read, a `fully_drawn` slice from the `stem-init` process comes 67-87 ms before the app's `gwsi_firstFrame`, although the app never asked for one. After I added the hook, the trace has two `fully_drawn` slices per launch. The tool reported fully drawn at mean 2129 ms, P90 2494 ms.
 - **Severity:** low (a developer can believe the TTFD KPI is met and implemented, and the TTFD workflow's own check for a missing marker never fires).
 - **Workaround:** check the app code for `useReportFullyDrawn()` instead of trusting a non-empty TTFD value.
 - **Suggestion:** report TTFD as missing when the app did not emit the marker, or document which component emits the automatic `fully_drawn` and when.
@@ -210,7 +210,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Expected:** a build error or a clear runtime message that the package has no Vega support. Amazon's Vega knowledge base (media playback API, migration notes) says: "`react-native-video` must be removed: It has native Android code (ExoPlayer) that does not work on Vega. There is no compatibility layer."
 - **Actual:** the build passes. The app aborts ~1 s after launch (SIGABRT): `react-native-nitro-modules` calls `TurboModuleRegistry.getEnforcing('NitroModules')`. Building its error message fails in React Native for Vega with "__fbBatchedBridgeConfig is not set, cannot invoke native modules".
 - **Severity:** medium (the most used React Native video library cannot be tried on Vega, and the crash does not name the cause).
-- **Workaround:** a Vega backend for v7 built like its web one (`*.kepler.ts` platform files on w3cmedia), in our fork, to be proposed upstream. It plays MP4 on the stick with the v7 API.
+- **Workaround:** a Vega backend for v7 built like its web one (`*.kepler.ts` platform files on w3cmedia), in my fork, to be proposed upstream. It plays MP4 on the stick with the v7 API.
 - **Suggestion:** list Nitro-based libraries as unsupported in the Vega compatibility docs, and make `getEnforcing` failures readable.
 
 ## FL-24 · Request headers for media work, but the only API for them is hidden (2026-10-17)
@@ -228,7 +228,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Expected:** a key event per press, as on Android TV.
 - **Actual:** 0 events from react-native-keyevent. `useTVEventHandler` got all 10 (5 presses, down and up). The package listens to `DeviceEventEmitter('onKeyDown')`, which only its Android native module sends. It installs and imports on Vega without an error. Amazon's sample handles the remote with its own `TVEventHandler` code on Vega.
 - **Severity:** low (silent: the app runs, the keys just never arrive).
-- **Workaround:** `TVEventHandler` directly, or a Vega module for the package (we wrote one: `index.kepler.js` that maps Vega key names to Android key codes. On the stick 10 of 10 events).
+- **Workaround:** `TVEventHandler` directly, or a Vega module for the package (I wrote one: `index.kepler.js` that maps Vega key names to Android key codes. On the stick 10 of 10 events).
 - **Suggestion:** in the Directory, mark packages as "installs" vs "works" on Vega, or note that key events need `TVEventHandler`.
 
 ## FL-26 · The accessibility settings README imports a default export that the package does not have (2026-10-18)
@@ -237,7 +237,7 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Expected:** the README import works.
 - **Actual:** `dist/src/index.js` and `index.d.ts` export `KeplerA11ySettingsInterface` only as a named export. There is no default export. TypeScript stops with "has no default export". Plain JavaScript gets `undefined` and fails at the first call. With the named import, `import { KeplerA11ySettingsInterface } from '...'`, it works: on the stick the module auto-links (`Successfully v2 auto-linked libKeplerA11ySettingsInterfaceTurbo.so`) and returns the setting.
 - **Severity:** low (found at the first build), but every example in the README has it.
-- **Workaround:** the named import. The module also looks itself up with `TurboModuleRegistry.getEnforcing` when it is loaded, so on a device without it the import throws. We load it with `require` inside `try`, and captions stay off there.
+- **Workaround:** the named import. The module also looks itself up with `TurboModuleRegistry.getEnforcing` when it is loaded, so on a device without it the import throws. I load it with `require` inside `try`, and captions stay off there.
 - **Suggestion:** fix the README examples (or add a default export), and say which Vega OS versions have the module.
 
 ## FL-27 · The headless playback sample service does not compile (2026-10-18)

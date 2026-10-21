@@ -6,7 +6,7 @@ License: [Apache-2.0](LICENSE).
 
 Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, the IAB standards for video ads and ad breaks. It plays the ads on Vega's video player (w3cmedia) and sends the IAB tracking pixels: the requests that tell the ad server an ad was seen. It is for apps that have their own ad server.
 
-Why it is needed: Vega has no client-side IMA SDK. Amazon's guide shows how to switch between a movie player and an ad player, and leaves the rest to each app: ad requests, VAST parsing, tracking, ad pods, Skip, the remote and Alexa. To our knowledge, no other open library does this on Vega. [Why this library](docs/why.md) compares the options.
+Why it is needed: Vega has no client-side IMA SDK. Amazon's guide shows how to switch between a movie player and an ad player, and leaves the rest to each app: ad requests, VAST parsing, tracking, ad pods, Skip, the remote and Alexa. To my knowledge, no other open library does this on Vega. [Why this library](docs/why.md) compares the options.
 
 An optional AI tool places the breaks between lines of dialogue and leaves out ads that do not fit the scene. See [AI break placement](#ai-break-placement-optional).
 
@@ -149,9 +149,9 @@ export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: 
 
 Your own controls, ad overlay or player (Shaka, react-native-video v7) and ads loaded on the title page: see the [Guide](docs/guide.md).
 
-## Fixes we sent upstream
+## Fixes I sent upstream
 
-To build vega-ads, we fixed gaps in libraries that Vega apps use. We sent each fix to the library itself. All are open pull requests. None is merged or reviewed yet.
+To build vega-ads, I fixed gaps in libraries that Vega apps use. I sent each fix to the library itself. All are open pull requests. None is merged or reviewed yet.
 
 | Pull request | What it does |
 |---|---|
@@ -170,7 +170,7 @@ To build vega-ads, we fixed gaps in libraries that Vega apps use. We sent each f
 | `react-native-vega-ads` | Install this one. The player component, the `useVegaAds` hook, the ad overlay, the remote and media controls on Vega. |
 | `react-native-ads-core` | Comes with it. VAST and VMAP requests, the break schedule, pods and IAB tracking in plain TypeScript, with no React Native or Vega code. |
 
-The core talks to the player through a small `PlayerPort` interface. So it can drive a player on another platform, but we tested it on a device only with Vega. See [Architecture](docs/architecture.md).
+The core talks to the player through a small `PlayerPort` interface. So it can drive a player on another platform, but I tested it on a device only with Vega. See [Architecture](docs/architecture.md).
 
 ## Docs
 
@@ -180,8 +180,8 @@ The core talks to the player through a small `PlayerPort` interface. So it can d
 - [Why this library](docs/why.md): what else plays ads on Vega today.
 - [How the breaks are placed](docs/how-breaks-are-placed.md), with the blind-labelled eval of the vision model.
 - [The ad backend on AWS](docs/aws.md): S3, CloudFront, Lambda and DynamoDB from one script.
-- [Amazon requirements](docs/amazon-requirements.md) and [our requirements](docs/requirements.md).
-- [Friction log](docs/friction-log.md): 32 problems we hit on the Vega platform, with steps to repeat them and suggestions.
+- [Amazon requirements](docs/amazon-requirements.md) and [the library's requirements](docs/requirements.md).
+- [Friction log](docs/friction-log.md): 32 problems I hit on the Vega platform, with steps to repeat them and suggestions.
 
 ## Tools
 

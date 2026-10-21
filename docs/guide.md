@@ -188,9 +188,9 @@ export function PlayerScreen({ uri, vmapUrl }: { uri: string; vmapUrl: string })
 }
 ```
 
-Both libraries export a hook named `useVideoPlayer`. Here it is the one from react-native-video. If you need ours in the same file, import it as `useVegaVideoPlayer`.
+Both libraries export a hook named `useVideoPlayer`. Here it is the one from react-native-video. If you need this library's hook in the same file, import it as `useVegaVideoPlayer`.
 
-Hide your controls while `ads.playing`: react-native-video reports `readyToPlay` during the pre-roll. react-native-video needs a Vega backend for this. We tested it on a Fire TV Stick with a prototype backend (pre-roll, pod, seek and events after the breaks).
+Hide your controls while `ads.playing`: react-native-video reports `readyToPlay` during the pre-roll. react-native-video needs a Vega backend for this. I tested it on a Fire TV Stick with a prototype backend (pre-roll, pod, seek and events after the breaks).
 
 ## If your app has its own remote handler (spatial navigation)
 

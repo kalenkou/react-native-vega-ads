@@ -122,11 +122,11 @@ The type of `name` is `AdEventName`, so your editor completes the names. It stil
 | You want | Use | You also need |
 |---|---|---|
 | Everything: content, ads, surfaces and ad UI | `<VegaAdsPlayer>` | nothing |
-| Your own screen and controls, our ad logic | `useVegaAds` + `DualSurfaceView` (or `AdSurfaceLayers` over your content surface) | your controls. Add `AdOverlay`, `AdCountdown`, `PauseAd` or your own UI |
+| Your own screen and controls, the library's ad logic | `useVegaAds` + `DualSurfaceView` (or `AdSurfaceLayers` over your content surface) | your controls. Add `AdOverlay`, `AdCountdown`, `PauseAd` or your own UI |
 | Your own player (Shaka, react-native-video v7) | `player` / `contentPlayer`: its w3cmedia `VideoPlayer`, `rnvPlayerPort(player)` or any `PlayerPort` | the ad surfaces above your content (`contentSurface={false}` or `AdSurfaceLayers`) |
 | Your own ad UI | `renderOverlay`, or the hook's `ads.ui`, `ads.snapshot`, `ads.ad` | `AdSkipButton` keeps the D-pad focus right, `useAdAnnouncements(ads.ui)` keeps VoiceView |
 | Only VAST/VMAP parsing and IAB tracking, any platform | `react-native-ads-core`: `requestVast`, `requestVmap`, `AdTracker` | no React, no Vega |
-| Ad timing without our players | `AdManager` from `react-native-ads-core` with your own `PlayerPort` | your players and surfaces |
+| Ad timing without the library's players | `AdManager` from `react-native-ads-core` with your own `PlayerPort` | your players and surfaces |
 
 ## Pitfalls
 

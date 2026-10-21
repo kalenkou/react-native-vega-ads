@@ -268,7 +268,7 @@ Sintel (H.264 High, 1280×544, -23.0 LUFS after `get_media.sh`) is the second ti
 
 ## Amazon "test before submission": Home, Back, another app (12.10.2026)
 
-Scenarios 1-3 of Amazon's list, run during the pre-roll where we could. `home-run.sh` and `lifecycle-run.sh` (kept outside the repo). The key is sent with `inputd-cli`. `KEY_HOME` does nothing on the stick (no key mapping, the app stays on screen). `KEY_HOMEPAGE` is the Home button.
+Scenarios 1-3 of Amazon's list, run during the pre-roll where I could. `home-run.sh` and `lifecycle-run.sh` (kept outside the repo). The key is sent with `inputd-cli`. `KEY_HOME` does nothing on the stick (no key mapping, the app stays on screen). `KEY_HOMEPAGE` is the Home button.
 
 | Scenario | Result |
 |---|---|
@@ -276,7 +276,7 @@ Scenarios 1-3 of Amazon's list, run during the pre-roll where we could. `home-ru
 | Back 2 s into the pre-roll | As designed (R23): the ad player is released and the movie is on screen, no pixel after `firstQuartile`. A second Back closes the player. A third leaves the app. Relaunch: details screen |
 | Another app (Amazon's template) during the movie, then the demo | PASS: the demo came back with a cold start, no error. The switch came after the pre-roll had ended, not during it: the script waited for an ad that the household memory had replaced |
 
-`vlcm crash-history` on the stick lists one entry for the demo in two days of tests: `AppNotResponding`, reason "Lifecycle Callback", during a LAUNCH transition on 11.10 at 22:04 UTC. Not seen again. We do not know which run caused it.
+`vlcm crash-history` on the stick lists one entry for the demo in two days of tests: `AppNotResponding`, reason "Lifecycle Callback", during a LAUNCH transition on 11.10 at 22:04 UTC. Not seen again. I do not know which run caused it.
 
 Not run (need a person or other hardware): HDMI unplugged for 5 minutes, TV input change, restart of the device, screensaver, Bluetooth audio. Alexa during ads passed on 11.10 (see above).
 
@@ -315,7 +315,7 @@ Demo, Tears of Steel, played up to the end of the first mid-roll, then Back. The
 | Compare: ads as usual | "Last watch, ads as usual: 3 ads · none left out or turned down" |
 | Play, Back 3 s into Brewnord, Voltaro prebuffered | "Last watch: 2 ads · 1 repeat left out · 2 ads turned down, up to 8 dB" |
 
-The first build sent `loudness:<dB>` when an ad's file was loaded: in the Play run the log shows it for the prebuffered Voltaro before Voltaro started. Now it follows the ad's `impression`, so in the Back run the prebuffered Voltaro, never seen, is not counted. We did not run the first build with Back.
+The first build sent `loudness:<dB>` when an ad's file was loaded: in the Play run the log shows it for the prebuffered Voltaro before Voltaro started. Now it follows the ad's `impression`, so in the Back run the prebuffered Voltaro, never seen, is not counted. I did not run the first build with Back.
 
 The lines match the pixels: 3 impressions in the first two runs, 2 in the Back run. In Play mode the pod's Kettlo got `notUsed` (seen in the pre-roll). The device log (`loggingctl`) lost some `[ads]` lines in this run. The report counts in the app, so it does not depend on the log.
 
@@ -405,7 +405,7 @@ Build with all review fixes up to `0931fb1`. The demo is muted.
 | Pause ad. Sintel "why" line | PASS |
 | Whole Tears of Steel, no key after Play | PASS on this build (1 run, 822 s): 5 ads, 5 `complete`, no ad error, `content:ended`, the player closes by itself. App memory 104-115 MB (`rm_pss`). Two earlier runs on the build before `0931fb1`: the same result, 93-116 MB |
 | Whole Sintel, no key after Play | PASS (970 s): 5 ads, 5 `complete`. Kettlo left out after the injury scene with VAST error 205, as the context map says. `content:ended`, the player closes by itself. App memory up to 95 MB (`rm_pss`) |
-| Cold start, `kpi-visualizer --kpi cool-start-latency --certification` | first frame P90 680 ms (29 of 30 launches counted), fully drawn P90 2.80 s. Amazon's targets: 1.5 s and 8 s. Faster than the earlier 1.09 s and 3.46 s. The stick had just been rebooted, so we keep the earlier, slower numbers in the README |
+| Cold start, `kpi-visualizer --kpi cool-start-latency --certification` | first frame P90 680 ms (29 of 30 launches counted), fully drawn P90 2.80 s. Amazon's targets: 1.5 s and 8 s. Faster than the earlier 1.09 s and 3.46 s. The stick had just been rebooted, so I keep the earlier, slower numbers in the README |
 
 ## Seek fix and the ad UI parts (17.10.2026, night)
 
@@ -426,7 +426,7 @@ Build with `a146eba` (`break:<id>:empty`) and `48d7416` (the demo mutes its play
 
 | Check | Result |
 |---|---|
-| Our VMAP on Tears of Steel through the port: `paused` at mount, ref calls during ads, mid-roll after a seek, post-roll | PASS: no content before the pre-roll (position 0.0 after it). `seek`/`resume` during an ad ignored. `AD_BREAK_ENDED`, then `ALL_ADS_COMPLETED`, then `onEnd` |
+| The demo's VMAP on Tears of Steel through the port: `paused` at mount, ref calls during ads, mid-roll after a seek, post-roll | PASS: no content before the pre-roll (position 0.0 after it). `seek`/`resume` during an ad ignored. `AD_BREAK_ENDED`, then `ALL_ADS_COMPLETED`, then `onEnd` |
 | Google IMA sample tags through the port: VMAP `premidpost`, skippable VAST, wrapper VAST, two source changes in one session | PASS: every break played. Each replaced player released once |
 | IMA sample tag `skippablelinear` | Google answered with an empty VAST (also from the Mac): the content started with no event. With `a146eba` the app gets `break:break-1:empty` 0.5 s after launch, then the content plays (checked on the stick through the port: `LOG` event) |
 | Full demo run with `48d7416` | 1/1 PASS. 17 `set muted true`, no unmute |
@@ -440,7 +440,7 @@ Demo built with the packages at `44b3ceb` (all fixes up to `a146eba` and the mut
 | Full demo run (`gate-run.sh 3`) | 3/3 PASS |
 | Seek over the mid-roll (`seek-run.sh 3`) | 3/3 PASS: the seek targets 142.6-143.3 s before the mid-roll starts. The pod plays. The movie resumes at 142.6-143.3 s |
 | Seek, earlier tries the same day | 1/3 and 2/3 by the script, 6/6 by the app: in each run the seek went past the break first and the pod played, but the system log dropped the line the script judged by (`content play` after `breakEnd`). The script now also accepts the content's pause position at the break and the seek target logged before the break. On all older logs it gives no false pass |
-| `react-native-video-vega` port at its last commit, our VMAP | PASS: no content before the pre-roll, `paused` applied at the break end, mid-roll after a seek, post-roll, then `AD_BREAK_ENDED`, `ALL_ADS_COMPLETED`, `onEnd` |
+| `react-native-video-vega` port at its last commit, the demo's VMAP | PASS: no content before the pre-roll, `paused` applied at the break end, mid-roll after a seek, post-roll, then `AD_BREAK_ENDED`, `ALL_ADS_COMPLETED`, `onEnd` |
 
 ## Headless, stitched ads, captions, AWS and the merged 0.1.0 (18.10.2026)
 

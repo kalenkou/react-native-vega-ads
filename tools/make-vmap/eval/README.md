@@ -6,12 +6,12 @@ How well does the vision model describe the scene before an ad break? This folde
 
 `breaks.json` has 24 mid-roll points from three open films. make-vmap chose them with `--local --speech-model ggml-base.en.bin --min-gap 50 --first-break-after 40`, so the set has more breaks than a real schedule would.
 
-- Tears of Steel (9) and Sintel (8): the set we choose the model and the prompt on.
+- Tears of Steel (9) and Sintel (8): the set I choose the model and the prompt on.
 - Big Buck Bunny (7): held out. It is not used for any choice. It is run once with the final model and prompt.
 
 ## Labels
 
-The author labelled every break blind with `label-kit.mjs`: a page that shows the 30 s of film before each break and a checkbox per signal (`SENSITIVITY_RULES` in `src/breakContext.ts`). The page shows no model answers. The labels were saved before we compared any model with them, and were not changed after.
+The author labelled every break blind with `label-kit.mjs`: a page that shows the 30 s of film before each break and a checkbox per signal (`SENSITIVITY_RULES` in `src/breakContext.ts`). The page shows no model answers. The labels were saved before I compared any model with them, and were not changed after.
 
 ```sh
 node eval/label-kit.mjs --media DIR --labels eval/breaks.json --out /tmp/label-kit
