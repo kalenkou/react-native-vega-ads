@@ -13,7 +13,7 @@ deploy-aws.sh ──► S3 (movies, ad creatives, VAST, VMAP, WebVTT) ──► 
 ```
 
 1. [`tools/make-vmap`](../tools/make-vmap) writes the VMAP. The demo runs it on your computer (`--local`). With `--bucket B --key movie.mp4` it can instead send a movie in S3 to Amazon Rekognition segment detection, which also finds the end credits. That mode is unit-tested but has not run on AWS yet.
-2. `tools/demo-ads/deploy-aws.sh MEDIA_DIR` deploys [`tools/pixel-collector`](../tools/pixel-collector) with AWS SAM (S3 + CloudFront with origin access control + Lambda function URL + DynamoDB on demand), uploads the media, and writes VAST, VMAP and WebVTT files that point to CloudFront and to the pixel collector.
+2. `tools/demo-ads/deploy-aws.sh MEDIA_DIR` deploys [`tools/pixel-collector`](../tools/pixel-collector) with AWS SAM: S3, CloudFront with origin access control, a Lambda function URL and DynamoDB on demand. It also uploads the media. Then it writes VAST, VMAP and WebVTT files that point to CloudFront and to the pixel collector.
 3. The app needs only the CloudFront URL. HTTPS media needs no cleartext entry in `manifest.toml`.
 4. `<pixel url>report` shows the day's counts per ad.
 

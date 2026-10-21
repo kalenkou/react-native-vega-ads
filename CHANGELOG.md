@@ -33,7 +33,7 @@ First release.
 - `AdManager`: pre-, mid- and post-rolls through a `PlayerPort`. Pods play in `sequence` order on two players, and the next ad starts about 500 ms before the current one ends. A seek over breaks plays only the last one. Every error and timeout ends in content.
 - Break events for the app: `breakStart` before a break's first ad, `breakEnd`, and `break:<id>:empty` when a break has no ad to play.
 - `onEvent(name, info)`: the second argument has the break id and the ad (id, creative id, title, advertiser, duration, place in the pod). `snapshot.ad` has the same data for the ad on screen.
-- Break context: a break blocks ad categories (from the VMAP or by hand). Blocked ads are left out with VAST error 205, spare ads of the response take their place, and `[BLOCKEDADCATEGORIES]` tells the ad server the list in each request of the break.
+- Break context: a break blocks ad categories (from the VMAP or by hand). Blocked ads are left out with VAST error 205. Spare ads of the response take their place. `[BLOCKEDADCATEGORIES]` tells the ad server the list in each request of the break.
 - No repeated creatives or advertisers across breaks and, with an optional memory, across titles and launches. Break limits `maxBreakAds` and `maxBreakSeconds`.
 - Never louder than the movie: with `contentLoudness`, a louder ad is turned down to it, never up.
 - Pause ads from VAST NonLinear (IAB CTV Ad Portfolio), with QR code and IAB tracking.
