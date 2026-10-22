@@ -2,7 +2,16 @@
 
 All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The two packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.2] - 2026-10-23
+
+### Added
+
+- `layoutScale()` and `scaleStyles()`: React Native 0.83 on Vega lays out in dp on a 960x540 canvas, so sizes written for the 1920x1080 layout of React Native 0.72 draw twice as big. The built-in ad UI (label, Skip, countdown, captions, pause ad) now scales itself with the window width and looks the same on both. Apps can scale their own 1920x1080 styles with `scaleStyles`. Styles passed in `styles` and `pauseAdStyle` are not scaled.
+
+### Documentation
+
+- `packages/vega/README.md`: "React Native 0.72 and 0.83" and a seek bar example with the ad breaks from `ads.timeline.marks`.
+- The demo app runs on React Native 0.83. `docs/device-results.md` has the compatibility table and the 0.83 run. Friction log FL-36 and FL-37.
 
 ### Tools
 
@@ -59,5 +68,6 @@ First release.
 - `vegaAdIdSource` for the Fire TV advertising ID. `preloadVegaAds` and `useAdPlan` for the title page. `rnvPlayerPort` for react-native-video v7.
 - Preview: `useStitchedAds` (IAB tracking of ads stitched into the stream by a server). `HeadlessPlayerService` and `HeadlessPlayerAdapter` (Amazon's headless player approach). `createAdPlayer` for ad players that are any `PlayerPort`.
 
+[0.1.2]: https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.2
 [0.1.1]: https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.1
 [0.1.0]: https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.0
