@@ -48,7 +48,7 @@ Measured on that stick: the switch from the movie to an ad takes 56-151 ms. In a
 - **Remote and Alexa.** They pause and play the ads. The Skip button gets the remote's focus. VoiceView, the Fire TV screen reader, reads out each ad.
 - **IAB tracking.** The ad server learns when an ad was shown, each quarter of it, pause, skip and errors. It also learns when a break starts and ends.
 - **No repeats.** The same ad does not come back within 30 minutes. A break has one ad per advertiser. With `avoidRepeats.memory` the app remembers the shown ads across movies and launches.
-- **Never louder.** An ad is never louder than the movie, when its VAST says how loud the ad is.
+- **Loudness match.** When its VAST says how loud the ad is, a louder ad is turned down to the loudness of the movie.
 - **Pause ads and captions.** A pause ad shows a QR code while the movie is paused. Ads can have captions.
 - **Blocked categories.** A break can block ad categories, for example no car ads right after a car crash. The list comes from the VMAP or from your code.
 - **Your own ad UI.** Ad events come with the ad's data (`onEvent(name, info)`). The ad on screen is in `ads.ad`. You can replace the overlay (`renderOverlay`), its styles (`adStyles`) and its texts in any language (`strings`).
