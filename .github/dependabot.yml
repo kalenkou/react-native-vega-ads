@@ -17,7 +17,8 @@ updates:
         dependency-type: development
         update-types: [minor, patch]
     ignore:
-      # Vega apps run React Native 0.72 with React 18.2; the packages are tested against them.
+      # The packages are tested against React Native 0.72 with React 18.2, the oldest versions they
+      # support. The demo app runs React Native 0.83.
       - dependency-name: react-native
         update-types: [version-update:semver-major, version-update:semver-minor]
       - dependency-name: react
