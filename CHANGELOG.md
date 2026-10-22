@@ -2,6 +2,12 @@
 
 All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The two packages share one version. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Documentation
+
+- API reference: a pitfall on React Native 0.83. The first read of `AdIdRetriever` can hold the JavaScript thread for up to 2.6 s on a cold start (FL-38). Pass `adId` after your first screen is drawn. The demo's movie page now asks for the ad plan when its poster has loaded.
+
 ## [0.1.2] - 2026-10-23
 
 ### Added
@@ -72,6 +78,7 @@ First release.
 - `vegaAdIdSource` for the Fire TV advertising ID. `preloadVegaAds` and `useAdPlan` for the title page. `rnvPlayerPort` for react-native-video v7.
 - Preview: `useStitchedAds` (IAB tracking of ads stitched into the stream by a server). `HeadlessPlayerService` and `HeadlessPlayerAdapter` (Amazon's headless player approach). `createAdPlayer` for ad players that are any `PlayerPort`.
 
-[0.1.2]: https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.2
-[0.1.1]: https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.1
+[Unreleased]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.0
