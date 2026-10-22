@@ -1,4 +1,4 @@
-import { isHttpUrl, scheduleFor, tagFromQuery, tagQuery, SAMPLE_TAGS } from '../src/adTag';
+import { isHttpUrl, scheduleFor, tagFromQuery, tagProblem, tagQuery, SAMPLE_TAGS } from '../src/adTag';
 
 describe('isHttpUrl', () => {
   it('accepts http and https URLs only', () => {
@@ -62,5 +62,31 @@ describe('SAMPLE_TAGS', () => {
       expect(isHttpUrl(tag.url)).toBe(true);
       expect(tag.url.includes(tag.kind === 'vmap' ? 'output=vmap' : 'output=vast')).toBe(true);
     }
+  });
+});
+
+describe('tagProblem', () => {
+  it('accepts an https tag on any page and an http tag on an http page', () => {
+    expect(tagProblem('https://ads.example/vmap.xml', 'https:')).toBeNull();
+    expect(tagProblem('http://ads.example/vmap.xml', 'http:')).toBeNull();
+  });
+
+  it('asks for a URL when the text is not one', () => {
+    expect(tagProblem('ads.example/vmap.xml', 'https:')).toBe('Enter an http or https URL of a VAST or VMAP tag.');
+    expect(tagProblem('', 'http:')).toBe('Enter an http or https URL of a VAST or VMAP tag.');
+  });
+
+  it('names the real cause of an http tag on an https page: the browser blocks it as mixed content', () => {
+    expect(tagProblem('http://ads.example/vmap.xml', 'https:')).toBe(
+      'This page is HTTPS, so the browser blocks an http:// tag. Use the https:// address of the tag.',
+    );
+    expect(tagProblem('HTTP://ads.example/vmap.xml', 'https:')).not.toBeNull();
+  });
+
+  it('allows http on this computer, which browsers do not block', () => {
+    expect(tagProblem('http://localhost:8080/vast.xml', 'https:')).toBeNull();
+    expect(tagProblem('http://127.0.0.1:8080/vast.xml', 'https:')).toBeNull();
+    expect(tagProblem('http://[::1]:8080/vast.xml', 'https:')).toBeNull();
+    expect(tagProblem('http://localhost.ads.example/vast.xml', 'https:')).not.toBeNull();
   });
 });

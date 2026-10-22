@@ -21,6 +21,11 @@ export interface VideoElement {
 /** Finds a surface (an element of the page) by its handle, the element id. */
 export type FindSurface = (id: string) => { appendChild(video: VideoElement): unknown } | null;
 
+/** A pause or a new source came before playback: the browser's AbortError. */
+function cutOff(error: unknown): boolean {
+  return (error as { name?: string } | null)?.name === 'AbortError';
+}
+
 /**
  * PlayerPort on an HTML video element: the browser stand-in for the w3cmedia VideoPlayer.
  * With `findSurface` the port is an ad player: attachSurface() puts the element into the
@@ -78,16 +83,17 @@ export class HtmlVideoPort implements PlayerPort {
     try {
       await this.video.play();
     } catch (error) {
-      const name = (error as { name?: string }).name;
-      if (name === 'AbortError') {
+      if (cutOff(error)) {
         return;
       }
-      if (name !== 'NotAllowedError' || this.video.muted) {
+      if ((error as { name?: string }).name !== 'NotAllowedError' || this.video.muted) {
         throw error;
       }
       this.video.muted = true;
       this.onSoundBlocked?.();
-      await this.video.play();
+      await this.video.play().catch((retryError: unknown) => {
+        if (!cutOff(retryError)) throw retryError;
+      });
     }
   }
 

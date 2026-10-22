@@ -165,6 +165,15 @@ select:focus-visible {
   background: #000;
 }
 
+/* An ad of the next break may wait here already: only the ad that plays is visible. */
+.surface video {
+  visibility: hidden;
+}
+
+.surface video.shown {
+  visibility: visible;
+}
+
 .ad-bar {
   position: absolute;
   top: 4%;
