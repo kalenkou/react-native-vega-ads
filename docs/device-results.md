@@ -21,6 +21,7 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11 to 18.10.2026, on React Native 0.72 unl
 | Seek over a mid-roll | 4/4: the break plays, then the movie resumes at the seek target |
 | In Amazon's multi-TV sample, Google IMA sample VMAP | pre-, mid- and post-roll with all quartiles. Remote pause, Back and Skip |
 | Demo cold launch on React Native 0.72 (30 launches each, `kpi-visualizer --certification`), 16.10 | launch to first frame: P90 1.08 s with the native splash screen, 1.09 s with the final look (mean 0.88 s, Amazon's target 1.5 s). Before the splash screen: mean 2.39 s, P90 3.35 s. Amazon's empty template: mean 2.07 s on this stick. Fully drawn (poster on screen, `useReportFullyDrawn`): P90 2.49 s, 3.46 s with the final look and its fonts (target: 8 s) |
+| Demo cold launch on React Native 0.83 (30 launches, the same command), 23.10 | launch to first frame: P90 0.88 s, mean 0.48 s (Amazon's target 1.5 s). Fully drawn: P90 6.3 s, mean 4.0 s (target 8 s). It is slower than on 0.72. I have not found the cause yet |
 
 ## Compatibility
 
