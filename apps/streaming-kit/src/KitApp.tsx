@@ -106,9 +106,12 @@ function PosterCard({
 }
 
 function Home({
+  focus,
   onPlay,
   onReady,
 }: {
+  /** The card that gets the focus: the movie the viewer came back from, or the first one. */
+  focus: MovieId;
   onPlay: (id: MovieId) => void;
   onReady: () => void;
 }) {
@@ -127,10 +130,15 @@ function Home({
       </View>
       <Text style={styles.label}>Pick a movie</Text>
       <View style={styles.cards}>
-        <PosterCard id="tos" first onPlay={onPlay} onPosterDone={onReady} />
+        <PosterCard
+          id="tos"
+          first={focus === 'tos'}
+          onPlay={onPlay}
+          onPosterDone={onReady}
+        />
         <PosterCard
           id="sintel"
-          first={false}
+          first={focus === 'sintel'}
           onPlay={onPlay}
           onPosterDone={onReady}
         />
@@ -286,6 +294,12 @@ function Watch({movie, onClose}: {movie: MovieId; onClose: () => void}) {
 
 export function KitApp() {
   const [movie, setMovie] = useState<MovieId | null>(null);
+  // Back from a movie, the focus returns to its card.
+  const [last, setLast] = useState<MovieId>('tos');
+  const play = useCallback((id: MovieId) => {
+    setLast(id);
+    setMovie(id);
+  }, []);
   const [catalogReady, setCatalogReady] = useState(false);
 
   // The catalog is ready when the first poster has loaded (or failed): hide the launch screen.
@@ -313,7 +327,7 @@ export function KitApp() {
   return movie !== null ? (
     <Watch movie={movie} onClose={() => setMovie(null)} />
   ) : (
-    <Home onPlay={setMovie} onReady={() => setCatalogReady(true)} />
+    <Home focus={last} onPlay={play} onReady={() => setCatalogReady(true)} />
   );
 }
 
