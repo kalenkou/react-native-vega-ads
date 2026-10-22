@@ -30,6 +30,8 @@ import { preloadVegaAds } from 'react-native-vega-ads';
 useEffect(() => preloadVegaAds({ vmapUrl }, { adId: AdIdRetriever }), [vmapUrl]);
 ```
 
+On React Native 0.83, when the title page is the app's first screen, start this after the page is drawn. The first read of `AdIdRetriever` can hold the JavaScript thread for up to 2.6 s on a cold start ([Pitfalls](api.md#pitfalls)).
+
 The player with the same `ads` uses the answers once, within five minutes. Otherwise it asks the ad server itself. Later breaks are requested during playback, as before.
 
 `useAdPlan(ads, options)` preloads the same way and returns what the viewer can know before Play: the number of breaks, the pre-roll (ads, seconds, skip after) and `marks`. Each mark has `at`, where the break is (`{ kind: 'start' }`, `{ kind: 'end' }`, `{ kind: 'time', seconds }` or `{ kind: 'percent', percent }`), and `sceneSignals` from the VMAP context. The demo draws its break map from it. `adPlanLabel(plan)` gives one line: "4 ad breaks · first: 1 ad, 10 s".

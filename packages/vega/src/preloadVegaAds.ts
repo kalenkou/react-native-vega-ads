@@ -48,6 +48,9 @@ export function vegaMacros(adId?: VegaAdIdRetriever, macros?: Macros): Macros | 
  * ```tsx
  * useEffect(() => preloadVegaAds({ vmapUrl }, { adId: AdIdRetriever }), [vmapUrl]);
  * ```
+ *
+ * On React Native 0.83 the first read of `AdIdRetriever` can hold the JavaScript thread for up to
+ * 2.6 s on a cold start. On the app's first screen, call this after the screen is drawn (FL-38).
  */
 export function preloadVegaAds(schedule: AdSchedule, options: PreloadVegaAdsOptions = {}): void {
   const clock = options.clock ?? systemClock;
@@ -94,6 +97,9 @@ export function takePreload(key: string): Promise<PreloadedAds> | undefined {
  * const plan = useAdPlan({ vmapUrl }, { adId: AdIdRetriever });
  * <Text>{adPlanLabel(plan)}</Text>
  * ```
+ *
+ * On the app's first screen on React Native 0.83, mount the component that calls this after the
+ * screen is drawn: see preloadVegaAds.
  */
 export function useAdPlan(schedule: AdSchedule, options: PreloadVegaAdsOptions = {}): AdPlan | null {
   const key = JSON.stringify(schedule);
