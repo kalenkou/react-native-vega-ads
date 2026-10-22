@@ -28,9 +28,9 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 
   The [Quick start](#quick-start) has the manifest entries and a public test VMAP.
 
-> Tested on a Fire TV Stick 4K Select (Vega OS 2.0). The API can change before 1.0.
+> Tested on a Fire TV Stick 4K Select (Vega OS 2.0) with React Native 0.72 and 0.83. The API can change before 1.0.
 
-Measured on that stick: the switch from the movie to an ad takes 56-151 ms. Memory peaks at 91 MB with 27 ads in 11 minutes. More: [device results](docs/device-results.md).
+Measured on that stick: the switch from the movie to an ad takes 56-151 ms. In an 11-minute stress test with 27 ads on React Native 0.72, memory peaked at 91 MB. Then it stayed at 65-68 MB. More: [device results](docs/device-results.md).
 
 ## Features
 
@@ -84,7 +84,7 @@ Everything runs on your computer. No cloud, no cost, no viewer data. On an Apple
 npm install react-native-vega-ads
 ```
 
-This also installs `react-native-ads-core`. Your Vega app already has the peer dependencies: `react` 18.2 or later, `react-native` 0.72 or later, `@amazon-devices/react-native-w3cmedia` 2.1 or later and `@amazon-devices/react-native-kepler` 2.0 or later. Babel and Metro need no changes. For the Fire TV advertising ID, also run `npm install @amazon-devices/kepler-adid-retriever`.
+This also installs `react-native-ads-core`. Your Vega app already has the peer dependencies: `react` 18.2 or later, `react-native` 0.72 or later, `@amazon-devices/react-native-w3cmedia` 2.1 or later and `@amazon-devices/react-native-kepler` 2.0 or later. The built-in ad UI keeps its size on React Native 0.72 and 0.83 ([details](packages/vega/README.md#react-native-072-and-083)). Babel and Metro need no changes. For the Fire TV advertising ID, also run `npm install @amazon-devices/kepler-adid-retriever`.
 
 ### 2. Add entries to `manifest.toml`
 
@@ -204,7 +204,7 @@ npm run check   # lint, format, types and the tests of the packages and tools
 cd apps/demo && npm ci && cp src/media.example.ts src/media.local.ts && npm run use-core && npm test
 ```
 
-Before a pull request run `npm run format` and `npm run check`. See [CONTRIBUTING.md](CONTRIBUTING.md). The demo app's 34 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
+Before a pull request run `npm run format` and `npm run check`. See [CONTRIBUTING.md](CONTRIBUTING.md). The demo app's 38 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
 
 ## Credits
 
