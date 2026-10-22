@@ -2,7 +2,7 @@
 
 Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega OS 2.0). Each entry has the task, steps, expected and actual results, severity, workaround and a suggestion.
 
-Test setup: Fire TV Stick 4K Select with Vega OS 2.0 (TV Ship/515) and Vega SDK 0.24.12112. The demo app and the spike app use `@amazon-devices/react-native-w3cmedia` 2.1 with React Native 0.72. Entries that name React Native 0.83 or w3cmedia 2.3.2 come from separate test apps.
+Test setup: Fire TV Stick 4K Select with Vega OS 2.0 (TV Ship/515) and Vega SDK 0.24.12112. The spike app, and the demo app until 22.10, use `@amazon-devices/react-native-w3cmedia` 2.1 with React Native 0.72. Since 22.10 the demo app uses w3cmedia 2.3.2 with React Native 0.83 (FL-36, FL-37). The other entries that name React Native 0.83 come from separate test apps.
 
 ## FL-01 · Sample video URL used across docs returns 403 (2026-10-11)
 - **Task:** play a long public MP4 as content in a w3cmedia `VideoPlayer` on Fire TV Stick 4K Select (Vega OS 2.0).
@@ -327,3 +327,21 @@ Test setup: Fire TV Stick 4K Select with Vega OS 2.0 (TV Ship/515) and Vega SDK 
 - **Severity:** low (a VVD test of one screen needs a separate app setup).
 - **Workaround:** for a VVD build, move both packages out of `node_modules`, replace the service entry file with a stub and remove the needs from `manifest.toml`. Restore everything after the test. With that, the VVD showed the bug with the old code and the fix with the new code.
 - **Suggestion:** ship these modules in the VVD, or let a build option skip them for the VVD. Do not rewrite the source `manifest.toml` during a build without saying so in the output.
+
+## FL-36 · The React Native 0.83 builds of two Amazon packages fail the build check of their own file (2026-10-22)
+- **Task:** move the demo app from React Native 0.72 to 0.83 (`@amazon-devices/react-native-kepler` 4.0.1, Vega SDK 0.24.12112). The app uses `@amazon-devices/kepler-adid-retriever` and `@amazon-devices/react-native-async-storage__async-storage`.
+- **Steps:** install the versions that npm tags `rn83-alpha`: `kepler-adid-retriever@1.0.17-rn-83` and `react-native-async-storage__async-storage@2.1.9000000000-rn-83`. Then `npm run build:release`.
+- **Expected:** the 0.83 builds of the packages build in a 0.83 app.
+- **Actual:** `build-vega` stops with "Library @amazon-devices/kepler-adid-retriever is not properly configured". It goes on: "The version is set to 1.0.17-rn-83 but that value is not part of it's 'kepler-compatibility.json' file". The same for async-storage. The `kepler-compatibility.json` of each package lists `1.0.17` and `2.1.9000000000` without the `-rn-83` suffix.
+- **Severity:** medium (the packages tagged for 0.83 do not build, and no page says which versions to use instead).
+- **Workaround:** use the latest versions without the suffix. `kepler-adid-retriever` 1.0.18 ships Hermes bundles for 0.72 and 0.83. With it and async-storage 2.1.9000000001, the demo on React Native 0.83 passed the full demo run on the stick. A saved place also survived a kill of the app. Adding the `-rn-83` version to the file also makes the build pass.
+- **Suggestion:** list the `-rn-83` versions in their own `kepler-compatibility.json`, or drop the `rn83-alpha` tag when the stable versions cover 0.83. Say on "Supported Libraries and Services" which version of each package to use on 0.83.
+
+## FL-37 · The 0.83 migration guide halves pixel values, which a library for both 0.72 and 0.83 cannot do (2026-10-22)
+- **Task:** keep the built-in ad UI of react-native-vega-ads the same size on 0.72 and 0.83 with one code base. The UI is the ad label, Skip, the countdown, captions and the pause ad. Same stick.
+- **Steps:** run the demo app, drawn for 1920x1080 on 0.72, on 0.83 without changes.
+- **Expected:** a note for library authors on how to support both lines.
+- **Actual:** every size is twice as big. The break map moves off the screen and the ad texts overlap. Step 4.9 of the migration guide ("Convert layout values to density-independent pixels") says to divide all hardcoded pixel values by 2. That fixes 0.83 and breaks 0.72. The library guidance page covers `peerDependencies` ranges but not layout.
+- **Severity:** low (each library finds its own way, and the change is small).
+- **Workaround:** scale by the window width. `Dimensions.get('window').width / 1920` is 1 on 0.72 and 0.5 on 0.83. react-native-vega-ads now does this for its built-in UI and exports it as `layoutScale()` and `scaleStyles()`. The demo uses the same helper for its own styles.
+- **Suggestion:** add a section to the 0.83 migration guide for libraries that support both lines. Show a helper like this one, or ship one in `react-native-kepler`.
