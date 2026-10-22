@@ -208,7 +208,7 @@ npm run check   # lint, format, types and the tests of the packages and tools
 cd apps/demo && npm ci && cp src/media.example.ts src/media.local.ts && npm run use-core && npm test
 ```
 
-Before a pull request run `npm run format` and `npm run check`. See [CONTRIBUTING.md](CONTRIBUTING.md). The demo app's 38 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
+Before a pull request run `npm run format` and `npm run check`. See [CONTRIBUTING.md](CONTRIBUTING.md). The demo app's 41 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
 
 ## Credits
 
