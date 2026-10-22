@@ -17,6 +17,16 @@ describe('layoutScale', () => {
   it('is 1 when the window has no width yet', () => {
     expect(layoutScale(0)).toBe(1);
   });
+
+  it('is 1 when the window size is not known', () => {
+    const rn = require('react-native') as typeof import('react-native'); // eslint-disable-line @typescript-eslint/no-require-imports
+    const spy = jest.spyOn(rn.Dimensions, 'get').mockReturnValue(undefined as never);
+    try {
+      expect(layoutScale()).toBe(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
 
 describe('scaleStyles', () => {
@@ -70,6 +80,92 @@ describe('scaleStyles', () => {
       gap: 5,
     });
     expect(scaled.text).toEqual({ fontSize: 14, lineHeight: 18, color: '#fff' });
+  });
+
+  it('halves the lengths by side, corner, start and end, and the text and shadow lengths', () => {
+    const scaled = scaleStyles(
+      {
+        card: {
+          borderTopWidth: 4,
+          borderBottomWidth: 2,
+          borderLeftWidth: 6,
+          borderRightWidth: 8,
+          borderStartWidth: 10,
+          borderEndWidth: 12,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 26,
+          borderBottomLeftRadius: 28,
+          borderBottomRightRadius: 30,
+          borderTopStartRadius: 32,
+          borderTopEndRadius: 34,
+          borderBottomStartRadius: 36,
+          borderBottomEndRadius: 38,
+          start: 40,
+          end: 42,
+          marginStart: 44,
+          marginEnd: 46,
+          paddingStart: 48,
+          paddingEnd: 50,
+          rowGap: 52,
+          columnGap: 54,
+          flexBasis: 56,
+          shadowRadius: 8,
+          shadowOffset: { width: 2, height: 4 },
+        },
+        heading: { letterSpacing: 1.4, textShadowRadius: 6, textShadowOffset: { width: 0, height: 2 } },
+      },
+      0.5,
+    );
+    expect(scaled.card).toEqual({
+      borderTopWidth: 2,
+      borderBottomWidth: 1,
+      borderLeftWidth: 3,
+      borderRightWidth: 4,
+      borderStartWidth: 5,
+      borderEndWidth: 6,
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 13,
+      borderBottomLeftRadius: 14,
+      borderBottomRightRadius: 15,
+      borderTopStartRadius: 16,
+      borderTopEndRadius: 17,
+      borderBottomStartRadius: 18,
+      borderBottomEndRadius: 19,
+      start: 20,
+      end: 21,
+      marginStart: 22,
+      marginEnd: 23,
+      paddingStart: 24,
+      paddingEnd: 25,
+      rowGap: 26,
+      columnGap: 27,
+      flexBasis: 28,
+      shadowRadius: 4,
+      shadowOffset: { width: 1, height: 2 },
+    });
+    expect(scaled.heading).toEqual({
+      letterSpacing: 0.7,
+      textShadowRadius: 3,
+      textShadowOffset: { width: 0, height: 1 },
+    });
+  });
+
+  it('halves translateX and translateY in a transform and keeps scale and rotate', () => {
+    const scaled = scaleStyles(
+      { moved: { transform: [{ translateX: 40 }, { translateY: -20 }, { scale: 1.2 }, { rotate: '10deg' }] } },
+      0.5,
+    );
+    expect(scaled.moved).toEqual({
+      transform: [{ translateX: 20 }, { translateY: -10 }, { scale: 1.2 }, { rotate: '10deg' }],
+    });
+  });
+
+  it('keeps a shadow offset and a transform at scale 1 and leaves the input as it was', () => {
+    const styles = { moved: { shadowOffset: { width: 2, height: 4 }, transform: [{ translateX: 40 }] } };
+    const before = JSON.stringify(styles);
+    expect(scaleStyles(styles, 1)).toEqual(styles);
+    scaleStyles(styles, 0.5);
+    expect(JSON.stringify(styles)).toBe(before);
   });
 
   it('keeps what is not a length: z-order, opacity, flex, ratios, percentages and zero', () => {
