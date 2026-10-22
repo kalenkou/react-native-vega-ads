@@ -10,6 +10,8 @@ A small Vega OS app: one movie with ads that do not annoy. It shows what
 - "Ad in 5" before a mid-roll, so a break never comes as a surprise
 - Skip after 5 s on skippable ads, Back and the remote work as expected.
 
+The app runs on React Native 0.83. Its screens are drawn for 1920x1080 and scaled with the library's `scaleStyles()`, so they look the same as on React Native 0.72.
+
 "Compare: ads as usual" on _Tears of Steel_ plays the same movie the way ads usually work, with a badge on screen: a mid-roll on a timer at 0:32 that cuts a line, the pre-roll's ad again, ads louder than the movie, no "Ad in 5".
 
 The movies are _Tears of Steel_, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0, and _Sintel_, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0. "Next" on the details screen switches between them.
@@ -19,7 +21,7 @@ The ads are invented brands drawn by [`tools/demo-ads`](../../tools/demo-ads).
 
 You need:
 
-- Node.js 22
+- Node.js 22.14 or later (React Native 0.83 for Vega needs it)
 - the Vega SDK (I test with 0.24.12112, `vega sdk list` shows yours)
 - a Fire TV device on the same network as your computer, or the Vega Virtual Device (see the note in step 2)
 - the media from [`tools/demo-ads`](../../tools/demo-ads) (not needed with the CloudFront address in step 2)

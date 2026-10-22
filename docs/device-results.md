@@ -20,14 +20,16 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11 to 18.10.2026. Details: [`apps/spike/DE
 | Full demo run after the last fixes (pre-roll, seek into the mid-roll pod, repeat left out), 16.10 | 3/3 cold launches |
 | Seek over a mid-roll | 4/4: the break plays, then the movie resumes at the seek target |
 | In Amazon's multi-TV sample, Google IMA sample VMAP | pre-, mid- and post-roll with all quartiles. Remote pause, Back and Skip |
-| Demo cold launch (30 launches each, `kpi-visualizer --certification`), 16.10 | launch to first frame: P90 1.08 s with the native splash screen, 1.09 s with the final look (mean 0.88 s, Amazon's target 1.5 s). Before the splash screen: mean 2.39 s, P90 3.35 s. Amazon's empty template: mean 2.07 s on this stick. Fully drawn (poster on screen, `useReportFullyDrawn`): P90 2.49 s, 3.46 s with the final look and its fonts (target: 8 s) |
+| Demo cold launch on React Native 0.72 (30 launches each, `kpi-visualizer --certification`), 16.10 | launch to first frame: P90 1.08 s with the native splash screen, 1.09 s with the final look (mean 0.88 s, Amazon's target 1.5 s). Before the splash screen: mean 2.39 s, P90 3.35 s. Amazon's empty template: mean 2.07 s on this stick. Fully drawn (poster on screen, `useReportFullyDrawn`): P90 2.49 s, 3.46 s with the final look and its fonts (target: 8 s) |
 
 ## Compatibility
 
 | Vega SDK | React Native | Status |
 |---|---|---|
 | 0.23 | 0.72 | Verified on Fire TV Stick 4K Select, Vega OS 2.0 (`apps/spike`) |
-| 0.24 | 0.72 | Verified on the same device (`apps/demo`, built with SDK 0.24.12112) |
-| 0.24 | 0.83 | Verified on the same device in Amazon's vega-video-sample with Shaka (`examples/vega-video-sample`) |
+| 0.24 | 0.72 | Verified on the same device (`apps/demo` until 22.10, built with SDK 0.24.12112) |
+| 0.24 | 0.83 | Verified on the same device (`apps/demo` since 22.10: the full demo run, a saved place after a kill, ad captions, the screens checked against 0.72), and in Amazon's vega-video-sample with Shaka (`examples/vega-video-sample`) |
+
+On React Native 0.83 the layout is in dp on a 960x540 canvas. The built-in ad UI and the demo scale their 1920x1080 sizes with `layoutScale()` and `scaleStyles()` (FL-37).
 
 The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read on 11.10.2026). The Vega Virtual Device of SDK 0.24 runs Vega OS 1.2 (`/etc/os-release`, read on 22.10.2026).
