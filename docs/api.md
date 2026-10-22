@@ -146,6 +146,7 @@ The built-in ad UI scales itself. `adStyles`, `styles` and `pauseAdStyle` are no
 - Mount `AdSurfaceLayers` after your content surface exists: on Vega a video surface created later is drawn on top, whatever the `zIndex`.
 - Do not call `play()` on the content player yourself: the ads start the content after the pre-roll.
 - Media must be HTTPS, or its host must be in the manifest's cleartext list. Otherwise the player gives only a generic error.
+- On React Native 0.83 the first read of `AdIdRetriever` can hold the JavaScript thread for 0.5 to 2.6 s on a cold start. Vega starts its ad ID service in that time. On 0.72 it took 40 ms. Pass `adId` after your first screen is drawn, for example from a component that mounts when the poster has loaded. The demo's movie page does this ([FL-38](friction-log.md)).
 
 ## Components
 
