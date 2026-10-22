@@ -1,7 +1,7 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import type {AdPlan} from 'react-native-vega-ads';
-import {colors, fonts} from '../theme';
+import {Text, View} from 'react-native';
+import {layoutScale, type AdPlan} from 'react-native-vega-ads';
+import {colors, fonts, layoutStyles} from '../theme';
 import {markFraction, timecode} from '../time';
 
 export interface BreakMapProps {
@@ -52,6 +52,7 @@ export const BreakMap = ({plan, duration, prerollLabel}: BreakMapProps) => (
     <View style={styles.track}>
       <View style={styles.line} />
       {plan.marks.map((mark, index) => {
+        // In the 1920x1080 layout, like the styles: the place is scaled the same way.
         const x = markFraction(mark.at, duration) * WIDTH;
         const atEnd = x > WIDTH - 360;
         const {time, note} = markLabel(mark, duration);
@@ -62,7 +63,9 @@ export const BreakMap = ({plan, duration, prerollLabel}: BreakMapProps) => (
             testID={`break-map-mark-${index}`}
             style={[
               styles.mark,
-              atEnd ? [styles.markEnd, {right: WIDTH - x}] : {left: x},
+              atEnd
+                ? [styles.markEnd, {right: (WIDTH - x) * layoutScale()}]
+                : {left: x * layoutScale()},
             ]}>
             <Text style={styles.note}>{top}</Text>
             <View style={styles.tick} />
@@ -74,7 +77,7 @@ export const BreakMap = ({plan, duration, prerollLabel}: BreakMapProps) => (
   </View>
 );
 
-const styles = StyleSheet.create({
+const styles = layoutStyles({
   root: {width: WIDTH},
   header: {
     flexDirection: 'row',

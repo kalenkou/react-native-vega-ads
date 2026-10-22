@@ -1,12 +1,12 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {Text, View} from 'react-native';
 import {
   useAdAnnouncements,
   type VegaAds,
   type W3cVideoPlayer,
 } from 'react-native-vega-ads';
 import {useRemoteKeys} from '../remote';
-import {colors, fonts} from '../theme';
+import {colors, fonts, layoutStyles} from '../theme';
 import {timecode} from '../time';
 import type {CaptionSettings} from '../captionSettings';
 import {AdLayer} from './AdLayer';
@@ -171,7 +171,7 @@ export const PlayerChrome = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = layoutStyles({
   root: {position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 5},
   title: {
     position: 'absolute',

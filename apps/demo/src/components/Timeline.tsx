@@ -1,7 +1,7 @@
 import React from 'react';
-import {StyleSheet, View} from 'react-native';
+import {View} from 'react-native';
 import type {BreakMark} from 'react-native-vega-ads';
-import {colors} from '../theme';
+import {colors, layoutStyles} from '../theme';
 import {fraction} from '../time';
 
 export interface TimelineProps {
@@ -33,7 +33,7 @@ export const Timeline = ({position, duration, marks}: TimelineProps) => (
   </View>
 );
 
-const styles = StyleSheet.create({
+const styles = layoutStyles({
   track: {height: 6, backgroundColor: colors.track, borderRadius: 3},
   played: {
     position: 'absolute',

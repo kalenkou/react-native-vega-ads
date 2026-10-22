@@ -1,10 +1,10 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {StyleSheet, View} from 'react-native';
+import {View} from 'react-native';
 import {watchReport, watchReportLabel} from 'react-native-vega-ads';
 import {MOVIES} from './catalog';
 import {useLaunchReady} from './launch';
 import {deviceResume} from './resume';
-import {colors} from './theme';
+import {colors, layoutStyles} from './theme';
 import {DetailsScreen} from './screens/DetailsScreen';
 import {PlayerScreen} from './screens/PlayerScreen';
 
@@ -107,6 +107,6 @@ export const App = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = layoutStyles({
   root: {flex: 1, backgroundColor: colors.background},
 });

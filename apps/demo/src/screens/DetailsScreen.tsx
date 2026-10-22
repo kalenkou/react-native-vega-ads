@@ -1,10 +1,10 @@
 import React, {useEffect, useState} from 'react';
-import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Image, Text, TouchableOpacity, View} from 'react-native';
 import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
 import {adPlanLabel, useAdPlan, type AdPlan} from 'react-native-vega-ads';
 import type {Movie} from '../catalog';
 import {BreakMap} from '../components/BreakMap';
-import {colors, fonts} from '../theme';
+import {colors, fonts, layoutStyles} from '../theme';
 import {formatTime} from '../time';
 
 export interface DetailsScreenProps {
@@ -162,7 +162,7 @@ export const DetailsScreen = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = layoutStyles({
   root: {flex: 1, backgroundColor: colors.background},
   poster: {position: 'absolute', top: 0, left: 0, right: 0, height: 640},
   scrim: {

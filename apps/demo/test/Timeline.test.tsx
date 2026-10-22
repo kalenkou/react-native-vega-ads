@@ -1,13 +1,22 @@
 import React from 'react';
-import TestRenderer from 'react-test-renderer';
+import TestRenderer, {act} from 'react-test-renderer';
 import {Timeline} from '../src/components/Timeline';
+
+/** React 19 renders on a later tick unless the render is inside act(). */
+const render = (element: React.ReactElement) => {
+  let renderer!: TestRenderer.ReactTestRenderer;
+  act(() => {
+    renderer = TestRenderer.create(element);
+  });
+  return renderer;
+};
 
 const styleOf = (node: TestRenderer.ReactTestInstance) =>
   Object.assign({}, ...[node.props.style].flat(2).filter(Boolean));
 
 describe('Timeline', () => {
   it('marks each ad break where it is, and fades the ones already played', () => {
-    const renderer = TestRenderer.create(
+    const renderer = render(
       <Timeline
         position={150}
         duration={600}
@@ -28,7 +37,7 @@ describe('Timeline', () => {
   });
 
   it('draws no marks before the duration is known', () => {
-    const renderer = TestRenderer.create(
+    const renderer = render(
       <Timeline
         position={0}
         duration={0}
