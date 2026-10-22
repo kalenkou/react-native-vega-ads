@@ -354,3 +354,12 @@ Test setup: Fire TV Stick 4K Select with Vega OS 2.0 (TV Ship/515) and Vega SDK 
 - **Severity:** medium (it delays the first screen of an app that asks for ads with the ID at launch).
 - **Workaround:** read `AdIdRetriever` only after the first screen is drawn. The demo's movie page now asks for the ad plan when the poster has loaded. After the change (28 counted launches): fully drawn P90 5.5 s and mean 3.0 s, before 6.3 s and 4.0 s. The read now comes after fully drawn. In the slowest launches the system starts the app process about 5 s after the launch, before any app code runs. The wait itself remains, right after fully drawn: 0.2 to 1.1 s in three traces, so a key pressed then waits. The deferral works because Metro's inline requires, the default in `@react-native/metro-config`, load the module at its first read.
 - **Suggestion:** load the module without blocking the JavaScript thread. Or say in the API reference that its first load waits for the ad ID service.
+
+## FL-39 · The accessibility settings package installs React Native 0.60.6 into every app that uses it (2026-10-23)
+- **Task:** read the caption and audio description settings in the demo app. Demo app on React Native 0.83 with `@amazon-devices/kepler-a11y-settings-interface-turbo` 1.0.0.
+- **Steps:** `npm install`, then `npm ls react-native-tscodegen-types` and `npm audit`. Push the lockfile to GitHub with Dependabot alerts on.
+- **Expected:** a TurboModule package installs only what the app needs at run time. `@amazon-devices/react-native-w3cmedia` 2.3.2 does so. Its version 2.1.99 also installed `react-native-tscodegen-types`.
+- **Actual:** the package lists `react-native-tscodegen-types` 0.66.0 under `dependencies`, and that package depends on `react-native` ^0.60.6. So every app that uses the package gets a second React Native, 0.60.6, with its 28 dependencies (47 MB in `node_modules`). npm audit and Dependabot report that tree in the app, including the advisory for React Native below 0.62.3. The version `1.0.0-rn-83` has the same dependency.
+- **Severity:** low (the old tree is not in the app bundle, but it adds security alerts and install size to each app).
+- **Workaround:** none in the app that keeps the package. The alerts are explained in this repository's `SECURITY.md`.
+- **Suggestion:** move `react-native-tscodegen-types` to `devDependencies`, or drop it from the published package.
