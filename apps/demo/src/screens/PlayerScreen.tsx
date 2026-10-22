@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {BackHandler, StyleSheet, Text} from 'react-native';
+import {BackHandler, Text} from 'react-native';
 import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
 import AsyncStorage from '@amazon-devices/react-native-async-storage__async-storage';
 import {VideoPlayer} from '@amazon-devices/react-native-w3cmedia';
@@ -14,7 +14,7 @@ import type {Movie} from '../catalog';
 import {PlayerChrome} from '../components/PlayerChrome';
 import {MUTED} from '../media.local';
 import {deviceResume, useSaveResume} from '../resume';
-import {colors} from '../theme';
+import {colors, layoutStyles} from '../theme';
 
 /** Content and ad players that stay muted: set again on every play, in case a new source resets it. */
 const createMutedPlayer = (): W3cVideoPlayer => {
@@ -144,7 +144,7 @@ export const PlayerScreen = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = layoutStyles({
   // Between the title and the controls of PlayerChrome.
   pauseAd: {top: 100, bottom: 220},
   // Above the ad surfaces (zIndex 2-3) and PlayerChrome (5), under the ad label (10).

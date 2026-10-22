@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer, {act} from 'react-test-renderer';
-import {StyleSheet} from 'react-native';
+import {Dimensions, StyleSheet} from 'react-native';
 import type {VegaAds} from 'react-native-vega-ads';
 import {AdLayer, adBadge} from '../src/components/AdLayer';
 
@@ -171,6 +171,18 @@ describe('AdLayer', () => {
     expect(StyleSheet.flatten(text?.props.style)).toMatchObject({
       fontSize: 46,
     });
+    // React Native 0.83 lays out in dp on a 960x540 canvas: the same setting at half the number.
+    const get = jest.spyOn(Dimensions, 'get');
+    get.mockReturnValue({width: 960, height: 540, scale: 2, fontScale: 2});
+    try {
+      const dp = draw({enabled: true, fontSize: 46});
+      const dpText = dp?.findAll((n) => (n.type as unknown) === 'Text')[0];
+      expect(StyleSheet.flatten(dpText?.props.style)).toMatchObject({
+        fontSize: 23,
+      });
+    } finally {
+      get.mockReturnValue({width: 1920, height: 1080, scale: 1, fontScale: 1});
+    }
   });
 
   it('draws nothing outside an ad', () => {

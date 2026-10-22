@@ -1,8 +1,13 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import {AdSkipButton, type AdStyles, type VegaAds} from 'react-native-vega-ads';
+import {Text, View} from 'react-native';
+import {
+  AdSkipButton,
+  layoutScale,
+  type AdStyles,
+  type VegaAds,
+} from 'react-native-vega-ads';
 import type {CaptionSettings} from '../captionSettings';
-import {colors, fonts} from '../theme';
+import {colors, fonts, layoutStyles} from '../theme';
 import {timecode} from '../time';
 import {Timeline} from './Timeline';
 
@@ -78,7 +83,12 @@ export const AdLayer = ({
           testID="ad-caption"
           style={styles.captionBox}
           pointerEvents="none">
-          <Text style={[styles.caption, {fontSize: captions.fontSize}]}>
+          <Text
+            style={[
+              styles.caption,
+              // The setting is in the 1920x1080 layout, like the other sizes.
+              {fontSize: captions.fontSize * layoutScale()},
+            ]}>
             {ui.caption}
           </Text>
         </View>
@@ -88,7 +98,7 @@ export const AdLayer = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = layoutStyles({
   root: {position: 'absolute', top: 0, bottom: 0, left: 0, right: 0},
   panel: {
     position: 'absolute',
@@ -150,7 +160,7 @@ const styles = StyleSheet.create({
 });
 
 /** The library's Skip button (focus, VoiceView, the focus anchor) in the demo's look. */
-const skipStyles: AdStyles = StyleSheet.create({
+const skipStyles: AdStyles = layoutStyles({
   skip: {
     right: 96,
     bottom: 54,

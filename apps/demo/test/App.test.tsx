@@ -2,6 +2,7 @@ import React from 'react';
 import TestRenderer, {act} from 'react-test-renderer';
 
 jest.mock('react-native-vega-ads', () => ({
+  scaleStyles: (styles: object) => styles,
   watchReport: () => ({}),
   watchReportLabel: () => '',
 }));
