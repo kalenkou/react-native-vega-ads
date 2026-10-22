@@ -150,6 +150,68 @@ describe('scaleStyles', () => {
     });
   });
 
+  it('halves the logical lengths of React Native 0.83: inset, block and inline margin and padding, corners, outline', () => {
+    const scaled = scaleStyles(
+      {
+        box: {
+          inset: 2,
+          insetBlock: 4,
+          insetBlockStart: 6,
+          insetBlockEnd: 8,
+          insetInline: 10,
+          insetInlineStart: 12,
+          insetInlineEnd: 14,
+          marginBlock: 16,
+          marginBlockStart: 18,
+          marginBlockEnd: 20,
+          marginInline: 22,
+          marginInlineStart: 24,
+          marginInlineEnd: 26,
+          paddingBlock: 28,
+          paddingBlockStart: 30,
+          paddingBlockEnd: 32,
+          paddingInline: 34,
+          paddingInlineStart: 36,
+          paddingInlineEnd: 38,
+          borderStartStartRadius: 40,
+          borderStartEndRadius: 42,
+          borderEndStartRadius: 44,
+          borderEndEndRadius: 46,
+          outlineWidth: 48,
+          outlineOffset: 50,
+        },
+      },
+      0.5,
+    );
+    expect(scaled.box).toEqual({
+      inset: 1,
+      insetBlock: 2,
+      insetBlockStart: 3,
+      insetBlockEnd: 4,
+      insetInline: 5,
+      insetInlineStart: 6,
+      insetInlineEnd: 7,
+      marginBlock: 8,
+      marginBlockStart: 9,
+      marginBlockEnd: 10,
+      marginInline: 11,
+      marginInlineStart: 12,
+      marginInlineEnd: 13,
+      paddingBlock: 14,
+      paddingBlockStart: 15,
+      paddingBlockEnd: 16,
+      paddingInline: 17,
+      paddingInlineStart: 18,
+      paddingInlineEnd: 19,
+      borderStartStartRadius: 20,
+      borderStartEndRadius: 21,
+      borderEndStartRadius: 22,
+      borderEndEndRadius: 23,
+      outlineWidth: 24,
+      outlineOffset: 25,
+    });
+  });
+
   it('halves translateX and translateY in a transform and keeps scale and rotate', () => {
     const scaled = scaleStyles(
       { moved: { transform: [{ translateX: 40 }, { translateY: -20 }, { scale: 1.2 }, { rotate: '10deg' }] } },

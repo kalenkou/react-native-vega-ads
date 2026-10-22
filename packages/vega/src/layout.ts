@@ -71,6 +71,32 @@ const LENGTHS = new Set([
   'letterSpacing',
   'shadowRadius',
   'textShadowRadius',
+  // The logical and outline lengths that React Native 0.83 adds.
+  'inset',
+  'insetBlock',
+  'insetBlockStart',
+  'insetBlockEnd',
+  'insetInline',
+  'insetInlineStart',
+  'insetInlineEnd',
+  'marginBlock',
+  'marginBlockStart',
+  'marginBlockEnd',
+  'marginInline',
+  'marginInlineStart',
+  'marginInlineEnd',
+  'paddingBlock',
+  'paddingBlockStart',
+  'paddingBlockEnd',
+  'paddingInline',
+  'paddingInlineStart',
+  'paddingInlineEnd',
+  'borderStartStartRadius',
+  'borderStartEndRadius',
+  'borderEndStartRadius',
+  'borderEndEndRadius',
+  'outlineWidth',
+  'outlineOffset',
 ]);
 
 /** `shadowOffset` and `textShadowOffset`: `{ width, height }` in the same units. */
@@ -113,8 +139,8 @@ function mapRecord(
 
 /**
  * Styles written for the 1920-wide layout, with every length multiplied by `scale`, so they look
- * the same on React Native 0.72 and 0.83. Lengths are positions, sizes, padding, margin, borders,
- * gaps, font size, line height, letter spacing, shadow radius and offset, and `translateX` and
+ * the same on React Native 0.72 and 0.83. Lengths are positions and insets, sizes, padding, margin
+ * (also by block and inline), borders, outlines, gaps, font size, line height, letter spacing, shadow radius and offset, and `translateX` and
  * `translateY`. Percentages, z-order, opacity, flex and `scale` or `rotate` transforms stay as they
  * are.
  */

@@ -4,6 +4,10 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ## [Unreleased]
 
+### Fixed
+
+- `scaleStyles()` also scales the logical lengths of React Native 0.83: `inset`, block and inline margin and padding, logical corner radii, `outlineWidth` and `outlineOffset`.
+
 ### Documentation
 
 - API reference: a pitfall on React Native 0.83. The first read of `AdIdRetriever` can hold the JavaScript thread for up to 2.6 s on a cold start (FL-38). Pass `adId` after your first screen is drawn. The demo's movie page now asks for the ad plan when its poster has loaded.
