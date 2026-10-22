@@ -4,6 +4,8 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-23
+
 ### Fixed
 
 - `scaleStyles()` also scales the logical lengths of React Native 0.83: `inset`, block and inline margin and padding, logical corner radii, `outlineWidth` and `outlineOffset`.
@@ -11,6 +13,13 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 ### Documentation
 
 - API reference: a pitfall on React Native 0.83. The first read of `AdIdRetriever` can hold the JavaScript thread for up to 2.6 s on a cold start (FL-38). Pass `adId` after your first screen is drawn. The demo's movie page now asks for the ad plan when its poster has loaded.
+- `packages/vega/README.md`: the seek bar example ends a slide when a break starts (`breakStart` in `onEvent`).
+- `SECURITY.md`: where the Dependabot alerts of the example apps come from.
+
+### Example apps
+
+- The demo asks for the ad plan after the movie page is drawn. After Next it never shows the plan of the previous movie. On React Native 0.83 the P90 of fully drawn fell from 6.3 s to 5.5 s in 30 cold launches.
+- `apps/streaming-kit`: Back from a movie returns the focus to its poster.
 
 ## [0.1.2] - 2026-10-23
 
@@ -82,7 +91,8 @@ First release.
 - `vegaAdIdSource` for the Fire TV advertising ID. `preloadVegaAds` and `useAdPlan` for the title page. `rnvPlayerPort` for react-native-video v7.
 - Preview: `useStitchedAds` (IAB tracking of ads stitched into the stream by a server). `HeadlessPlayerService` and `HeadlessPlayerAdapter` (Amazon's headless player approach). `createAdPlayer` for ad players that are any `PlayerPort`.
 
-[Unreleased]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/kalenkou/react-native-vega-ads/releases/tag/v0.1.0
