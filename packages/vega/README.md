@@ -56,6 +56,47 @@ Required in `manifest.toml`: the media category, the `IMediaPlaybackServer` inte
 
 Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmedia`, `@amazon-devices/react-native-kepler`.
 
+### Ad breaks on your seek bar
+
+`ads.timeline.marks` lists the mid-rolls: `id`, `time` in content seconds, and `done` once the
+break has played. Draw them on your own seek bar. This example uses react-native-video v7 and
+`@react-native-community/slider` on React Native 0.83. Both need their Vega ports, pull requests
+[#5171](https://github.com/TheWidlarzGroup/react-native-video/pull/5171) and
+[#839](https://github.com/callstack/react-native-slider/pull/839), not merged yet. On a Fire TV
+Stick it marks the two breaks of Sintel at 2:42 and 9:03, and the remote moves the slider.
+
+```tsx
+const player = useVideoPlayer({ uri });
+const content = useMemo(() => rnvPlayerPort(player), [player]);
+const schedule = useMemo(() => ({ vmapUrl }), [vmapUrl]);
+const [time, setTime] = useState(0);
+const [duration, setDuration] = useState(0);
+useEvent(player, 'onLoad', ({ duration: seconds }) => setDuration(seconds));
+useEvent(player, 'onProgress', ({ currentTime }) => setTime(currentTime));
+
+<VegaAdsPlayer player={content} ads={schedule}>
+  {({ ads }) => (
+    <>
+      <VideoView player={player} style={StyleSheet.absoluteFill} />
+      {!ads.playing && duration > 0 && (
+        <View style={styles.bar}>
+          {ads.timeline.marks.map((mark) => (
+            <View
+              key={mark.id}
+              style={[styles.mark, { left: `${(mark.time / duration) * 100}%` }, mark.done && styles.played]}
+            />
+          ))}
+          <Slider value={time} maximumValue={duration} step={10} onSlidingComplete={(s) => player.seekTo(s)} />
+        </View>
+      )}
+    </>
+  )}
+</VegaAdsPlayer>;
+```
+
+`styles.mark` is a thin bar with `position: 'absolute'`. To line the marks up with the thumb, inset
+them by half the thumb width on both sides.
+
 ### Headless approach (preview)
 
 Amazon's CSAI guide offers a second way: the w3cmedia players run in a service component of
