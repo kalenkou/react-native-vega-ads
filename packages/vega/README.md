@@ -100,7 +100,12 @@ useEvent(player, 'onProgress', ({ currentTime }) => {
   if (currentTime > 0) setStarted(true);
 });
 
-<VegaAdsPlayer player={content} ads={schedule}>
+<VegaAdsPlayer
+  player={content}
+  ads={schedule}
+  // a break that starts during a key hold hides the bar before the slide ends: end it here
+  onEvent={(name) => name === 'breakStart' && (sliding.current = false)}
+>
   {({ ads }) => (
     <>
       <VideoView player={player} style={StyleSheet.absoluteFill} />
