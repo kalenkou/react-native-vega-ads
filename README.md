@@ -30,7 +30,12 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 
   The [Quick start](#quick-start) has the manifest entries and a public test VMAP.
 
-> Tested on a Fire TV Stick 4K Select (Vega OS 2.0) with React Native 0.72 and 0.83. The API can change before 1.0.
+| React Native | Vega SDK | Tested on |
+| --- | --- | --- |
+| 0.72 | 0.23 and 0.24 | Fire TV Stick 4K Select, Vega OS 2.0 |
+| 0.83 | 0.24 | Fire TV Stick 4K Select, Vega OS 2.0 |
+
+The API can change before 1.0.
 
 Measured on that stick: the switch from the movie to an ad takes 56-151 ms. In an 11-minute stress test with 27 ads on React Native 0.72, memory peaked at 91 MB. Then it stayed at 65-68 MB. More: [device results](docs/device-results.md).
 
