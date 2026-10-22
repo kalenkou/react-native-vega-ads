@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { MAX_REDIRECTS, useVegaVideoPlayer, useVideoPlayer, VERSION } from '../src';
+import { layoutScale, MAX_REDIRECTS, scaleStyles, useVegaVideoPlayer, useVideoPlayer, VERSION } from '../src';
 
 describe('package smoke test', () => {
   it('exposes the version from package.json', () => {
@@ -14,5 +14,10 @@ describe('package smoke test', () => {
 
   it('exports the default maxRedirects, so an app can raise it without a direct dependency on core', () => {
     expect(MAX_REDIRECTS).toBe(5);
+  });
+
+  it('exports the layout scale, so an app can size its own UI for React Native 0.72 and 0.83', () => {
+    expect(layoutScale(960)).toBe(0.5);
+    expect(scaleStyles({ a: { fontSize: 28 } }, 0.5)).toEqual({ a: { fontSize: 14 } });
   });
 });

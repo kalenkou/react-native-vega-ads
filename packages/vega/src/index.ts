@@ -16,6 +16,7 @@ export type { AdCountdownProps } from './AdCountdown';
 export { PauseAd } from './PauseAd';
 export type { PauseAdProps } from './PauseAd';
 export type { AdStyles } from './AdStyles';
+export { LAYOUT_WIDTH, layoutScale, scaleStyles } from './layout';
 
 // Hooks
 export { useVegaAds } from './useVegaAds';

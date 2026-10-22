@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import type { AdUiState } from 'react-native-ads-core';
 import type { AdStyles } from './AdStyles';
+import { scaleStyles } from './layout';
 
 export interface AdSkipButtonProps {
   /** `ads.ui` */
@@ -54,17 +55,20 @@ export function AdSkipButton({ ui, onSkip, styles: app = {} }: AdSkipButtonProps
 }
 
 const styles = StyleSheet.create({
-  skip: {
-    position: 'absolute',
-    right: 48,
-    bottom: 64,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderColor: '#fff',
-    borderWidth: 2,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  skipWaiting: { opacity: 0.6 },
-  skipText: { color: '#fff', fontSize: 28 },
+  ...scaleStyles({
+    skip: {
+      position: 'absolute',
+      right: 48,
+      bottom: 64,
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      borderColor: '#fff',
+      borderWidth: 2,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+    },
+    skipWaiting: { opacity: 0.6 },
+    skipText: { color: '#fff', fontSize: 28 },
+  }),
+  // Not drawn: the focus target stays one unit.
   focusAnchor: { position: 'absolute', width: 1, height: 1, opacity: 0 },
 });

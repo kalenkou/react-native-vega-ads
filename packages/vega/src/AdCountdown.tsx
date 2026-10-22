@@ -2,6 +2,7 @@ import { type ReactElement, useEffect, useRef } from 'react';
 import { AccessibilityInfo, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { adCountdownState, type AdUiStrings } from 'react-native-ads-core';
 import type { AdStyles } from './AdStyles';
+import { scaleStyles } from './layout';
 
 export interface AdCountdownProps {
   /** `ads.timeline.nextBreakIn`: whole seconds to the next break, or null. */
@@ -41,13 +42,15 @@ export function AdCountdown({ nextBreakIn, strings, style, styles: app = {} }: A
   );
 }
 
-const styles = StyleSheet.create({
-  root: { position: 'absolute', right: 48, top: 40, zIndex: 10 },
-  label: {
-    color: '#fff',
-    fontSize: 24,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-});
+const styles = StyleSheet.create(
+  scaleStyles({
+    root: { position: 'absolute', right: 48, top: 40, zIndex: 10 },
+    label: {
+      color: '#fff',
+      fontSize: 24,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+  }),
+);

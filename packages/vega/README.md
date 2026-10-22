@@ -141,6 +141,22 @@ Checked on a Fire TV Stick 4K Select (muted), a 110 s stream with a 10 s pre-rol
 mid-roll at 1:10: impression, start, quartiles and skip of the pre-roll (skip at 5 s moved the
 player to 0:10), the full mid-roll to `complete`. In 4 of 5 runs all 11 pixels reached the ad server. One run sent no event after Skip. The cause is not known.
 
+### React Native 0.72 and 0.83
+
+React Native 0.72 on Vega lays out in physical pixels, 1920x1080 on a 1080p TV. React Native 0.83
+lays out in dp on a 960x540 canvas, so the same numbers draw twice as big. The built-in ad UI
+(label, Skip, countdown, captions, pause ad) is sized for 1920x1080 and scales itself with the
+window width, so it looks the same on both. Your own styles from a 0.72 app can do the same:
+
+```tsx
+import { scaleStyles } from 'react-native-vega-ads';
+
+// Written for 1920x1080. Lengths are halved on React Native 0.83, kept on 0.72.
+const styles = StyleSheet.create(scaleStyles({ title: { fontSize: 48, marginBottom: 24 } }));
+```
+
+`layoutScale()` gives the factor itself: 1 on React Native 0.72, 0.5 on 0.83. Styles you pass in
+`styles` or `pauseAdStyle` are yours and are not scaled.
 
 ## License
 
