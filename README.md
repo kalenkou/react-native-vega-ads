@@ -152,7 +152,7 @@ export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: 
 
 Your own controls, ad overlay or player (Shaka, react-native-video v7) and ads loaded on the title page: see the [Guide](docs/guide.md).
 
-## Fixes I sent upstream
+## Fixes in other libraries
 
 To build vega-ads, I fixed gaps in libraries that Vega apps use. I sent each fix to the library itself. All are open pull requests. None is merged or reviewed yet.
 
