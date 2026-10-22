@@ -6,7 +6,11 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ### Added
 
-- `layoutScale()` and `scaleStyles()`: React Native 0.83 on Vega lays out in dp on a 960x540 canvas, so sizes written for the 1920x1080 layout of React Native 0.72 draw twice as big. The built-in ad UI (label, Skip, countdown, captions, pause ad) now scales itself with the window width and looks the same on both. Apps can scale their own 1920x1080 styles with `scaleStyles`. Styles passed in `styles` and `pauseAdStyle` are not scaled.
+- `layoutScale()` and `scaleStyles()`: React Native 0.83 on Vega lays out in dp on a 960x540 canvas. Sizes written for the 1920x1080 layout of React Native 0.72 draw twice as big there. The built-in ad UI (label, Skip, countdown, captions, pause ad) now scales itself with the window width and looks the same on both. Apps can scale their own 1920x1080 styles with `scaleStyles`. Styles passed in `adStyles`, `styles` and `pauseAdStyle` are not scaled.
+
+### Changed
+
+- The built-in ad UI reads the window width once, when the package loads, and scales its 1920x1080 sizes by it. In Jest, mock `Dimensions.get('window')` to 1920x1080 before the import, or the UI renders at the size of the mock's window.
 
 ### Documentation
 

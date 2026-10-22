@@ -128,6 +128,16 @@ The type of `name` is `AdEventName`, so your editor completes the names. It stil
 | Only VAST/VMAP parsing and IAB tracking, any platform | `react-native-ads-core`: `requestVast`, `requestVmap`, `AdTracker` | no React, no Vega |
 | Ad timing without the library's players | `AdManager` from `react-native-ads-core` with your own `PlayerPort` | your players and surfaces |
 
+## Layout on React Native 0.72 and 0.83
+
+| Export | What it is |
+|---|---|
+| `LAYOUT_WIDTH` | 1920, the width the built-in ad UI is drawn for |
+| `layoutScale(width?)` | the window width over 1920: 1 on React Native 0.72 on Vega, 0.5 on 0.83, 1 when the width is not known. Read once, when the package loads |
+| `scaleStyles(styles, scale?)` | the same styles with every length multiplied by `scale`: positions, sizes, padding, margin, borders, gaps, font size, line height, letter spacing, shadow radius and offset, `translateX` and `translateY`. Percentages, flex, opacity and z-order stay |
+
+The built-in ad UI scales itself. `adStyles`, `styles` and `pauseAdStyle` are not scaled.
+
 ## Pitfalls
 
 - `null` means different things. `ads={null}` on `<VegaAdsPlayer>` plays the content without ads. `source: null` in `useVegaAds` waits and starts nothing. To play without ads through the hook, pass `source: { breaks: [] }`.

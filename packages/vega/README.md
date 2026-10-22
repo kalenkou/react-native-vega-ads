@@ -59,26 +59,44 @@ Peer dependencies: `react`, `react-native`, `@amazon-devices/react-native-w3cmed
 ### Ad breaks on your seek bar
 
 `ads.timeline.marks` lists the mid-rolls: `id`, `time` in content seconds, and `done` once the
-break has played. Draw them on your own seek bar. This example uses react-native-video v7 and
-`@react-native-community/slider` on React Native 0.83. Both need their Vega ports, pull requests
-[#5171](https://github.com/TheWidlarzGroup/react-native-video/pull/5171) and
-[#839](https://github.com/callstack/react-native-slider/pull/839), not merged yet. On a Fire TV
-Stick it marks the two breaks of Sintel at 2:42 and 9:03, and the remote moves the slider.
+break has started or a seek has passed it. Draw them on your own seek bar. This example uses
+react-native-video v7 and `@react-native-community/slider` on React Native 0.83. Both need their
+Vega ports, pull requests [#5171](https://github.com/TheWidlarzGroup/react-native-video/pull/5171)
+and [#839](https://github.com/callstack/react-native-slider/pull/839), not merged yet. The whole
+screen is in [`apps/streaming-kit`](https://github.com/kalenkou/react-native-vega-ads/tree/main/apps/streaming-kit).
+On a Fire TV Stick it marks the two breaks of Sintel at 2:42 and 9:03, and the remote moves the
+slider.
 
 ```tsx
-const player = useVideoPlayer({ uri });
-const content = useMemo(() => rnvPlayerPort(player), [player]);
+const player = useVideoPlayer({ uri }, (p) => {
+  p.showNotificationControls = true; // the remote's play/pause goes to the movie
+});
+const content = useMemo(
+  () =>
+    rnvPlayerPort(player, {
+      // after a break, the ad players give the remote back to the movie
+      takeMediaControlFocus: async () => {
+        player.showNotificationControls = true;
+      },
+    }),
+  [player],
+);
 const schedule = useMemo(() => ({ vmapUrl }), [vmapUrl]);
 const [time, setTime] = useState(0);
 const [duration, setDuration] = useState(0);
+const [started, setStarted] = useState(false);
+const sliding = useRef(false); // while a key moves the thumb, the clock must not pull it back
 useEvent(player, 'onLoad', ({ duration: seconds }) => setDuration(seconds));
-useEvent(player, 'onProgress', ({ currentTime }) => setTime(currentTime));
+useEvent(player, 'onProgress', ({ currentTime }) => {
+  if (!sliding.current) setTime(currentTime);
+  if (currentTime > 0) setStarted(true);
+});
 
 <VegaAdsPlayer player={content} ads={schedule}>
   {({ ads }) => (
     <>
       <VideoView player={player} style={StyleSheet.absoluteFill} />
-      {!ads.playing && time > 0 && (
+      {started && !ads.playing && duration > 0 && (
         <View style={styles.bar}>
           {ads.timeline.marks.map((mark) => (
             <View
@@ -86,7 +104,18 @@ useEvent(player, 'onProgress', ({ currentTime }) => setTime(currentTime));
               style={[styles.mark, { left: `${(mark.time / duration) * 100}%` }, mark.done && styles.played]}
             />
           ))}
-          <Slider value={time} maximumValue={duration} step={10} onSlidingComplete={(s) => player.seekTo(s)} />
+          <Slider
+            hasTVPreferredFocus
+            value={time}
+            maximumValue={duration}
+            step={10}
+            onSlidingStart={() => (sliding.current = true)}
+            onSlidingComplete={(seconds) => {
+              sliding.current = false;
+              setTime(seconds);
+              player.seekTo(seconds);
+            }}
+          />
         </View>
       )}
     </>
@@ -94,9 +123,9 @@ useEvent(player, 'onProgress', ({ currentTime }) => setTime(currentTime));
 </VegaAdsPlayer>;
 ```
 
-The bar waits for `time > 0`: the movie starts only after the pre-roll, so the bar does not show
-before it. `styles.mark` is a thin bar with `position: 'absolute'`. To line the marks up with the
-thumb, inset them by half the thumb width on both sides.
+The bar waits for `started`: the movie starts only after the pre-roll, so the bar does not show
+before it, and it hides during each break. `styles.mark` is a thin bar with `position: 'absolute'`.
+To line the marks up with the thumb, inset them by half the thumb width on both sides.
 
 ### Headless approach (preview)
 
@@ -197,8 +226,10 @@ import { scaleStyles } from 'react-native-vega-ads';
 const styles = StyleSheet.create(scaleStyles({ title: { fontSize: 48, marginBottom: 24 } }));
 ```
 
-`layoutScale()` gives the factor itself: 1 on React Native 0.72, 0.5 on 0.83. Styles you pass in
-`styles` or `pauseAdStyle` are yours and are not scaled.
+`layoutScale()` gives the factor itself: 1 on React Native 0.72, 0.5 on 0.83. It is read once, when
+the package loads. Styles you pass in `adStyles` (on `VegaAdsPlayer`), `styles` (on each part) or
+`pauseAdStyle` are yours and are not scaled. In Jest, mock `Dimensions.get('window')` to 1920x1080
+before the import, or the built-in UI renders at the size of the mock's window.
 
 ## License
 

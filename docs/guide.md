@@ -178,8 +178,20 @@ import { useVideoPlayer, VideoView } from 'react-native-video';
 import { rnvPlayerPort, VegaAdsPlayer } from 'react-native-vega-ads';
 
 export function PlayerScreen({ uri, vmapUrl }: { uri: string; vmapUrl: string }) {
-  const player = useVideoPlayer({ uri }); // do not call play() here: the ads start the content
-  const content = useMemo(() => rnvPlayerPort(player), [player]);
+  // Do not call play() here: the ads start the content. showNotificationControls gives the
+  // remote's play/pause to the content, and the port asks for it again after each break.
+  const player = useVideoPlayer({ uri }, (p) => {
+    p.showNotificationControls = true;
+  });
+  const content = useMemo(
+    () =>
+      rnvPlayerPort(player, {
+        takeMediaControlFocus: async () => {
+          player.showNotificationControls = true;
+        },
+      }),
+    [player],
+  );
   return (
     <VegaAdsPlayer player={content} ads={{ vmapUrl }}>
       <VideoView player={player} style={StyleSheet.absoluteFill} />
