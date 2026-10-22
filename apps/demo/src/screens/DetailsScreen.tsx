@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {Image, Text, TouchableOpacity, View} from 'react-native';
 import {AdIdRetriever} from '@amazon-devices/kepler-adid-retriever';
 import {adPlanLabel, useAdPlan, type AdPlan} from 'react-native-vega-ads';
@@ -34,6 +34,23 @@ function prerollLabel(plan: AdPlan): string {
   return `${ads} · ${pre.seconds} s${skip}`;
 }
 
+/**
+ * Asks for the ad plan and hands it to the page. The page mounts it only after the poster is drawn:
+ * on a cold start the first read of `AdIdRetriever` waits for Vega's ad ID service and holds the
+ * JavaScript thread for 1.4 to 2.6 s (FL-38). Before the poster, that wait delays the whole page.
+ */
+const AdPlanRequest = ({
+  vmapUrl,
+  onPlan,
+}: {
+  vmapUrl: string;
+  onPlan: (plan: AdPlan | null) => void;
+}) => {
+  const plan = useAdPlan({vmapUrl}, {adId: AdIdRetriever});
+  useEffect(() => onPlan(plan), [plan, onPlan]);
+  return null;
+};
+
 /** The movie page: poster, story, Play (with the D-pad focus), the next title and the break map. */
 export const DetailsScreen = ({
   movie,
@@ -54,9 +71,14 @@ export const DetailsScreen = ({
       globalThis as {performance?: {reportFullyDrawn?: () => void}}
     ).performance?.reportFullyDrawn?.();
   }, []);
-  // Ask for the schedule and the pre-roll now: after Play the ad only has to buffer,
-  // and the viewer sees how many ads the movie has before pressing Play.
-  const plan = useAdPlan({vmapUrl: movie.vmapUrl}, {adId: AdIdRetriever});
+  // Ask for the schedule and the pre-roll once the poster is drawn: after Play the ad only has to
+  // buffer, and the viewer sees how many ads the movie has before pressing Play.
+  const [drawn, setDrawn] = useState(false);
+  const [plan, setPlan] = useState<AdPlan | null>(null);
+  const handleDrawn = useCallback(() => {
+    setDrawn(true);
+    onDrawn?.();
+  }, [onDrawn]);
 
   return (
     <View style={styles.root}>
@@ -64,9 +86,16 @@ export const DetailsScreen = ({
         source={{uri: movie.poster}}
         style={styles.poster}
         resizeMode="cover"
-        onLoad={onDrawn}
-        onError={onDrawn}
+        onLoad={handleDrawn}
+        onError={handleDrawn}
       />
+      {drawn && (
+        <AdPlanRequest
+          key={movie.vmapUrl}
+          vmapUrl={movie.vmapUrl}
+          onPlan={setPlan}
+        />
+      )}
       <View style={styles.scrim} />
       <View style={styles.content}>
         <Text style={styles.title}>{movie.title}</Text>
