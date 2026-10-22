@@ -34,9 +34,38 @@ export interface PlayState {
   viewing: boolean;
   /** An ad is on screen. */
   adOnScreen: boolean;
-  /** The movie has played in this viewing. Until then the pre-roll is still loading. */
+  /**
+   * The movie has played in this viewing, or the library has handed over to it (see
+   * contentTakesOver). Until then the pre-roll is still loading.
+   */
   contentBegun: boolean;
   contentPaused: boolean;
+}
+
+/**
+ * An onEvent name after which the movie is the viewer's to play: the break is over, empty, cut
+ * off or late, or the start failed. Play must work then even when the browser refused to start
+ * the movie without a click.
+ */
+export function contentTakesOver(eventName: string): boolean {
+  return (
+    eventName === 'breakEnd' ||
+    eventName === 'error:start' ||
+    /^break:.+:(empty|interrupted|superseded|late)$/.test(eventName)
+  );
+}
+
+export type BackAction = 'closePauseAd' | 'closePlayer' | null;
+
+/**
+ * Back, as on the TV: a pause ad closes first. Otherwise the player closes, also during an ad
+ * (VegaAdsPlayer's default `backDuringAd: 'app'`), so Back never skips an ad.
+ */
+export function backAction(state: { viewing: boolean; pauseAdOnScreen: boolean }): BackAction {
+  if (!state.viewing) {
+    return null;
+  }
+  return state.pauseAdOnScreen ? 'closePauseAd' : 'closePlayer';
 }
 
 export type PlayAction = 'restart' | 'start' | 'toggleAd' | 'wait' | 'playContent' | 'pauseContent';

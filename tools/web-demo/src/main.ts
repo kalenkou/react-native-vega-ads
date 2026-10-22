@@ -20,7 +20,7 @@ import type {
   SessionSnapshot,
 } from 'react-native-ads-core';
 import { AdTag, isHttpUrl, SAMPLE_TAGS, scheduleFor, tagFromQuery, tagProblem, tagQuery } from './adTag';
-import { AdAnnouncer, keyAction, KeyTarget, playAction } from './controls';
+import { AdAnnouncer, backAction, contentTakesOver, keyAction, KeyTarget, playAction } from './controls';
 import { HtmlVideoPort, VideoElement } from './HtmlVideoPort';
 import { mirrorHttp } from './mirrorHttp';
 
@@ -442,6 +442,7 @@ function start(): void {
     },
     onEvent: (name, info) => {
       if (manager !== created) return;
+      if (contentTakesOver(name)) contentBegun = true;
       events.push(name);
       const ad = info.ad ? ` · ${info.ad.title ?? info.ad.id ?? 'ad'}` : '';
       const where = info.breakId && !name.startsWith('break:') ? ` · ${info.breakId}` : '';
@@ -490,16 +491,16 @@ function togglePlay(): void {
   }
 }
 
-/**
- * Back, as on the TV: a pause ad closes first. Otherwise the player closes, also during an ad
- * (VegaAdsPlayer's default `backDuringAd: 'app'`), so Back never skips an ad.
- */
 function back(): void {
-  if (!manager || manager.closePauseAd()) {
-    return;
+  switch (backAction({ viewing: manager !== null, pauseAdOnScreen: pauseAd !== null })) {
+    case 'closePauseAd':
+      manager?.closePauseAd();
+      break;
+    case 'closePlayer':
+      log('event', 'Back: the player closes, as on the TV');
+      void load();
+      break;
   }
-  log('event', 'Back: the player closes, as on the TV');
-  void load();
 }
 
 function seekBy(seconds: number): void {
