@@ -309,3 +309,21 @@ Test setup: Fire TV Stick 4K Select with Vega OS 2.0 (TV Ship/515) and Vega SDK 
 - **Severity:** medium (a developer finds out on the device, one library at a time, and half of the crashes do not name the package).
 - **Workaround:** try each native library on the device before building on it. For sound and video, use w3cmedia directly (`AudioPlayer`, `VideoPlayer`).
 - **Suggestion:** at build time, warn about packages that have Android or iOS native code but no `.kepler` files and no Amazon port. Make the `__fbBatchedBridgeConfig` error name the module that was asked for.
+
+## FL-34 · The moduleName API of SplashScreenManager finds no splash screen in a React Native 0.83 app (2026-10-22)
+- **Task:** keep the native splash screen until the app is ready, from plain JavaScript and not from a hook. The `hide()` of react-native-bootsplash needs this. Fire TV Stick 4K Select, Vega OS 2.0, React Native 0.83 (`@amazon-devices/react-native-kepler` 4.0.1), release build, `SplashScreenImages.zip` in `assets/raw`.
+- **Steps:** at module scope, `SplashScreenManager.preventAutoHideAsync(name)` with the `name` from `app.json` (`dev.kalenkou.rnv7test.main`). Later `hideAsync(name)`.
+- **Expected:** the 0.83 SplashScreenManager page says the "moduleName parameter maps to the name field in your app's app.json file". The splash stays until `hideAsync`.
+- **Actual:** `preventAutoHideAsync` rejects with "[SplashScreenManager] No registered splash screen for module: dev.kalenkou.rnv7test.main". `hideAsync` rejects with "Splash screen not found or already dismissed". The splash hides on the first frame. The comment in the source says the name must match the "screenKey that users register in app's main.cpp create() method". A React Native app has no such file. `AppRegistry.getAppKeys()[0]` is `LogBox`, not the app.
+- **Severity:** medium (the documented API without hooks does nothing in a React Native 0.83 app, and the hooks work only inside a component).
+- **Workaround:** the native module also has `preventAutoHideV2(rootTag)` and `hideV2(rootTag)`, which the hooks use. `AppRegistry.setWrapperComponentProvider` gets the root tag before the first render. With it the splash stayed until `hideV2`: screenshots show it, and the system log has the app's `state-change/foreground` right after the hide. react-native-bootsplash PR #808 works this way.
+- **Suggestion:** make the moduleName API work with the `app.json` name, or mark it as not for React Native apps. Add a documented API by root tag that works outside a component.
+
+## FL-35 · The VVD lacks the player client and server modules, and a build puts them back into manifest.toml (2026-10-22)
+- **Task:** test a seek fix of react-native-video v7 on the Vega Virtual Device (VVD, SDK 0.24.12112). The TV of the stick was off. The test app also has a headless player mode with `@amazon-devices/kepler-player-client` and `kepler-player-server` 2.3.0-rn-83.
+- **Steps:** `vega run-app <aarch64 vpkg> -d VirtualDevice`. Then remove the two `[[needs.module]]` entries from `manifest.toml`, and build again.
+- **Expected:** the app installs, or the build says that the VVD lacks these modules.
+- **Actual:** the install fails with "Module dependency not found". The message goes on: "The Vega Virtual Device is missing modules that are available on a physical device. Test your app using a Fire TV Stick instead". The missing modules are `kepler_player_client_2` and `kepler_player_server_2`. After the entries are removed, the next build writes them back into the source `manifest.toml`: autolinking adds the needs of every package in `node_modules`. The build also says that both packages are "not properly configured", because 2.3.0-rn-83 is not in their `kepler-compatibility.json`.
+- **Severity:** low (a VVD test of one screen needs a separate app setup).
+- **Workaround:** for a VVD build, move both packages out of `node_modules`, replace the service entry file with a stub and remove the needs from `manifest.toml`. Restore everything after the test. With that, the VVD showed the bug with the old code and the fix with the new code.
+- **Suggestion:** ship these modules in the VVD, or let a build option skip them for the VVD. Do not rewrite the source `manifest.toml` during a build without saying so in the output.
