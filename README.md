@@ -119,7 +119,7 @@ Ad and movie URLs must be HTTPS. The w3cmedia player refuses `http://` media and
 
 ```toml
 [network-traffic-policy.cleartext]
-allowed-domains = ["192.168.1.20"]
+allowed-domains = ["192.0.2.20"]
 ```
 
 Keep the usual w3cmedia services of a Vega video app. The build adds the `[[needs.module]]` entries itself. A full manifest: [`apps/demo/manifest.toml`](apps/demo/manifest.toml).
@@ -182,7 +182,7 @@ The core talks to the player through a small `PlayerPort` interface. So it can d
 - [How the breaks are placed](docs/how-breaks-are-placed.md), with the blind-labelled eval of the vision model.
 - [The ad backend on AWS](docs/aws.md): S3, CloudFront, Lambda and DynamoDB from one script.
 - [Amazon requirements](docs/amazon-requirements.md) and [the library's requirements](docs/requirements.md).
-- [Friction log](docs/friction-log.md): 32 problems I hit on the Vega platform, with steps to repeat them and suggestions.
+- [Friction log](docs/friction-log.md): 33 problems I hit on the Vega platform, with steps to repeat them and suggestions.
 
 ## Tools
 
