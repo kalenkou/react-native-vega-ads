@@ -2,6 +2,8 @@
 
 Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega OS 2.0). Each entry has the task, steps, expected and actual results, severity, workaround and a suggestion.
 
+Test setup: Fire TV Stick 4K Select with Vega OS 2.0 (TV Ship/515) and Vega SDK 0.24.12112. The demo app and the spike app use `@amazon-devices/react-native-w3cmedia` 2.1 with React Native 0.72. Entries that name React Native 0.83 or w3cmedia 2.3.2 come from separate test apps.
+
 ## FL-01 · Sample video URL used across docs returns 403 (2026-10-11)
 - **Task:** play a long public MP4 as content in a w3cmedia `VideoPlayer` on Fire TV Stick 4K Select (Vega OS 2.0).
 - **Steps:** `player.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'` (a Google sample bucket used in many player samples. In Amazon's `AmazonAppDev/vega-sports-app` it appears only as a commented-out option).
@@ -159,13 +161,13 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Workaround:** `--build-number 1` in the `build:release` script. All three then pass with 0 errors (info only: no app icon).
 - **Suggestion:** start the template's build number at 1, or make `build-vega --build-type Release` warn when it is 0.
 
-## FL-18 · The media controls manifest check gives different answers for the same manifest (2026-10-11)
+## FL-18 · The media controls manifest check sometimes answers `false`, with no reason (2026-10-11, checked again 2026-10-22)
 - **Task:** make remote and Alexa play/pause reach my players, Fire TV Stick 4K Select, Vega OS 2.0.
-- **Steps:** launch the same build with the same `manifest.toml` 13 times. Read `checkClientManifestForKMC: ... has KMC:` in the system log.
-- **Expected:** the same answer each time.
-- **Actual:** `true` 9 times, `false` 4 times, with no reason logged.
-- **Severity:** unclear. If `false` turns media controls off, remote and voice stop working without any error.
-- **Workaround:** none. I look for this line when a media control test fails.
+- **Steps:** launch my test app many times with the media controls entry in `manifest.toml`. Read `checkClientManifestForKMC: ... has KMC:` in the system log.
+- **Expected:** `true` each time.
+- **Actual:** on 2026-10-11, 4 of 20 launches logged `false`, all within 20 minutes, with no reason. The package was installed again before each launch. In these 4 launches the log has no `MediaControlHandler` setup line, though the app logged 35 to 96 lines of its own. Since then every launch in my saved logs said `true`: 175 launches of 5 apps from 2026-10-12 to 2026-10-22. On 2026-10-22 I checked one possible cause, `command_options = ["Next"]`, used in the voice tests of 2026-10-11 (FL-10). The answer was `true`. An earlier version of this entry said 4 of 13 launches. A recount of the saved logs found 20.
+- **Severity:** low (seen on one day only. When it happens, remote and voice commands may not reach the app, and the app gets no error).
+- **Workaround:** when a media controls test fails, look for this line first and launch the app again.
 - **Suggestion:** log why the check returns `false`, and document what it reads.
 
 ## FL-19 · A video surface created later is drawn on top, whatever its zIndex (2026-10-15)
@@ -293,3 +295,17 @@ Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega
 - **Severity:** medium (a local media server does not work on the VVD, and the reason is only in the system log).
 - **Workaround:** serve media over https for VVD tests.
 - **Suggestion:** apply the same cleartext rule on the VVD as on devices, or say in the VVD docs that it plays https only.
+
+## FL-33 · 10 of 13 popular native libraries crash a Vega app at import, and 5 of them name nothing (2026-10-22)
+- **Task:** see what a developer meets when they add a popular React Native library that has no Amazon port. Fire TV Stick 4K Select, Vega OS 2.0, React Native 0.83, release build.
+- **Steps:** one test app, one library at a time: `npm install`, build, run, `require()` the package, then one call or one render. A global `ErrorUtils` handler prints any fatal error on screen. The 13 packages have 47k to 888k npm downloads a week. None has an Amazon port, and React Native Directory does not mark any of them as Vega-compatible.
+- **Expected:** a build warning that the package has native code but no Vega code. Or a runtime error that names the package.
+- **Actual:**
+  - 10 build, then crash at `require()`. Without the handler the app closes, even inside `try`/`catch`.
+  - 5 of these name the missing module: react-native-config 1.7.2, react-native-blob-util 0.25.1, react-native-audio-api 0.13.6, react-native-bootsplash 7.3.4 and react-native-sound 0.13.0. Example: `TurboModuleRegistry.getEnforcing(...): 'RNSound' could not be found`.
+  - 5 show only "__fbBatchedBridgeConfig is not set, cannot invoke native modules". These are react-native-fs 2.20.0, react-native-restart 0.0.29, react-native-background-timer 2.4.1, react-native-tts 4.1.1 and react-native-track-player 4.1.2. react-native-video v7 shows the same message (FL-23).
+  - 2 do not build: @react-native-community/blur 4.4.1 (`Unable to resolve module ./components/BlurView`) and react-native-image-colors 2.6.1 (needs `expo-modules-core`).
+  - 1 builds and imports but draws nothing: @react-native-picker/picker 2.11.4. Its `Picker` returns `null` on a platform it does not know, without a warning.
+- **Severity:** medium (a developer finds out on the device, one library at a time, and half of the crashes do not name the package).
+- **Workaround:** try each native library on the device before building on it. For sound and video, use w3cmedia directly (`AudioPlayer`, `VideoPlayer`).
+- **Suggestion:** at build time, warn about packages that have Android or iOS native code but no `.kepler` files and no Amazon port. Make the `__fbBatchedBridgeConfig` error name the module that was asked for.
