@@ -1,5 +1,5 @@
 import type { AdUiState } from 'react-native-ads-core';
-import { AdAnnouncer, keyAction, playAction } from '../src/controls';
+import { AdAnnouncer, backAction, contentTakesOver, keyAction, playAction } from '../src/controls';
 
 describe('keyAction', () => {
   it('loads the tag on Enter in the URL field and leaves the other keys to typing', () => {
@@ -62,6 +62,40 @@ describe('playAction', () => {
 
   it('waits while the pre-roll loads: the movie must not start before it', () => {
     expect(playAction({ ...state, contentBegun: false, contentPaused: true })).toBe('wait');
+  });
+});
+
+describe('contentTakesOver', () => {
+  it('is true when the ads before the movie are over, however they ended', () => {
+    expect(contentTakesOver('breakEnd')).toBe(true);
+    expect(contentTakesOver('error:start')).toBe(true);
+    expect(contentTakesOver('break:preroll:empty')).toBe(true);
+    expect(contentTakesOver('break:preroll:interrupted')).toBe(true);
+    expect(contentTakesOver('break:midroll-1:superseded')).toBe(true);
+    expect(contentTakesOver('break:midroll-1:late')).toBe(true);
+  });
+
+  it('is false while an ad break goes on', () => {
+    expect(contentTakesOver('breakStart')).toBe(false);
+    expect(contentTakesOver('impression')).toBe(false);
+    expect(contentTakesOver('start')).toBe(false);
+    expect(contentTakesOver('complete')).toBe(false);
+    expect(contentTakesOver('skipped:repeat')).toBe(false);
+    expect(contentTakesOver('content:ended')).toBe(false);
+  });
+});
+
+describe('backAction', () => {
+  it('closes a pause ad first', () => {
+    expect(backAction({ viewing: true, pauseAdOnScreen: true })).toBe('closePauseAd');
+  });
+
+  it('closes the player otherwise, also during an ad: Back never skips an ad, as on the TV', () => {
+    expect(backAction({ viewing: true, pauseAdOnScreen: false })).toBe('closePlayer');
+  });
+
+  it('does nothing on the movie page', () => {
+    expect(backAction({ viewing: false, pauseAdOnScreen: false })).toBeNull();
   });
 });
 
