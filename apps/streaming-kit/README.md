@@ -35,12 +35,7 @@ Device.
    ```
 
 3. Copy `src/media.example.ts` to `src/media.local.ts`. Set `MEDIA_BASE` to
-   `https://d3f9mqgmbcpau1.cloudfront.net/`, the media of the demo app on its CloudFront.
-   Or run the demo's media server on your computer (step 1 in
-   [the demo README](../demo/README.md)) and use its `http://` address. Then add its host to
-   `apps/streaming-kit/manifest.toml` under `[network-traffic-policy.cleartext]`, as the demo
-   README shows for the demo. Do not commit that. The Vega Virtual Device refuses `http://`
-   media, so use the CloudFront address there.
+   `https://d3f9mqgmbcpau1.cloudfront.net/`. This is the demo app's media on CloudFront.
 4. Install, add the packages of this repository, and build:
 
    ```sh
@@ -57,6 +52,11 @@ Device.
 
    `vega device list` shows the device ID. Use `build/aarch64-release/streaming-kit_aarch64.vpkg`
    on a 64-bit device and on the Vega Virtual Device on a Mac with Apple silicon.
+
+**Your own media server.** You can run the demo's media server on your computer instead (step 1 in
+[the demo README](../demo/README.md)). Set `MEDIA_BASE` to its `http://` address. Add its host to
+`manifest.toml` under `[network-traffic-policy.cleartext]`, as the demo README shows. Do not commit
+that. The Vega Virtual Device refuses `http://` media, so use the CloudFront address there.
 
 The Vega Virtual Device shows no launch screen, so bootsplash is visible only on a Fire TV.
 

@@ -4,8 +4,6 @@ VAST 4 / VMAP 1 and player-independent ad break logic for client-side ad inserti
 
 Most apps get it through [`react-native-vega-ads`](https://github.com/kalenkou/react-native-vega-ads/tree/main/packages/vega). Use it on its own for VAST/VMAP and tracking only. The break logic talks to the player through `PlayerPort`. The Vega adapter is tested on a Fire TV Stick. A browser adapter for an HTML video element is in the [web demo](https://github.com/kalenkou/react-native-vega-ads/tree/main/tools/web-demo).
 
-Part of [react-native-vega-ads](https://github.com/kalenkou/react-native-vega-ads). On Amazon Vega OS use [`react-native-vega-ads`](https://github.com/kalenkou/react-native-vega-ads/tree/main/packages/vega), which wraps this package in a React hook.
-
 ## Ports
 
 `core` never imports a player SDK, `fetch` or timers. Give it:

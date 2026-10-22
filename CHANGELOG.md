@@ -10,7 +10,7 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ### Changed
 
-- The built-in ad UI reads the window width once, when the package loads, and scales its 1920x1080 sizes by it. In Jest, mock `Dimensions.get('window')` to 1920x1080 before the import, or the UI renders at the size of the mock's window.
+- **Upgrade note:** the built-in ad UI reads the window width once, when the package loads, and scales its 1920x1080 sizes by it. In Jest, mock `Dimensions.get('window')` to 1920x1080 before the import, or the UI renders at the size of the mock's window.
 
 ### Documentation
 
@@ -20,7 +20,7 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 ### Tools
 
 - `tools/web-demo`: a web page that runs `react-native-ads-core` with an HTML video element as the player (`HtmlVideoPort`). It plays the demo's movies and ads and logs the ad requests, events and tracking pixels. No change in the packages.
-- `tools/web-demo`: "Your ad tag" loads the URL typed in the field, and a shared `?vmap=` or `?vast=` link opens with that tag. Back closes the player during an ad, as on the TV, instead of skipping the ad. Play while the pre-roll loads no longer starts the movie first. The arrow keys seek after a mouse click on a button. A screen reader hears each ad once. An ad waiting for the next break no longer covers the ad that plays. An http tag on the https page gets the real reason (mixed content). The page is published only after the type check and the tests pass.
+- `tools/web-demo`: your own ad tag, and shared `?vmap=` and `?vast=` links. Fixes for Back, Play, the arrow keys and screen readers.
 
 ## [0.1.1] - 2026-10-22
 

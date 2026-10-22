@@ -1,8 +1,16 @@
 # react-native-vega-ads
 
-VAST/VMAP video ads for React Native on Amazon Vega OS (Fire TV): w3cmedia players, a React hook, video surfaces and a 10-foot overlay.
+Video ads (VAST 4 and VMAP 1) for React Native apps on Amazon Fire TV (Vega OS). One component plays the movie with its ads.
 
 Part of [react-native-vega-ads](https://github.com/kalenkou/react-native-vega-ads). Full guide and manifest entries: [main README](https://github.com/kalenkou/react-native-vega-ads#readme). Device measurements: [docs/device-results.md](https://github.com/kalenkou/react-native-vega-ads/blob/main/docs/device-results.md).
+
+## Install
+
+```sh
+npm install react-native-vega-ads
+```
+
+This also installs `react-native-ads-core`. It runs on Vega OS with React Native 0.72 or 0.83.
 
 ## Use
 

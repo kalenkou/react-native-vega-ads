@@ -1,8 +1,6 @@
 # react-native-vega-ads
 
-[![CI](https://github.com/kalenkou/react-native-vega-ads/actions/workflows/ci.yml/badge.svg)](https://github.com/kalenkou/react-native-vega-ads/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/react-native-vega-ads)](https://www.npmjs.com/package/react-native-vega-ads)
-
-License: [Apache-2.0](LICENSE).
+[![CI](https://github.com/kalenkou/react-native-vega-ads/actions/workflows/ci.yml/badge.svg)](https://github.com/kalenkou/react-native-vega-ads/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/react-native-vega-ads)](https://www.npmjs.com/package/react-native-vega-ads) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 Video ads for React Native apps on Amazon Fire TV (Vega OS). The library reads VAST 4 and VMAP 1, the IAB standards for video ads and ad breaks. It plays the ads on Vega's video player (w3cmedia) and sends the IAB tracking pixels: the requests that tell the ad server an ad was seen. It is for apps that have their own ad server.
 
@@ -19,7 +17,11 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 ## Try it
 
 - **In your browser:** the [web demo](https://kalenkou.github.io/react-native-vega-ads/) runs the same ad logic (`react-native-ads-core`) with a web video element as the player. No Fire TV needed. Its source is in [`tools/web-demo`](tools/web-demo).
-- **On a Fire TV Stick:** download `demo_armv7.vpkg` from the [latest release](https://github.com/kalenkou/react-native-vega-ads/releases/latest) and install it with `vega device install-app -p demo_armv7.vpkg -d <device>`. The demo plays two films with ads, streamed over HTTPS. Its "Compare: ads as usual" button plays the same film with ads on a timer, for comparison. On the Vega Virtual Device of an Apple silicon Mac, use `demo_aarch64.vpkg`. The demo's source is in [`apps/demo`](apps/demo).
+- **On a Fire TV Stick:** download `demo_armv7.vpkg` from the [latest release](https://github.com/kalenkou/react-native-vega-ads/releases/latest). Install it with `vega device install-app -p demo_armv7.vpkg -d <device>`.
+  - The demo plays two films with ads, streamed over HTTPS.
+  - The "Compare: ads as usual" button plays the same film with ads on a timer.
+  - On the Vega Virtual Device of an Apple silicon Mac, use `demo_aarch64.vpkg`.
+  - Source: [`apps/demo`](apps/demo).
 - **In your app:** `npm install react-native-vega-ads`, then
 
   ```tsx
@@ -34,18 +36,18 @@ Measured on that stick: the switch from the movie to an ad takes 56-151 ms. In a
 
 ## Features
 
-- Ads before, during and after the movie (pre-, mid- and post-rolls). The break times come from a VMAP file or from your own list of ad URLs (VAST tags).
-- VAST 4 wrappers (one ad server passes the request on to another), ad pods (several ads in one break) and skippable ads.
-- No black frame between the movie and the ads. The movie resumes where it stopped.
-- Home and Back: in the background the library releases every video player, as Amazon requires. Back in the app, the movie continues at the same second, and ads already shown do not come again. [Details](docs/features.md), including the rare case when the system closes the app first.
-- The remote and Alexa pause and play the ads. The Skip button gets the remote's focus. VoiceView, the Fire TV screen reader, reads out each ad.
-- IAB tracking: the ad server learns when an ad was shown, each quarter of it, pause, skip and errors. It also learns when a break starts and ends.
-- No repeats. The same ad does not come back within 30 minutes. A break has one ad per advertiser. With `avoidRepeats.memory` the app remembers the shown ads across movies and launches.
-- An ad is never louder than the movie, when its VAST says how loud the ad is.
-- Pause ads (an ad with a QR code while the movie is paused) and captions in ads.
-- A break can block ad categories, for example no car ads right after a car crash. The list comes from the VMAP or from your code.
-- Your own ad UI: ad events come with the ad's data (`onEvent(name, info)`). The ad on screen is in `ads.ad`. You can replace the overlay (`renderOverlay`), its styles (`adStyles`) and its texts in any language (`strings`).
-- In preview, the API can change:
+- **Ad breaks.** Ads before, during and after the movie (pre-, mid- and post-rolls). The break times come from a VMAP file or from your own list of ad URLs (VAST tags).
+- **VAST 4.** Wrappers (one ad server passes the request on to another), ad pods (several ads in one break) and skippable ads.
+- **No black frame** between the movie and the ads. The movie resumes where it stopped.
+- **Home and Back.** In the background the library releases every video player, as Amazon requires. Back in the app, the movie continues at the same second, and ads already shown do not come again. [Details](docs/features.md), including the rare case when the system closes the app first.
+- **Remote and Alexa.** They pause and play the ads. The Skip button gets the remote's focus. VoiceView, the Fire TV screen reader, reads out each ad.
+- **IAB tracking.** The ad server learns when an ad was shown, each quarter of it, pause, skip and errors. It also learns when a break starts and ends.
+- **No repeats.** The same ad does not come back within 30 minutes. A break has one ad per advertiser. With `avoidRepeats.memory` the app remembers the shown ads across movies and launches.
+- **Never louder.** An ad is never louder than the movie, when its VAST says how loud the ad is.
+- **Pause ads and captions.** A pause ad shows a QR code while the movie is paused. Ads can have captions.
+- **Blocked categories.** A break can block ad categories, for example no car ads right after a car crash. The list comes from the VMAP or from your code.
+- **Your own ad UI.** Ad events come with the ad's data (`onEvent(name, info)`). The ad on screen is in `ads.ad`. You can replace the overlay (`renderOverlay`), its styles (`adStyles`) and its texts in any language (`strings`).
+- **Preview.** The API of these parts can change:
   - Tracking for server-side ads, where your server puts the ads into the video stream itself.
   - Amazon's headless player, where the video plays in a separate process.
 
