@@ -489,3 +489,22 @@ Muted demo with `7e771f5`, `kill-resume-run.sh`: Play, the pre-roll, about 11 s 
 | Continue | PASS: the app log says `play from 11.6`. The frame 15 s later is at 0:24.5, and no ad impression came after Continue |
 | Back from the player | PASS: the page shows "Play" again (the saved place is cleared) |
 | Regression, `gate-run.sh` 3 runs | PASS 3 of 3: pre-roll, movie, the mid-roll pod without the repeated ad (`notUsed`), movie after the pod, no errors |
+
+## React Native 0.83: cold launch, the streaming kit and a whole film (22-23.10.2026, night)
+
+Muted demo on React Native 0.83 (`apps/demo`), the same stick.
+
+| Check | Result |
+|---|---|
+| Cold launch before the ad plan fix, 30 launches (`kpi-visualizer --certification --kpi cool-start-latency`) | launch to first frame P90 0.88 s. Fully drawn P90 6.3 s, mean 4.0 s, max 11.8 s. Traces: the first `AdIdRetriever` read held the JavaScript thread for 0.5 to 2.6 s (FL-38) |
+| Cold launch with the fix (`8acfbcc`), 30 launches | 28 counted: first frame P90 717 ms, fully drawn P90 5.5 s, mean 3.0 s, max 7.5 s. The tool reported launches 6 and 29 as "crashed" with no crash log, and the stick's crash history has no entry for the app |
+| The next movie after Next (`20d230b`) | PASS: the movie page draws only the plan of the movie on screen |
+| Whole film, Tears of Steel with no key pressed (`5495f91`) | PASS: 5 impressions and 5 completes, no VAST error. The repeated ad was left out, all 5 ads were turned down (up to 7.8 dB), the player closed by itself. PSS 96, 93, 76, 73, 56 and 58 MB. The system log reader stopped for 6 minutes, so the first mid-roll has no sample |
+| A first try of the same run | stopped by the TV. 7 s into the pre-roll the stick logged "Marking window 3 as Unbound due to output removal". The audio sink went away and the system ended the app. HOME woke the display again (`DISPLAY ON`, One Touch Play) |
+
+The streaming kit (`apps/streaming-kit`), muted build.
+
+| Check | Result |
+|---|---|
+| `kit-example-run.sh`, 2 runs | PASS 2 of 2: splash, posters, Sintel with the pre-roll pixels, the seek bar moves 10 s per press, a seek past 2:42 plays the mid-roll, Play/Pause pauses the movie and the ad, Back returns home |
+| Back from Sintel (`67f7a3f`) | PASS: the focus is on the Sintel poster again. One more Right keeps it there |
