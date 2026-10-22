@@ -78,7 +78,7 @@ useEvent(player, 'onProgress', ({ currentTime }) => setTime(currentTime));
   {({ ads }) => (
     <>
       <VideoView player={player} style={StyleSheet.absoluteFill} />
-      {!ads.playing && duration > 0 && (
+      {!ads.playing && time > 0 && (
         <View style={styles.bar}>
           {ads.timeline.marks.map((mark) => (
             <View
@@ -94,8 +94,9 @@ useEvent(player, 'onProgress', ({ currentTime }) => setTime(currentTime));
 </VegaAdsPlayer>;
 ```
 
-`styles.mark` is a thin bar with `position: 'absolute'`. To line the marks up with the thumb, inset
-them by half the thumb width on both sides.
+The bar waits for `time > 0`: the movie starts only after the pre-roll, so the bar does not show
+before it. `styles.mark` is a thin bar with `position: 'absolute'`. To line the marks up with the
+thumb, inset them by half the thumb width on both sides.
 
 ### Headless approach (preview)
 
