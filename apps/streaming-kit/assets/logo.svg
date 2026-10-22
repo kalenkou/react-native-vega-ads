@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="300" viewBox="0 0 480 300">
+  <rect x="150" y="10" width="180" height="180" rx="36" fill="#f28c38"/>
+  <path d="M215 60 L285 100 L215 140 Z" fill="#0b0d12"/>
+  <text x="240" y="262" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial" font-weight="bold" font-size="44" fill="#eef1f6">Vega streaming kit</text>
+</svg>

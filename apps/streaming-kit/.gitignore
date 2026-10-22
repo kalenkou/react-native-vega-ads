@@ -1,0 +1,9 @@
+build
+buildinfo.json
+.tmp
+# The address of your media server (src/media.example.ts shows the shape)
+src/media.local.ts
+# The packed Vega ports (ports/README.md says how to make them)
+ports/*.tgz
+# The lockfile pins the checksums of your own packed ports
+package-lock.json

@@ -165,6 +165,8 @@ To build vega-ads, I fixed gaps in libraries that Vega apps use. I sent each fix
 | [vega-video-sample #14](https://github.com/AmazonAppDev/vega-video-sample/pull/14) | A title with `secure: true` now gets hardware DRM. 3 new tests. |
 | [react-native-multi-tv-app-sample #139](https://github.com/AmazonAppDev/react-native-multi-tv-app-sample/pull/139) | Optional client-side ads on the Vega player screen, with this library. Off by default. |
 
+The [streaming kit](apps/streaming-kit) runs the ports of react-native-video, the slider and bootsplash together in one app.
+
 ## Packages
 
 | Package | What it is |
@@ -188,6 +190,7 @@ The core talks to the player through a small `PlayerPort` interface. So it can d
 ## Tools
 
 - [`apps/demo`](apps/demo): a small Vega app on `<VegaAdsPlayer>`, with a movie page and a player.
+- [`apps/streaming-kit`](apps/streaming-kit): one Fire TV app from four open-source parts. react-native-video v7 plays the movie and this library plays the ads. The slider seeks, with the ad breaks marked on it. Bootsplash holds the launch screen. It needs the Vega ports from the pull requests above.
 - [`tools/make-vmap`](tools/make-vmap): finds the break points in a movie and writes the VMAP.
 - [`tools/demo-ads`](tools/demo-ads): demo ad creatives, VAST, VMAP and a pixel log on your network.
 - [`tools/pixel-collector`](tools/pixel-collector): counts the tracking pixels on AWS Lambda and DynamoDB.

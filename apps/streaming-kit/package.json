@@ -1,0 +1,38 @@
+{
+  "name": "@vega-ads/streaming-kit",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "react-native start",
+    "typecheck": "tsc --noEmit",
+    "build:release": "react-native build-vega --build-type Release --build-number 1",
+    "build:debug": "react-native build-vega --build-type Debug",
+    "use-core": "rm -rf .tmp && npm run build --prefix ../../packages/core && npm run build --prefix ../../packages/vega && mkdir -p .tmp && npm pack ../../packages/core ../../packages/vega --pack-destination .tmp && npm install --no-save .tmp/*.tgz"
+  },
+  "dependencies": {
+    "@amazon-devices/react-native-kepler": "~4.0.0",
+    "@amazon-devices/react-native-w3cmedia": "~2.3.2",
+    "@react-native-community/slider": "file:ports/react-native-community-slider-5.2.1.tgz",
+    "react": "19.2.0",
+    "react-native": "0.83.0",
+    "react-native-bootsplash": "file:ports/react-native-bootsplash-7.3.4.tgz",
+    "react-native-nitro-modules": "^0.37.1",
+    "react-native-video": "file:ports/react-native-video-7.0.0-beta.12.tgz"
+  },
+  "devDependencies": {
+    "@amazon-devices/kepler-cli-platform": "^0",
+    "@react-native-community/cli": "20.0.0",
+    "@react-native/babel-preset": "0.83.0",
+    "@react-native/metro-config": "0.83.0",
+    "@react-native/typescript-config": "0.83.0",
+    "@types/react": "^19.2.0",
+    "typescript": "5.8.3"
+  },
+  "kepler": {
+    "projectType": "application",
+    "appName": "vegaStreamingKit",
+    "targets": [
+      "tv"
+    ]
+  }
+}
