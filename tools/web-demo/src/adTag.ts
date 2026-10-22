@@ -25,6 +25,23 @@ export function isHttpUrl(text: string): boolean {
   return /^https?:\/\/[^\s/]+/i.test(text);
 }
 
+/** localhost, 127.0.0.1 and [::1]: browsers let an https page fetch them over http. */
+const LOCAL_HTTP = /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/i;
+
+/**
+ * Why the page cannot read the tag, or null. `pageProtocol` is `location.protocol`.
+ * An https page may not fetch an http tag (mixed content), so the CORS hint would be wrong.
+ */
+export function tagProblem(url: string, pageProtocol: string): string | null {
+  if (!isHttpUrl(url)) {
+    return 'Enter an http or https URL of a VAST or VMAP tag.';
+  }
+  if (pageProtocol === 'https:' && /^http:/i.test(url) && !LOCAL_HTTP.test(url)) {
+    return 'This page is HTTPS, so the browser blocks an http:// tag. Use the https:// address of the tag.';
+  }
+  return null;
+}
+
 /** A VMAP as it is; a VAST tag plays as a pre-roll. */
 export function scheduleFor(tag: AdTag): AdSchedule {
   return tag.kind === 'vmap' ? { vmapUrl: tag.url } : { breaks: [{ offset: 'start', vastUrl: tag.url }] };

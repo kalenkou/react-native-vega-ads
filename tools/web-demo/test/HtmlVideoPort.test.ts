@@ -152,6 +152,34 @@ describe('HtmlVideoPort', () => {
     expect(blocked).not.toHaveBeenCalled();
   });
 
+  it('counts the muted retry as accepted too when a pause cuts it off', async () => {
+    const video = new FakeVideo();
+    video.playResult = () =>
+      Promise.reject(
+        video.muted
+          ? Object.assign(new Error('interrupted'), { name: 'AbortError' })
+          : Object.assign(new Error('blocked'), { name: 'NotAllowedError' }),
+      );
+    const blocked = jest.fn();
+    const port = new HtmlVideoPort(video, undefined, blocked);
+    await expect(port.play()).resolves.toBeUndefined();
+    expect(video.played).toBe(2);
+    expect(video.muted).toBe(true);
+    expect(blocked).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes other errors of the muted retry on', async () => {
+    const video = new FakeVideo();
+    video.playResult = () =>
+      Promise.reject(
+        video.muted
+          ? Object.assign(new Error('bad file'), { name: 'NotSupportedError' })
+          : Object.assign(new Error('blocked'), { name: 'NotAllowedError' }),
+      );
+    const port = new HtmlVideoPort(video);
+    await expect(port.play()).rejects.toThrow('bad file');
+  });
+
   it('passes other play errors on', async () => {
     const video = new FakeVideo();
     video.playResult = () => Promise.reject(Object.assign(new Error('bad file'), { name: 'NotSupportedError' }));

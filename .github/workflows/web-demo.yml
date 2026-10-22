@@ -23,6 +23,9 @@ jobs:
       - uses: actions/setup-node@v7
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      # The checks of CI for the code of this page, so a broken page is not published.
+      - run: npm run typecheck
+      - run: npm test -w packages/core -w tools/web-demo
       # The page, its script and a copy of the demo CDN's VAST, VMAP and WebVTT files.
       - run: npm run build -w tools/web-demo
       - uses: actions/upload-pages-artifact@v5

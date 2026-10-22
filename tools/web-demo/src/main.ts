@@ -19,7 +19,8 @@ import type {
   PreloadedAds,
   SessionSnapshot,
 } from 'react-native-ads-core';
-import { AdTag, isHttpUrl, SAMPLE_TAGS, scheduleFor, tagFromQuery, tagQuery } from './adTag';
+import { AdTag, isHttpUrl, SAMPLE_TAGS, scheduleFor, tagFromQuery, tagProblem, tagQuery } from './adTag';
+import { AdAnnouncer, keyAction, KeyTarget, playAction } from './controls';
 import { HtmlVideoPort, VideoElement } from './HtmlVideoPort';
 import { mirrorHttp } from './mirrorHttp';
 
@@ -112,11 +113,13 @@ function log(kind: 'event' | 'request' | 'pixel', text: string): void {
   // Ad server URLs can be very long: the line shows the start, the tooltip all of it.
   item.append(time, ` ${text.length > 140 ? `${text.slice(0, 139)}…` : text}`);
   item.title = text;
+  // Follows new lines only while the viewer is at the end: an older line being read stays put.
+  const atEnd = el.log.scrollHeight - el.log.scrollTop - el.log.clientHeight < 24;
   el.log.append(item);
   while (el.log.children.length > 400) {
     el.log.firstElementChild?.remove();
   }
-  el.log.scrollTop = el.log.scrollHeight;
+  if (atEnd) el.log.scrollTop = el.log.scrollHeight;
 }
 
 function shortUrl(url: string): string {
@@ -179,6 +182,8 @@ function newAdPlayer(): HtmlVideoPort {
   video.preload = 'auto';
   video.muted = el.content.muted;
   adVideos.add(video);
+  // The next break's ad may already wait in the same surface: only the ad that plays is shown.
+  video.addEventListener('play', () => adVideos.forEach((other) => other.classList.toggle('shown', other === video)));
   video.addEventListener('emptied', () => {
     if (!video.isConnected) adVideos.delete(video);
   });
@@ -195,7 +200,13 @@ let events: string[] = [];
 let preload: Promise<PreloadedAds> | null = null;
 /** The breaks of the VMAP before Play, as on the title's page of the TV app. */
 let planMarks: AdPlanMark[] = [];
-let said = '';
+/** The viewer's tag the ad plan was loaded for; the field may hold newer text. */
+let loadedTag: AdTag | null = null;
+/** The movie has played in this viewing: before that the pre-roll is still loading. */
+let contentBegun = false;
+/** Counts load() calls, so an older one does not start a viewing after a newer one. */
+let loads = 0;
+const announcer = new AdAnnouncer();
 /** The movie and its post-roll are over: Play starts a new viewing. */
 let ended = false;
 let countdownShown = false;
@@ -220,9 +231,8 @@ function currentTag(): AdTag | null {
 
 function schedule(): AdSchedule {
   const m = movie();
-  const tag = tagMode() ? currentTag() : null;
-  if (tag) {
-    return scheduleFor(tag);
+  if (tagMode() && loadedTag) {
+    return scheduleFor(loadedTag);
   }
   return { vmapUrl: classic() ? m.classicVmapUrl! : m.vmapUrl };
 }
@@ -254,10 +264,9 @@ function planLabel(mark: AdPlanMark): string {
   return mark.sceneSignals.length > 0 ? `${at} after: ${mark.sceneSignals.join(', ')}` : at;
 }
 
-/** Says a line once to a screen reader, as VoiceView does on the TV. */
+/** Says a line to a screen reader, as VoiceView does on the TV. */
 function announce(text: string): void {
-  if (text !== '' && text !== said) {
-    said = text;
+  if (text !== '') {
     el.announce.textContent = text;
   }
 }
@@ -277,14 +286,13 @@ function render(): void {
   el.skip.textContent = ui.skip.label;
   el.caption.textContent = ui.caption;
   el.caption.hidden = ui.caption === '';
-  if (ui.visible) announce(ui.skipAnnouncement || ui.announcement);
+  announce(announcer.next(ui) ?? '');
 
   const countdown = adCountdownState(classic() ? null : timeline.nextBreakIn);
   el.countdown.hidden = adOn || !countdown.visible;
   el.countdown.textContent = countdown.label;
   if (!el.countdown.hidden && !countdownShown) announce(countdown.announcement);
   countdownShown = !el.countdown.hidden;
-  if (!adOn && !countdown.visible) said = ''; // the next break is announced again
 
   el.pauseAd.hidden = pauseAd === null;
   if (pauseAd) {
@@ -298,7 +306,9 @@ function render(): void {
   const total = duration();
   el.progress.style.width = adOn ? '0' : `${(100 * content.getCurrentTime()) / total}%`;
   el.time.textContent = adOn ? ui.label : `${clockText(content.getCurrentTime())} / ${clockText(total)}`;
-  const shown = adOn ? el.adSurface.querySelector('video') : el.content;
+  const shown = adOn
+    ? (el.adSurface.querySelector<HTMLVideoElement>('video.shown') ?? el.adSurface.querySelector('video'))
+    : el.content;
   el.play.textContent = shown?.paused === false ? 'Pause' : 'Play';
   el.next.disabled = adOn || nextBreak() === null;
 }
@@ -337,20 +347,26 @@ async function stop(): Promise<void> {
   snapshot = IDLE_SNAPSHOT;
   timeline = { marks: [], nextBreakIn: null };
   pauseAd = null;
+  contentBegun = false;
   await old?.dispose();
 }
 
-async function load(): Promise<void> {
+/** Shows the movie page: the poster, Play and the ad plan. Resolves with its number (see `loads`). */
+async function load(): Promise<number> {
+  loads += 1;
+  const id = loads;
   await stop();
   const m = movie();
   el.classicOption.disabled = m.classicVmapUrl === undefined;
   if (el.mode.value === 'classic' && el.classicOption.disabled) el.mode.value = 'vega-ads';
   el.tagBox.hidden = !tagMode();
-  if (tagMode() && !currentTag()) {
+  if (tagMode() && el.tagUrl.value.trim() === '') {
     el.tagKind.value = SAMPLE_TAGS.googleVmap.kind;
     el.tagUrl.value = SAMPLE_TAGS.googleVmap.url;
   }
-  const tag = tagMode() ? currentTag() : null;
+  const problem = tagMode() ? tagProblem(el.tagUrl.value.trim(), location.protocol) : null;
+  loadedTag = tagMode() && !problem ? currentTag() : null;
+  const tag = loadedTag;
   history.replaceState(null, '', tag ? tagQuery(tag) : location.pathname);
   el.content.pause();
   el.content.poster = m.poster;
@@ -363,6 +379,13 @@ async function load(): Promise<void> {
   el.plan.textContent = 'Loading the ad plan…';
   el.breaks.textContent = '';
   planMarks = [];
+  if (problem) {
+    preload = null;
+    el.plan.textContent = problem;
+    renderMarks();
+    render();
+    return id;
+  }
   log('event', `${m.title}, ${tag ? `your ${tag.kind.toUpperCase()} tag` : classic() ? 'ads as usual' : 'vega-ads'}`);
   // As on the title's page of the TV app: the VMAP and the pre-roll are asked for before Play.
   const ready = preloadAds(schedule(), { http, clock });
@@ -379,11 +402,15 @@ async function load(): Promise<void> {
   }
   renderMarks();
   render();
+  return id;
 }
 
 function start(): void {
   if (manager) {
     return; // one viewing at a time: a second click while the ad plan loads must not start another
+  }
+  if (tagMode() && !loadedTag) {
+    return; // the plan line says what is wrong with the tag
   }
   el.start.hidden = true;
   el.content.muted = false;
@@ -432,32 +459,51 @@ function start(): void {
 // ---- Controls.
 
 function togglePlay(): void {
-  if (ended) {
-    void load().then(start);
-    return;
-  }
-  if (!manager) {
-    start();
-    return;
-  }
-  if (snapshot.adSurface !== null) {
-    manager.togglePause();
-    render();
-  } else if (el.content.paused) {
-    void content.play().catch(() => undefined);
-  } else {
-    content.pause(); // the pause ad comes after 1.5 s
+  const action = playAction({
+    ended,
+    viewing: manager !== null,
+    adOnScreen: snapshot.adSurface !== null,
+    contentBegun,
+    contentPaused: el.content.paused,
+  });
+  switch (action) {
+    case 'restart':
+      void load().then((id) => {
+        if (id === loads) start(); // not when the viewer picked another movie meanwhile
+      });
+      break;
+    case 'start':
+      start();
+      break;
+    case 'toggleAd':
+      manager?.togglePause();
+      render();
+      break;
+    case 'playContent':
+      void content.play().catch(() => undefined);
+      break;
+    case 'pauseContent':
+      content.pause(); // the pause ad comes after 1.5 s
+      break;
+    case 'wait':
+      break;
   }
 }
 
+/**
+ * Back, as on the TV: a pause ad closes first. Otherwise the player closes, also during an ad
+ * (VegaAdsPlayer's default `backDuringAd: 'app'`), so Back never skips an ad.
+ */
 function back(): void {
-  if (!manager?.closePauseAd()) {
-    void manager?.back();
+  if (!manager || manager.closePauseAd()) {
+    return;
   }
+  log('event', 'Back: the player closes, as on the TV');
+  void load();
 }
 
 function seekBy(seconds: number): void {
-  if (manager && snapshot.adSurface === null) {
+  if (manager && contentBegun && snapshot.adSurface === null) {
     content.setCurrentTime(Math.max(0, Math.min(content.getCurrentTime() + seconds, duration() - 1)));
   }
 }
@@ -482,17 +528,11 @@ el.soundOn.addEventListener('click', () => {
 el.movie.addEventListener('change', () => void load());
 el.mode.addEventListener('change', () => void load());
 el.tagLoad.addEventListener('click', () => {
-  if (currentTag()) {
-    // A shared link: ?vmap=URL or ?vast=URL opens the page with that tag.
-    const shared = tagFromQuery(location.search);
-    if (shared) {
-      el.mode.value = 'tag';
-      el.tagKind.value = shared.kind;
-      el.tagUrl.value = shared.url;
-    }
-    void load();
+  const problem = tagProblem(el.tagUrl.value.trim(), location.protocol);
+  if (problem) {
+    el.plan.textContent = problem;
   } else {
-    el.plan.textContent = 'Enter an http or https URL of a VAST or VMAP tag.';
+    void load();
   }
 });
 el.tagBox.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((button) =>
@@ -504,6 +544,9 @@ el.tagBox.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((button) 
   }),
 );
 el.content.addEventListener('timeupdate', render);
+el.content.addEventListener('playing', () => {
+  if (manager) contentBegun = true;
+});
 el.content.addEventListener('play', render);
 el.content.addEventListener('pause', render);
 el.content.addEventListener('loadedmetadata', () => {
@@ -511,22 +554,45 @@ el.content.addEventListener('loadedmetadata', () => {
   render();
 });
 
+function keyTarget(target: EventTarget | null): KeyTarget {
+  if (target instanceof HTMLInputElement) return 'input';
+  if (target instanceof HTMLButtonElement) return 'button';
+  if (target instanceof HTMLSelectElement) return 'select';
+  return 'page';
+}
+
 document.addEventListener('keydown', (event) => {
-  if (event.target instanceof HTMLInputElement) {
-    if (event.key === 'Enter') el.tagLoad.click();
-    return; // typing a URL, not controlling the player
-  }
-  const onControl = event.target instanceof HTMLButtonElement || event.target instanceof HTMLSelectElement;
-  if (event.key === ' ' && !onControl) {
-    event.preventDefault();
-    togglePlay();
-  } else if (event.key === 'Escape' || event.key === 'Backspace') {
-    back();
-  } else if (event.key === 'ArrowRight' && !onControl) {
-    seekBy(10);
-  } else if (event.key === 'ArrowLeft' && !onControl) {
-    seekBy(-10);
+  switch (keyAction(event.key, keyTarget(event.target))) {
+    case 'load':
+      el.tagLoad.click();
+      break;
+    case 'toggle':
+      event.preventDefault();
+      togglePlay();
+      break;
+    case 'back':
+      back();
+      break;
+    case 'forward':
+      seekBy(10);
+      break;
+    case 'rewind':
+      seekBy(-10);
+      break;
   }
 });
 
+// After a mouse click some browsers keep the focus on the button, and Space would press it
+// again instead of playing or pausing. A key press on a button (detail 0) keeps the focus.
+document.addEventListener('click', (event) => {
+  if (event.detail > 0 && event.target instanceof HTMLButtonElement) event.target.blur();
+});
+
+// A shared link: ?vmap=URL or ?vast=URL opens the page with that tag.
+const shared = tagFromQuery(location.search);
+if (shared) {
+  el.mode.value = 'tag';
+  el.tagKind.value = shared.kind;
+  el.tagUrl.value = shared.url;
+}
 void load();

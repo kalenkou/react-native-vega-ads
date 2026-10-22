@@ -11,6 +11,8 @@ It uses the same movies, ads and ad tags as the Fire TV build. They come from th
 - Ads turned down to the movie's loudness, ad captions and the pause ad.
 - A live log of the ad requests, the ad events and the tracking pixels.
 - "Ads as usual" next to it, to compare.
+- "Your ad tag": a VAST or VMAP URL of your own ad server, or Google's sample tags. The page address then holds the tag (`?vmap=URL` or `?vast=URL`), so the test can be shared as a link.
+- Back works as on the TV: it closes a pause ad, otherwise the player, also during an ad. It never skips an ad.
 
 ## Build and run
 
@@ -23,7 +25,7 @@ Then open http://localhost:8080.
 
 The build needs the internet. It copies the VAST, VMAP and WebVTT files of the CDN into `dist/cdn/`. The CDN sends no CORS headers, so the page reads these copies from its own origin. Videos, images and pixels still go to the CDN and the pixel collector, as on the TV.
 
-The workflow `.github/workflows/web-demo.yml` publishes `dist/` to GitHub Pages.
+The workflow `.github/workflows/web-demo.yml` publishes `dist/` to GitHub Pages after the type check and the tests of `packages/core` and `tools/web-demo`.
 
 ## How it differs from the TV
 
