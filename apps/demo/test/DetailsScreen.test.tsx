@@ -6,12 +6,12 @@ const mockUseAdPlan = jest.fn();
 jest.mock('react-native-vega-ads', () => ({
   scaleStyles: (styles: object) => styles,
   layoutScale: () => 1,
-  adPlanLabel: () => '1 ad',
+  adPlanLabel: (plan: {label: string}) => plan.label,
   useAdPlan: (schedule: unknown, options: unknown) =>
     mockUseAdPlan(schedule, options),
 }));
 // Counts every read of the ad ID module. On a cold start its first read waits for Vega's ad ID
-// service and holds the JavaScript thread for 1.4 to 2.6 s (FL-38).
+// service and holds the JavaScript thread for 0.5 to 2.6 s (FL-38).
 const mockReadAdId = jest.fn();
 const mockRetriever = {
   isAdvertisingTrackingEnabled: () => true,
@@ -23,10 +23,21 @@ jest.mock('@amazon-devices/kepler-adid-retriever', () => ({
     return mockRetriever;
   },
 }));
-jest.mock('../src/components/BreakMap', () => ({BreakMap: () => null}));
+// Every render of the break map: which plan it drew against which movie length.
+const mockBreakMap = jest.fn();
+jest.mock('../src/components/BreakMap', () => ({
+  BreakMap: (props: unknown) => {
+    mockBreakMap(props);
+    return null;
+  },
+}));
 
 import {DetailsScreen} from '../src/screens/DetailsScreen';
 import type {Movie} from '../src/catalog';
+
+// A read at import time (for example a module-level options object) loads the module with the
+// bundle on the device, before any screen: the test must see it before beforeEach clears the mock.
+const readsAtImport = mockReadAdId.mock.calls.length;
 
 const movie = {
   title: 'Sintel',
@@ -41,12 +52,26 @@ const movie = {
   contentLoudness: -23,
 } as Movie;
 
-const plan = {breaks: 4, preroll: null, marks: []};
+const sintel = {...movie, title: 'Sintel'};
+const tears = {
+  ...movie,
+  title: 'Tears of Steel',
+  duration: 734,
+  poster: 'http://media.test/tears.jpg',
+  vmapUrl: 'http://media.test/tears.xml',
+} as Movie;
+const plan = {label: '4 ad breaks', breaks: 4, preroll: null, marks: [162]};
+const tearsPlan = {...plan, label: '3 ad breaks', marks: [140]};
 
 describe('DetailsScreen', () => {
   beforeEach(() => {
     mockReadAdId.mockClear();
-    mockUseAdPlan.mockReset().mockReturnValue(plan);
+    mockBreakMap.mockClear();
+    mockUseAdPlan
+      .mockReset()
+      .mockImplementation((schedule: {vmapUrl: string}) =>
+        schedule.vmapUrl === tears.vmapUrl ? tearsPlan : plan,
+      );
   });
 
   function render(onDrawn = jest.fn()) {
@@ -64,6 +89,10 @@ describe('DetailsScreen', () => {
     });
     return renderer;
   }
+
+  it('does not read the ad ID module when the screen module loads', () => {
+    expect(readsAtImport).toBe(0);
+  });
 
   it('does not read the ad ID module or ask for the ad plan before the poster is drawn', () => {
     const renderer = render();
@@ -90,4 +119,27 @@ describe('DetailsScreen', () => {
       ).toBeGreaterThan(0);
     },
   );
+
+  it("never draws the previous movie's plan after Next", () => {
+    const props = {next: 'x', onPlay: jest.fn(), onNext: jest.fn()};
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(
+        <DetailsScreen movie={sintel} {...props} />,
+      );
+    });
+    act(() => {
+      renderer.root.findByType(Image).props.onLoad();
+    });
+    mockBreakMap.mockClear();
+    act(() => {
+      renderer.update(<DetailsScreen movie={tears} {...props} />);
+    });
+    const drawn = mockBreakMap.mock.calls.map(
+      ([p]: [{plan: {label: string}; duration: number}]) =>
+        `${p.plan.label}@${p.duration}`,
+    );
+    expect(drawn).not.toContain('4 ad breaks@734');
+    expect(drawn).toContain('3 ad breaks@734');
+  });
 });

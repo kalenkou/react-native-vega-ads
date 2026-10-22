@@ -34,20 +34,28 @@ function prerollLabel(plan: AdPlan): string {
   return `${ads} · ${pre.seconds} s${skip}`;
 }
 
+/** The plan of one title: the page draws it only while that title is on screen. */
+interface TitlePlan {
+  vmapUrl: string;
+  plan: AdPlan | null;
+}
+
 /**
  * Asks for the ad plan and hands it to the page. The page mounts it only after the poster is drawn:
- * on a cold start the first read of `AdIdRetriever` waits for Vega's ad ID service and holds the
- * JavaScript thread for 1.4 to 2.6 s (FL-38). Before the poster, that wait delays the whole page.
+ * on a cold start on React Native 0.83 the first read of `AdIdRetriever` loads its Turbo Module,
+ * which waits for Vega's ad ID service and holds the JavaScript thread for 0.5 to 2.6 s (FL-38).
+ * Before the poster, that wait delays the whole page. Metro's inline requires (the default) load
+ * the module at this first read, so keep every reference to `AdIdRetriever` in here.
  */
 const AdPlanRequest = ({
   vmapUrl,
   onPlan,
 }: {
   vmapUrl: string;
-  onPlan: (plan: AdPlan | null) => void;
+  onPlan: (plan: TitlePlan) => void;
 }) => {
   const plan = useAdPlan({vmapUrl}, {adId: AdIdRetriever});
-  useEffect(() => onPlan(plan), [plan, onPlan]);
+  useEffect(() => onPlan({vmapUrl, plan}), [vmapUrl, plan, onPlan]);
   return null;
 };
 
@@ -74,7 +82,9 @@ export const DetailsScreen = ({
   // Ask for the schedule and the pre-roll once the poster is drawn: after Play the ad only has to
   // buffer, and the viewer sees how many ads the movie has before pressing Play.
   const [drawn, setDrawn] = useState(false);
-  const [plan, setPlan] = useState<AdPlan | null>(null);
+  const [titlePlan, setTitlePlan] = useState<TitlePlan | null>(null);
+  // After Next the previous title's plan is still in state for a moment: never draw it.
+  const plan = titlePlan?.vmapUrl === movie.vmapUrl ? titlePlan.plan : null;
   const handleDrawn = useCallback(() => {
     setDrawn(true);
     onDrawn?.();
@@ -93,7 +103,7 @@ export const DetailsScreen = ({
         <AdPlanRequest
           key={movie.vmapUrl}
           vmapUrl={movie.vmapUrl}
-          onPlan={setPlan}
+          onPlan={setTitlePlan}
         />
       )}
       <View style={styles.scrim} />
