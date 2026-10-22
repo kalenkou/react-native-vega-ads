@@ -345,3 +345,12 @@ Test setup: Fire TV Stick 4K Select with Vega OS 2.0 (TV Ship/515) and Vega SDK 
 - **Severity:** low (each library finds its own way, and the change is small).
 - **Workaround:** scale by the window width. `Dimensions.get('window').width / 1920` is 1 on 0.72 and 0.5 on 0.83. react-native-vega-ads now does this for its built-in UI and exports it as `layoutScale()` and `scaleStyles()`. The demo uses the same helper for its own styles.
 - **Suggestion:** add a section to the 0.83 migration guide for libraries that support both lines. Show a helper like this one, or ship one in `react-native-kepler`.
+
+## FL-38 · On React Native 0.83 the first AdIdRetriever read blocks JavaScript for up to 2.6 s (2026-10-23)
+- **Task:** show the demo's movie page fast on a cold start and ask for its ad plan with the advertising ID. Same stick, demo app on React Native 0.83, `@amazon-devices/kepler-adid-retriever` 1.0.18.
+- **Steps:** read `AdIdRetriever` while the first screen renders. Measure 30 cold launches with `vega exec perf kpi-visualizer --certification --kpi cool-start-latency`. Open the traces of the slow launches.
+- **Expected:** the module loads in tens of milliseconds, as on 0.72 (40 ms in the 16.10 run).
+- **Actual:** `TurboModuleBinding::moduleProvider` for `AmazonAdIdRetrieverTurboModule` took 0.5 to 2.6 s on the JavaScript thread. In that time the system started `com.amazon.admanager.service`. The poster request waited for it. Fully drawn P90 was 6.3 s, against 3.46 s on 0.72. Nothing in the API reference says that the first call waits for a service.
+- **Severity:** medium (it delays the first screen of an app that asks for ads with the ID at launch).
+- **Workaround:** read `AdIdRetriever` only after the first screen is drawn. The demo's movie page now asks for the ad plan when the poster has loaded. After the change (28 counted launches): fully drawn P90 5.5 s and mean 3.0 s, before 6.3 s and 4.0 s. The read now comes after fully drawn. In the slowest launches the system starts the app process about 5 s after the launch, before any app code runs.
+- **Suggestion:** load the module without blocking the JavaScript thread, or say in the API reference that the first call waits for the ad ID service.
