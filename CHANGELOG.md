@@ -15,6 +15,7 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 - API reference: a pitfall on React Native 0.83. The first read of `AdIdRetriever` can hold the JavaScript thread for up to 2.6 s on a cold start (FL-38). Pass `adId` after your first screen is drawn. The demo's movie page now asks for the ad plan when its poster has loaded.
 - `packages/vega/README.md`: the seek bar example ends a slide when a break starts (`breakStart` in `onEvent`).
 - `SECURITY.md`: where the Dependabot alerts of the example apps come from.
+- Friction log FL-38 and FL-39.
 
 ### Example apps
 
