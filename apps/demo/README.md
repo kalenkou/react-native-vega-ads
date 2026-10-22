@@ -21,8 +21,8 @@ You need:
 
 - Node.js 22
 - the Vega SDK (I test with 0.24.12112, `vega sdk list` shows yours)
-- a Fire TV device on the same network as your computer
-- the media from [`tools/demo-ads`](../../tools/demo-ads)
+- a Fire TV device on the same network as your computer, or the Vega Virtual Device (see the note in step 2)
+- the media from [`tools/demo-ads`](../../tools/demo-ads) (not needed with the CloudFront address in step 2)
 
 1. From the repository root, install and build the tools, get the movie and the ads, and
    start the media server on your computer:
@@ -35,17 +35,23 @@ You need:
    node serve.mjs --dir media --midrolls 139.917,441.208
    ```
 
-   It prints its address, for example `http://192.168.1.20:8080/`. Keep it running.
+   It prints its address, for example `http://192.0.2.20:8080/`. Keep it running.
 
 2. In another terminal, from the repository root, `cd apps/demo`. Copy `src/media.example.ts`
    to `src/media.local.ts` and set `MEDIA_BASE` to that address. `media.local.ts` is not committed.
    Set `MUTED = true` there to mute the movie and the ads, for test runs where the TV must stay silent.
 
+   No local server: set `MEDIA_BASE` to `https://d3f9mqgmbcpau1.cloudfront.net/`, the same media
+   on the demo's CloudFront. Then skip `get_media.sh` and `serve.mjs` in step 1, and skip step 3.
+   Use this address on the Vega Virtual Device, which refuses `http://` media
+   ([friction log FL-32](../../docs/friction-log.md#fl-32--the-vega-virtual-device-refuses-http-media-that-the-device-plays-2026-10-19)).
+   The ads then send their tracking pixels to the demo's AWS Lambda.
+
 3. Let the app load `http://` media from your computer. Add to `apps/demo/manifest.toml`:
 
    ```toml
    [network-traffic-policy.cleartext]
-   allowed-domains = ["192.168.1.20"]
+   allowed-domains = ["192.0.2.20"]
    ```
 
    Do not commit this: it is for a development network only.
@@ -69,7 +75,8 @@ You need:
    ```
 
    `vega device list` shows the device ID. Use `build/aarch64-release/demo_aarch64.vpkg` on a
-   64-bit device.
+   64-bit device. On the Vega Virtual Device, use the aarch64 package on a Mac with Apple silicon
+   and `build/x86_64-release/demo_x86_64.vpkg` on an Intel Mac or Linux.
 
 ## Launch
 

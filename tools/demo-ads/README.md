@@ -89,7 +89,7 @@ app manifest:
 
 ```toml
 [network-traffic-policy.cleartext]
-allowed-domains = ["192.168.1.20"]
+allowed-domains = ["192.0.2.20"]
 ```
 
 Use HTTPS hosting for anything outside a development network.
