@@ -185,6 +185,8 @@ To build vega-ads, I fixed gaps in libraries that Vega apps use. I sent each fix
 
 The [streaming kit](apps/streaming-kit) runs the ports of react-native-video, the slider and bootsplash together in one app.
 
+![react-native-video v7 on a Fire TV Stick 4K Select. Before: version 7.0.0-beta.12 from npm throws at import. After: with pull request #5171 an MP4 plays](docs/images/rnv7-before-after.jpg)
+
 ## Packages
 
 | Package | What it is |
