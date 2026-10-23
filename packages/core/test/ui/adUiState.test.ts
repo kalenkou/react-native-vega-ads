@@ -1,4 +1,4 @@
-import { adCountdownState, adUiState } from '../../src/ui/adUiState';
+import { adCountdownState, adUiState, defaultAdUiStrings } from '../../src/ui/adUiState';
 import type { SessionSnapshot } from '../../src/machine/AdBreakSession';
 
 function snapshot(overrides: Partial<SessionSnapshot>): SessionSnapshot {
@@ -166,5 +166,60 @@ describe('adCountdownState', () => {
       announceAdIn: (n) => `Werbepause in ${n} Sekunden`,
     });
     expect(state).toEqual({ visible: true, label: 'Werbung in 3', announcement: 'Werbepause in 3 Sekunden' });
+  });
+});
+
+describe('defaultAdUiStrings', () => {
+  const report = {
+    ads: 1,
+    skipped: 0,
+    repeatsLeftOut: 0,
+    sameAdvertiserLeftOut: 0,
+    blockedAfterScene: 0,
+    quieter: 0,
+    mostTurnedDownDb: 0,
+    pauseAds: 0,
+  };
+
+  it('names the ad plan of a movie page', () => {
+    const { adPlan } = defaultAdUiStrings;
+    expect(adPlan({ breaks: 0, preroll: null, marks: [] })).toBe('No ads');
+    expect(adPlan({ breaks: 1, preroll: null, marks: [] })).toBe('1 ad break');
+    expect(adPlan({ breaks: 3, preroll: null, marks: [] })).toBe('3 ad breaks');
+    expect(adPlan({ breaks: 4, preroll: { ads: 1, seconds: 10, skipAfter: null }, marks: [] })).toBe(
+      '4 ad breaks · first: 1 ad, 10 s',
+    );
+    expect(adPlan({ breaks: 4, preroll: { ads: 2, seconds: 25, skipAfter: 5 }, marks: [] })).toBe(
+      '4 ad breaks · first: 2 ads, 25 s, skippable after 5 s',
+    );
+  });
+
+  it('says what a watch spared the viewer, and only what happened', () => {
+    const { watchReport } = defaultAdUiStrings;
+    expect(watchReport(report)).toBe('1 ad · none left out or turned down');
+    expect(watchReport({ ...report, ads: 2, skipped: 1 })).toBe('2 ads · none left out or turned down · 1 skipped');
+    expect(
+      watchReport({
+        ...report,
+        ads: 5,
+        repeatsLeftOut: 1,
+        sameAdvertiserLeftOut: 2,
+        blockedAfterScene: 1,
+        quieter: 5,
+        mostTurnedDownDb: 7.8,
+      }),
+    ).toBe(
+      '5 ads · 1 repeat left out · 2 ads of the same brand left out · 1 ad left out after a scene · ' +
+        '5 ads turned down, up to 8 dB',
+    );
+    expect(watchReport({ ...report, repeatsLeftOut: 2, quieter: 1, mostTurnedDownDb: 3.2 })).toBe(
+      '1 ad · 2 repeats left out · 1 ad turned down, up to 3 dB',
+    );
+  });
+
+  it('has the texts of the pause ad', () => {
+    expect(defaultAdUiStrings.pauseAdHint).toBe('Back closes the ad');
+    expect(defaultAdUiStrings.scanQr).toBe('Scan to learn more');
+    expect(defaultAdUiStrings.announcePauseAd).toBe('Ad while paused. Press Back to close it.');
   });
 });
