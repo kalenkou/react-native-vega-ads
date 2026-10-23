@@ -1077,7 +1077,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     await settle();
     expect(sent()).toEqual(['https://t.test/error-pod-1?code=405']);
     expect(ctx.events).not.toContain('complete');
-    expect(ctx.events).toContain('error:405');
+    expect(adsOf(ctx, 'error:405')).toEqual(['pod-1']);
     expect(first.deinitialized).toBe(true);
     expect(ctx.session.state).toBe('playing');
   });
@@ -1348,6 +1348,49 @@ describe('AdBreakSession: blocked categories and spare ads', () => {
     const ctx = setup(pod, { blockedAdCategories: ['1571'] });
     await loadReady(ctx);
     expect(last(ctx.states)?.why?.blockedAfterScene).toEqual(['Voltaro']);
+  });
+});
+
+describe('AdBreakSession: viewer rules and event details', () => {
+  it('counts only repeats as ads the household saw, not a second ad of one advertiser', async () => {
+    const pod = fixture('pod-optimized.xml')
+      .replace('<AdTitle>first</AdTitle>', '<AdTitle>first</AdTitle><Advertiser>Acme</Advertiser>')
+      .replace('<AdTitle>second</AdTitle>', '<AdTitle>second</AdTitle><Advertiser>Acme</Advertiser>');
+    const ctx = setup(pod, { repeats: new RepeatGuard(new FakeClock(0)) });
+    await loadReady(ctx);
+    expect(adsOf(ctx, 'skipped:advertiser')).toEqual(['pod-2']);
+    expect(last(ctx.states)?.why?.repeatsLeftOut).toBe(0);
+  });
+
+  it('does not remember an ad that was left out of an earlier break', async () => {
+    const repeats = new RepeatGuard(new FakeClock(0));
+    const earlier = setup(fixture('pod-optimized.xml'), { repeats, maxAds: 1 });
+    await loadReady(earlier);
+    expect(earlier.events).toContain('notUsed');
+    const ctx = setup(fixture('pod-optimized.xml'), { repeats });
+    await loadReady(ctx);
+    expect(ctx.events).not.toContain('skipped:repeat');
+  });
+
+  it('names the ad in each ad event', async () => {
+    const ctx = setup(
+      fixture('pod-optimized.xml').replace(
+        /type="video\/mp4"([^>]*><!\[CDATA\[https:\/\/cdn\.test\/pod-2)/,
+        'type="video/webm"$1',
+      ),
+      { maxAds: 2 },
+    );
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitEnded();
+    await settle();
+    expect(adsOf(ctx, 'impression')).toEqual(['pod-1']);
+    expect(adsOf(ctx, 'error:403')).toEqual(['pod-2']);
+
+    const cut = setup(fixture('pod-optimized.xml'), { maxAds: 1 });
+    await loadReady(cut);
+    expect(adsOf(cut, 'skipped:budget')).toEqual(['pod-2']);
   });
 });
 
