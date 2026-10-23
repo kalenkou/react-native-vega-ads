@@ -16,6 +16,7 @@ Screenshots of the demo app on a Fire TV Stick 4K Select, React Native 0.83. Fil
 
 ## Run it
 
+- **Watch:** a [2-minute video](https://youtu.be/H2RlcTclVKg) of the demo on a real Fire TV Stick.
 - **In your browser:** the [web demo](https://kalenkou.github.io/react-native-vega-ads/) runs the same ad logic (`react-native-ads-core`) with a web video element as the player. No Fire TV needed. Its source is in [`tools/web-demo`](tools/web-demo).
 - **On a Fire TV Stick:** download `demo_armv7.vpkg` from the [latest release](https://github.com/kalenkou/react-native-vega-ads/releases/latest). Install it with `vega device install-app -p demo_armv7.vpkg -d <device>`.
   - The demo plays two films with ads, streamed over HTTPS.
