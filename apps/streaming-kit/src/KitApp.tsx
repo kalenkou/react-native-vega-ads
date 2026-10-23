@@ -150,13 +150,14 @@ function Home({
   );
 }
 
-/** The thumb of the focused slider is 28 dp wide: its centre runs from 14 dp to the width minus 14 dp. */
-const THUMB_HALF = 14;
+/** The slider's thumb in dp. With focus it is 4 dp wider: its centre runs from half that to the width minus half. */
+const THUMB = 16;
+const THUMB_HALF = (THUMB + 4) / 2;
 
 /**
  * The slider with the mid-rolls of vega-ads marked on it, like a streaming app's seek bar.
  * The marks are drawn over the track. A mark under the thumb is not drawn, so the thumb
- * stays on top. Played breaks fade.
+ * stays on top. Marks ahead are yellow, played ones grey: both show on either part of the track.
  */
 function SeekBar({
   time,
@@ -205,6 +206,7 @@ function SeekBar({
           minimumTrackTintColor="#f28c38"
           maximumTrackTintColor="#3a404c"
           thumbTintColor="#ffffff"
+          thumbSize={THUMB}
           onSlidingStart={onSlidingStart}
           onValueChange={setMoving}
           onSlidingComplete={(seconds) => {
@@ -446,8 +448,8 @@ const styles = StyleSheet.create({
     height: 14,
     marginLeft: -2,
     borderRadius: 2,
-    backgroundColor: '#ff9a4d',
+    backgroundColor: '#ffd23f',
   },
-  markDone: {opacity: 0.35},
+  markDone: {backgroundColor: '#c3c8d1'},
   slider: {height: 40},
 });
