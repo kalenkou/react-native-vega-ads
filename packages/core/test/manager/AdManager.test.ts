@@ -684,6 +684,7 @@ describe('AdManager', () => {
     expect(ctx.content.paused).toBe(false);
     expect(ctx.events).toContain('break:break-1:late');
     expect(ctx.details).toContainEqual(['break:break-1:late', { breakId: 'break-1' }]);
+    expect(ctx.events).not.toContain('content:ended');
   });
 
   it('releases the ad player of a prefetched break that a seek jumped over', async () => {
@@ -2068,6 +2069,7 @@ describe('AdManager: an app that listens to nothing', () => {
     await starting;
     await settle();
     await player.flush();
+    expect(player.calls).toContain('play');
     return player;
   }
 
