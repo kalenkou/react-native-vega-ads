@@ -155,7 +155,8 @@ const THUMB_HALF = 14;
 
 /**
  * The slider with the mid-rolls of vega-ads marked on it, like a streaming app's seek bar.
- * The marks are drawn first, so the thumb passes over them. Played breaks fade.
+ * The marks are drawn over the track. A mark under the thumb is not drawn, so the thumb
+ * stays on top. Played breaks fade.
  */
 function SeekBar({
   time,
@@ -174,22 +175,20 @@ function SeekBar({
 }) {
   // A bar that goes away during a key hold (a break starts) ends the slide too.
   useEffect(() => onSlidingEnd, [onSlidingEnd]);
+  const [width, setWidth] = useState(0);
+  // Where the thumb is while it moves: the label and the hidden mark follow it.
+  const [moving, setMoving] = useState<number | null>(null);
+  const shown = moving ?? time;
+  const underThumb = (mark: BreakMark) =>
+    (Math.abs(mark.time - shown) / duration) *
+      Math.max(0, width - 2 * THUMB_HALF) <
+    THUMB_HALF + 2;
   return (
     <View style={styles.bar}>
-      <Text style={styles.time}>{clock(time)}</Text>
-      <View style={styles.seek}>
-        <View style={styles.marks} pointerEvents="none">
-          {marks.map((mark) => (
-            <View
-              key={mark.id}
-              style={[
-                styles.mark,
-                {left: `${(mark.time / duration) * 100}%`},
-                mark.done && styles.markDone,
-              ]}
-            />
-          ))}
-        </View>
+      <Text style={styles.time}>{clock(shown)}</Text>
+      <View
+        style={styles.seek}
+        onLayout={({nativeEvent}) => setWidth(nativeEvent.layout.width)}>
         <Slider
           hasTVPreferredFocus
           style={styles.slider}
@@ -207,8 +206,26 @@ function SeekBar({
           maximumTrackTintColor="#3a404c"
           thumbTintColor="#ffffff"
           onSlidingStart={onSlidingStart}
-          onSlidingComplete={onSeek}
+          onValueChange={setMoving}
+          onSlidingComplete={(seconds) => {
+            setMoving(null);
+            onSeek(seconds);
+          }}
         />
+        <View style={styles.marks} pointerEvents="none">
+          {marks.map((mark) =>
+            underThumb(mark) ? null : (
+              <View
+                key={mark.id}
+                style={[
+                  styles.mark,
+                  {left: `${(mark.time / duration) * 100}%`},
+                  mark.done && styles.markDone,
+                ]}
+              />
+            ),
+          )}
+        </View>
       </View>
       <Text style={styles.time}>{clock(duration)}</Text>
     </View>
@@ -222,6 +239,8 @@ function Watch({movie, onClose}: {movie: MovieId; onClose: () => void}) {
   const [started, setStarted] = useState(false);
   // While the slider moves, the playing time must not pull it back.
   const sliding = useRef(false);
+  // After a seek the player still reports the old time for a moment: wait for the new one.
+  const seekingTo = useRef<{seconds: number; since: number} | null>(null);
   const endSliding = useCallback(() => {
     sliding.current = false;
   }, []);
@@ -250,6 +269,15 @@ function Watch({movie, onClose}: {movie: MovieId; onClose: () => void}) {
   });
   useEvent(player, 'onLoad', (data) => setDuration(data.duration));
   useEvent(player, 'onProgress', ({currentTime}) => {
+    const seek = seekingTo.current;
+    if (
+      seek &&
+      Math.abs(currentTime - seek.seconds) > 2 &&
+      Date.now() - seek.since < 3000
+    ) {
+      return;
+    }
+    seekingTo.current = null;
     if (!sliding.current) {
       setTime(currentTime);
     }
@@ -280,6 +308,7 @@ function Watch({movie, onClose}: {movie: MovieId; onClose: () => void}) {
                 onSlidingEnd={endSliding}
                 onSeek={(seconds) => {
                   sliding.current = false;
+                  seekingTo.current = {seconds, since: Date.now()};
                   setTime(seconds);
                   player.seekTo(seconds);
                 }}
@@ -412,9 +441,9 @@ const styles = StyleSheet.create({
   },
   mark: {
     position: 'absolute',
-    top: 11,
+    top: 13,
     width: 4,
-    height: 18,
+    height: 14,
     marginLeft: -2,
     borderRadius: 2,
     backgroundColor: '#ff9a4d',
