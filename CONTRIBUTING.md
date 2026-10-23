@@ -19,6 +19,7 @@ The demo app has its own steps: [apps/demo](apps/demo/README.md).
 2. Run `npm run format`, then `npm run check`. CI runs the same check on Node.js 22 and 24.
 3. If the change touches playback, run it on a Fire TV device and add the result to [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md). Failures too.
 4. Update the docs and [CHANGELOG.md](CHANGELOG.md) when the API changes.
+5. For a change in `packages/core`, run `npm run test:mutation` (about 5 minutes). Stryker changes the code one small step at a time and runs the tests. A change that no test catches shows a gap in the tests. The report is in `packages/core/reports/mutation/index.html`. CI runs it after each change to `packages/core` on `main`.
 
 ## Style
 
