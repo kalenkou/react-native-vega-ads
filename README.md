@@ -12,7 +12,7 @@ An optional AI tool places the breaks between lines of dialogue and leaves out a
 | --- | --- | --- |
 | ![Sintel's movie page with the break map: pre-roll, 00:02:42.083 after injury, 00:09:03.125 after death and weapons, post-roll](docs/images/movie-page.jpg) | ![An ad in a mid-roll of Sintel: "No Kettlo ad after a scene with injury · Volume matched to the movie"](docs/images/ad-break.jpg) | ![The paused movie with a pause ad and a QR code](docs/images/pause-ad.jpg) |
 
-Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Foundation, CC BY 3.0. Ads: invented brands.
+Screenshots of the demo app on a Fire TV Stick 4K Select, React Native 0.83. Films: (CC) Blender Foundation, CC BY 3.0. Ads: invented brands.
 
 ## Run it
 
