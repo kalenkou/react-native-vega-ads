@@ -519,3 +519,9 @@ The release v0.1.3 demo build from CloudFront (23.10.2026, night). A copy built 
 |---|---|
 | 3 runs, each from a clean install | PASS 3 of 3: pre-roll, movie, the mid-roll pod without the repeated ad (`notUsed`), movie after the pod, no errors. One impression each for Kettlo, Brewnord and Voltaro per run |
 | The same build installed over the local demo, without a clean install | every ad left out as a repeat (`skipped:repeat`): the local demo had shown them less than 30 minutes before, and an update keeps the app's storage. Expected, the repeat rule works across updates of the app |
+
+The release v0.1.4 demo build from CloudFront (23.10.2026, midday). The release file itself, with sound, installed with `vega device install-app` and started with `vega device launch-app`. Pixels counted by the Lambda pixel collector in DynamoDB.
+
+| Check | Result |
+|---|---|
+| 3 runs, each from a clean install | PASS 3 of 3: pre-roll, movie, the mid-roll pod without the repeated ad (`notUsed`), movie after the pod, no errors. One impression each for Kettlo, Brewnord and Voltaro in every run |
