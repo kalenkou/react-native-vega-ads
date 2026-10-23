@@ -82,7 +82,16 @@ You need:
 
 ## Launch
 
-The system shows `assets/raw/SplashScreenImages.zip` (one frame: the app's background and a small break map) from the first frame until the movie page has its poster. Then the app reports fully drawn and hides the splash (`src/launch.ts`). On a Fire TV Stick 4K Select, 30 cold launches on React Native 0.83 (23.10, 29 counted): first frame P90 0.77 s, fully drawn P90 5.6 s. On React Native 0.72 (16.10) the same look gave 1.09 s and 3.46 s.
+From the first frame until the movie page has its poster, the system shows a splash screen: the app's background and a small break map (`assets/raw/SplashScreenImages.zip`). Then the app reports "fully drawn" and hides the splash (`src/launch.ts`).
+
+Cold launches on a Fire TV Stick 4K Select, 30 for each version:
+
+| React Native | First frame, P90 | Fully drawn, P90 |
+| --- | --- | --- |
+| 0.83 (23.10, 29 counted) | 0.77 s | 5.6 s |
+| 0.72 (16.10) | 1.09 s | 3.46 s |
+
+Amazon's targets are 1.5 s for the first frame and 8 s for fully drawn.
 
 ## Look
 
