@@ -4,10 +4,22 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-10-23
+
 ### Fixed
 
 - WebVTT captions: tags are removed in one pass. Before, a long caption line full of "<" from an ad server took seconds to read (found by CodeQL).
 - WebVTT captions: a line with "-->" starts the next cue, as the WebVTT parsing rules say, also without a blank line before it. Before, it was read as text of the previous cue (found by a property test).
+
+### Documentation
+
+- `scaleStyles()` leaves `boxShadow`, `filter`, `transformOrigin` and `perspective` as they are. The API reference now says so.
+- `layoutScale()` reads the window on each call. Only the built-in styles are scaled once, when the package loads.
+- README: a Proof table with the test and device results, and screenshots from React Native 0.83.
+
+### Example apps
+
+- The demo's movie page asks for the ad plan after 5 s also when the poster never loads.
 
 ## [0.1.3] - 2026-10-23
 
@@ -97,7 +109,8 @@ First release.
 - `vegaAdIdSource` for the Fire TV advertising ID. `preloadVegaAds` and `useAdPlan` for the title page. `rnvPlayerPort` for react-native-video v7.
 - Preview: `useStitchedAds` (IAB tracking of ads stitched into the stream by a server). `HeadlessPlayerService` and `HeadlessPlayerAdapter` (Amazon's headless player approach). `createAdPlayer` for ad players that are any `PlayerPort`.
 
-[Unreleased]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.0...v0.1.1
