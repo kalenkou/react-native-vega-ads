@@ -213,6 +213,8 @@ npm run check   # lint, format, types and the tests of the packages and tools
 cd apps/demo && npm ci && cp src/media.example.ts src/media.local.ts && npm run use-core && npm test
 ```
 
+`npm run test:mutation` runs Stryker on `react-native-ads-core`. It makes 3,452 small changes to the code, one at a time, and the tests catch 89 % of them (23.10.2026). Property tests with fast-check feed the VAST, VMAP and WebVTT parsers random input.
+
 Before a pull request run `npm run format` and `npm run check`. See [CONTRIBUTING.md](CONTRIBUTING.md). The demo app's 43 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
 
 ## Credits
