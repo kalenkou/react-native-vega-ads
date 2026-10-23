@@ -16,7 +16,9 @@ const out = values.out;
 const CDN = 'https://d3f9mqgmbcpau1.cloudfront.net/';
 /** The documents the page asks for first; the ones they point to are found by following their URLs. */
 const ENTRIES = ['vmap/movie.xml', 'vmap/classic.xml', 'vmap/sintel.xml', 'vast/pause.xml'];
-const LINKED = new RegExp(`${CDN.replace(/[.]/g, '\\.')}([\\w./-]+\\.(?:xml|vtt))`, 'g');
+/** `text` as a literal inside a regular expression: every special character escaped. */
+const literal = (text) => text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+const LINKED = new RegExp(`${literal(CDN)}([\\w./-]+\\.(?:xml|vtt))`, 'g');
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
