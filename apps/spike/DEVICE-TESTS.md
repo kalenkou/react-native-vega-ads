@@ -500,6 +500,8 @@ Muted demo on React Native 0.83 (`apps/demo`), the same stick.
 | Cold launch with the fix (`8acfbcc`), 30 launches | 28 counted: first frame P90 717 ms, fully drawn P90 5.5 s, mean 3.0 s, max 7.5 s. The tool reported launches 6 and 29 as "crashed" with no crash log, and the stick's crash history has no entry for the app |
 | Cold launch again, 30 launches, the build of `40876ce` | 29 counted (the tool dropped one for a trace marker error), no crash: first frame P90 772 ms, fully drawn P90 5.6 s, mean 3.2 s, max 7.7 s |
 | The next movie after Next (`20d230b`) | PASS: the movie page draws only the plan of the movie on screen |
+| Regression, 14 scripts (22.10, 23:16 to 00:07) | PASS: gate 3 of 3 and seek 2 of 2. Back, Home, the app switch, the pause ad and the classic mode work. The line that says why an ad was left out shows VAST 205. Ad captions show. A saved place after a kill works: Continue plays from 0:11.7 with no new impression. The script for Home while the pre-roll loads still expects an older rule. The app stayed alive in the background with no pixel, and back in front it played the pre-roll the viewer had not seen yet. The library does this since 19.10 |
+| Break context (`category-run.sh`, `serve.mjs --context`), 23.10 | PASS: the first mid-roll blocks 1551 and 1571. Voltaro got an error pixel with code 205 and no impression. Brewnord played to the end |
 | Whole film, Tears of Steel with no key pressed (`5495f91`) | PASS: 5 impressions and 5 completes, no VAST error. The repeated ad was left out, all 5 ads were turned down (up to 7.8 dB), the player closed by itself. PSS 96, 93, 76, 73, 56 and 58 MB. The system log reader stopped for 6 minutes, so the first mid-roll has no sample |
 | A first try of the same run | stopped by the TV. 7 s into the pre-roll the stick logged "Marking window 3 as Unbound due to output removal". The audio sink went away and the system ended the app. HOME woke the display again (`DISPLAY ON`, One Touch Play) |
 
@@ -515,4 +517,4 @@ The release v0.1.3 demo build from CloudFront (23.10.2026, night). A copy built 
 | Check | Result |
 |---|---|
 | 3 runs, each from a clean install | PASS 3 of 3: pre-roll, movie, the mid-roll pod without the repeated ad (`notUsed`), movie after the pod, no errors. One impression each for Kettlo, Brewnord and Voltaro per run |
-| The same build installed over the local demo, without a clean install | every ad left out as a repeat (`skipped:repeat`): the local demo had shown them less than 30 minutes before, and an update keeps the app's storage. Expected, the repeat rule works across installs |
+| The same build installed over the local demo, without a clean install | every ad left out as a repeat (`skipped:repeat`): the local demo had shown them less than 30 minutes before, and an update keeps the app's storage. Expected, the repeat rule works across updates of the app |
