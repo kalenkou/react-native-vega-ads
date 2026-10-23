@@ -2037,3 +2037,62 @@ describe('AdManager: calls between breaks', () => {
     expect(plays).toBe(1);
   });
 });
+
+describe('AdManager: an app that listens to nothing', () => {
+  const PRE = 'https://ads.test/pre.xml';
+
+  function quiet(options: Partial<AdManagerDeps> = {}) {
+    const adPlayers: FakePlayer[] = [];
+    const content = new FakePlayer({ duration: 600 });
+    void content.initialize();
+    const manager = new AdManager({
+      http: new FakeHttp().on(PRE, { body: fixture('vast/inline.xml') }),
+      clock: new FakeClock(1_000_000),
+      content,
+      adSurface: AD_A,
+      createAdPlayer: () => {
+        const player = new FakePlayer({ duration: 10 });
+        adPlayers.push(player);
+        return player;
+      },
+      ...options,
+    });
+    return { manager, content, adPlayers };
+  }
+
+  async function playPreRoll(ctx: ReturnType<typeof quiet>): Promise<FakePlayer> {
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: PRE }]));
+    await settle();
+    const player = ctx.adPlayers[0] as FakePlayer;
+    player.emitCanPlay();
+    await starting;
+    await settle();
+    await player.flush();
+    return player;
+  }
+
+  it('starts the schedule without a timeline listener', async () => {
+    const events: string[] = [];
+    const ctx = quiet({ onEvent: (name) => events.push(name) });
+    await ctx.manager.start(manual([]));
+    expect(events).not.toContain('error:start');
+    expect(ctx.content.calls).toContain('play');
+  });
+
+  it('plays a pre-roll to its end', async () => {
+    const ctx = quiet();
+    const player = await playPreRoll(ctx);
+    player.emitTime(10);
+    player.emitEnded();
+    await settle();
+    expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
+  });
+
+  it('comes back from the background during a pre-roll', async () => {
+    const ctx = quiet();
+    await playPreRoll(ctx);
+    await ctx.manager.suspend();
+    await ctx.manager.wake();
+    expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
+  });
+});
