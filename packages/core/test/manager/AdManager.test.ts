@@ -1905,3 +1905,135 @@ describe('AdManager: viewing state and break ends', () => {
     expect(ctx.last()?.state).toBe('playing');
   });
 });
+
+describe('AdManager: calls between breaks', () => {
+  const MID = 'https://ads.test/mid.xml';
+
+  it('back(), closePauseAd() and viewerPaused() do nothing without a break or a pause ad', async () => {
+    const ctx = setup({});
+    await ctx.manager.start(manual([]));
+    await expect(ctx.manager.back()).resolves.toBeUndefined();
+    expect(ctx.manager.closePauseAd()).toBe(false);
+    expect(() => ctx.manager.viewerPaused()).not.toThrow();
+  });
+
+  it('dispose() between breaks leaves media controls alone and stops listening for the content end', async () => {
+    const ctx = setup({});
+    await ctx.manager.start(manual([]));
+    const focus = ctx.content.calls.filter((c) => c === 'focus').length;
+    await ctx.manager.dispose();
+    expect(ctx.content.calls.filter((c) => c === 'focus')).toHaveLength(focus);
+    ctx.content.emitEnded();
+    await settle();
+    expect(ctx.events).not.toContain('content:ended');
+  });
+
+  it('suspend() and wake() between breaks, after a break has played', async () => {
+    const ctx = setup({ [MID]: fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: MID }]));
+    ctx.content.emitTime(20);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    ctx.content.emitTime(30);
+    await settle();
+    await playAdToEnd(ctx);
+    await expect(ctx.manager.suspend()).resolves.toBeUndefined();
+    await ctx.manager.wake();
+    expect(ctx.events.filter((e) => e.endsWith(':interrupted'))).toEqual([]);
+  });
+
+  it('a mid-roll interrupted by the background is not played again after wake()', async () => {
+    const ctx = setup({ [MID]: fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: MID }]));
+    ctx.content.emitTime(20);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    ctx.content.emitTime(30);
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    await ctx.manager.suspend();
+    await ctx.manager.wake();
+    ctx.content.emitTime(31);
+    await settle();
+    expect(ctx.http.requests.filter((u) => u === MID)).toHaveLength(1);
+  });
+
+  it('asks for no pause ad when the app gives no pause ad callback', async () => {
+    const PAUSE = 'https://ads.test/pause.xml';
+    const ctx = setup({ [PAUSE]: fixture('vast/pause.xml') }, { pauseAdUrl: PAUSE });
+    await ctx.manager.start(manual([]));
+    await settle();
+    expect(ctx.http.requests).toEqual([]);
+  });
+
+  it('reports no VMAP error for a VMAP that loads', async () => {
+    const ctx = setup({
+      [VMAP]: fixture('vmap/pre-mid-post.xml'),
+      'https://ads.test/pre.xml': fixture('vast/empty.xml'),
+    });
+    await ctx.manager.start({ vmapUrl: VMAP });
+    await settle();
+    expect(ctx.events.filter((e) => e.startsWith('vmap:error'))).toEqual([]);
+  });
+
+  it('places a percentage break only once the content knows its length', async () => {
+    const ctx = setup({
+      [VMAP]: fixture('vmap/pre-mid-post.xml'),
+      'https://ads.test/pre.xml': fixture('vast/empty.xml'),
+    });
+    let length = 0;
+    ctx.content.getDuration = () => length;
+    await ctx.manager.start({ vmapUrl: VMAP });
+    await settle();
+    ctx.content.emitTime(10); // a stream that does not know its length yet
+    await settle();
+    length = 600;
+    ctx.content.emitTime(11);
+    await settle();
+    ctx.content.emitTime(285); // a seek over the mid-roll at 90.5 s, which has no ads
+    await settle();
+    ctx.content.emitTime(286); // 50 % is 300 s
+    await settle();
+    expect(ctx.http.requests).toContain('https://ads.test/mid2.xml');
+  });
+
+  it('prefetches a break as many seconds ahead as the app asks', async () => {
+    const ctx = setup({ [MID]: fixture('vast/inline.xml') }, { prefetchSeconds: 5 });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: MID }]));
+    for (const time of [20, 22, 24]) {
+      ctx.content.emitTime(time);
+      await settle();
+    }
+    expect(ctx.http.requests).toEqual([]);
+    ctx.content.emitTime(26);
+    await settle();
+    expect(ctx.http.requests).toEqual([MID]);
+  });
+
+  it('does not move a content player that is one second from where the viewer was', async () => {
+    const ctx = setup({});
+    await ctx.content.initialize();
+    ctx.content.emitTime(9);
+    await ctx.manager.start(manual([]), { resumeAt: 10 });
+    expect(ctx.content.calls.filter((c) => c.startsWith('seek'))).toEqual([]);
+  });
+
+  it('does not play the content after dispose() when the start fails', async () => {
+    const ctx = setup({});
+    let fail = (): void => undefined;
+    let plays = 0;
+    ctx.content.play = () => {
+      plays++;
+      return new Promise((_, reject) => (fail = () => reject(new Error('player busy'))));
+    };
+    const starting = ctx.manager.start(manual([]));
+    await settle();
+    await ctx.manager.dispose();
+    fail();
+    await starting;
+    expect(ctx.events).toContain('error:start');
+    expect(plays).toBe(1);
+  });
+});
