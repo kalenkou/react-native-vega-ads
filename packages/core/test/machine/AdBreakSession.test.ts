@@ -1,7 +1,8 @@
 import { readFileSync } from 'fs';
 import { AdBreakSession, SessionSnapshot } from '../../src/machine/AdBreakSession';
+import type { AdEventInfo } from '../../src/events';
 import { RepeatGuard } from '../../src/pod/RepeatGuard';
-import { installImagePolyfill } from '../../src/vast';
+import { installImagePolyfill, requestVast } from '../../src/vast';
 import { FakeClock } from '../fakes/FakeClock';
 import { FakeHttp } from '../fakes/FakeHttp';
 import { FakePlayer } from '../fakes/FakePlayer';
@@ -42,6 +43,7 @@ function setup(
     content?: FakePlayer;
     holdInit?: (player: FakePlayer) => void;
     captionLanguage?: string;
+    handOverLeadMs?: number;
   } = {},
 ) {
   const http = new FakeHttp().on(TAG, { body });
@@ -51,6 +53,7 @@ function setup(
   const adPlayers: FakePlayer[] = [];
   const states: SessionSnapshot[] = [];
   const events: string[] = [];
+  const details: Array<[string, AdEventInfo]> = [];
   const session = new AdBreakSession({
     http,
     clock,
@@ -77,10 +80,14 @@ function setup(
     blockedAdCategories: options.blockedAdCategories,
     sceneSignals: options.sceneSignals,
     captionLanguage: options.captionLanguage,
+    handOverLeadMs: options.handOverLeadMs,
     onChange: (snapshot) => states.push(snapshot),
-    onEvent: (name) => events.push(name),
+    onEvent: (name, info) => {
+      events.push(name);
+      details.push([name, info]);
+    },
   });
-  return { session, content, adPlayers, states, events, clock, http };
+  return { session, content, adPlayers, states, events, details, clock, http };
 }
 
 /** Loads the break and lets the ad player report it can play. */
@@ -123,6 +130,9 @@ describe('AdBreakSession: loading (R10)', () => {
     const ctx = setup(webmOnly);
     await expect(ctx.session.load([{ kind: 'url', url: TAG }])).resolves.toBe('empty');
     expect(sent()).toContain('https://t.test/error?code=403');
+    expect(ctx.events).toEqual(['error:403']);
+    expect(ctx.session.state).toBe('empty');
+    expect(last(ctx.states)?.state).toBe('empty');
   });
 
   it('sends 402 (media file timeout) and gives up on an ad that never becomes playable', async () => {
@@ -134,6 +144,95 @@ describe('AdBreakSession: loading (R10)', () => {
     expect(sent()).toContain('https://t.test/error?code=402');
     expect(sent()).not.toContain('https://t.test/error?code=400');
     expect(ctx.adPlayers[0]?.deinitialized).toBe(true);
+  });
+});
+
+describe('AdBreakSession: loading, more cases', () => {
+  it('is idle before load()', () => {
+    expect(setup(fixture('inline.xml')).session.state).toBe('idle');
+  });
+
+  it('plays a preloaded answer without asking the ad server again', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const preloaded = await requestVast({ kind: 'url', url: TAG }, { http: ctx.http, clock: ctx.clock });
+    ctx.http.requests.length = 0;
+    const loading = ctx.session.load([{ kind: 'url', url: TAG }], [preloaded]);
+    await settle();
+    ctx.adPlayers[0]?.emitCanPlay();
+    await expect(loading).resolves.toBe('ready');
+    expect(ctx.http.requests).toEqual([]);
+  });
+
+  it('asks the ad server again for a source whose preloaded request failed', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const down = 'https://ads.test/down.xml';
+    const failed = await requestVast({ kind: 'url', url: down }, { http: new FakeHttp().fail(down), clock: ctx.clock });
+    expect(failed.status).toBe('failed');
+    const loading = ctx.session.load([{ kind: 'url', url: TAG }], [failed]);
+    await settle();
+    ctx.adPlayers[0]?.emitCanPlay();
+    await expect(loading).resolves.toBe('ready');
+    expect(ctx.http.requests).toEqual([TAG]);
+  });
+
+  it('loads nothing when the break is left while the ad server answers', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    let answer = (): void => undefined;
+    const get = ctx.http.get.bind(ctx.http);
+    ctx.http.get = (url, options) => new Promise((resolve) => (answer = () => resolve(get(url, options))));
+    const loading = ctx.session.load([{ kind: 'url', url: TAG }]);
+    await settle();
+    await ctx.session.interrupt();
+    answer();
+    await expect(loading).resolves.toBe('empty');
+    expect(ctx.adPlayers).toHaveLength(0);
+    expect(ctx.session.state).toBe('interrupted');
+  });
+
+  it('loads nothing when the break is left while the viewing history is read', async () => {
+    let restore = (): void => undefined;
+    const memory = {
+      read: () => new Promise<string | null>((resolve) => (restore = () => resolve(null))),
+      write: () => Promise.resolve(),
+    };
+    const ctx = setup(fixture('inline.xml'), { repeats: new RepeatGuard(new FakeClock(0), { memory }) });
+    const loading = ctx.session.load([{ kind: 'url', url: TAG }]);
+    await settle();
+    await ctx.session.interrupt();
+    restore();
+    await expect(loading).resolves.toBe('empty');
+    expect(ctx.adPlayers).toHaveLength(0);
+    expect(ctx.session.state).toBe('interrupted');
+  });
+
+  it('loads nothing when the break is left just after its ad became playable', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const loading = ctx.session.load([{ kind: 'url', url: TAG }]);
+    await settle();
+    const player = ctx.adPlayers[0] as FakePlayer;
+    player.emitCanPlay();
+    const interrupted = ctx.session.interrupt();
+    await expect(loading).resolves.toBe('empty');
+    await interrupted;
+    expect(ctx.session.state).toBe('interrupted');
+    expect(player.deinitialized).toBe(true);
+  });
+
+  it('plays only the first ad of a source that allows one ad', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'));
+    const loading = ctx.session.load([{ kind: 'url', url: TAG }], [], [true]);
+    await settle();
+    const player = ctx.adPlayers[0] as FakePlayer;
+    player.emitCanPlay();
+    await expect(loading).resolves.toBe('ready');
+    expect(player.src).toBe('https://cdn.test/pod-1.mp4');
+    await ctx.session.start();
+    expect(last(ctx.states)).toMatchObject({ position: 1, total: 1 });
+  });
+
+  it('reports an empty break for an empty source that allows one ad', async () => {
+    const ctx = setup(fixture('empty.xml'));
+    await expect(ctx.session.load([{ kind: 'url', url: TAG }], [], [true])).resolves.toBe('empty');
   });
 });
 
@@ -1274,6 +1373,8 @@ describe('AdBreakSession: a player call that fails', () => {
     await expect(loading).resolves.toBe('empty');
     expect(ctx.adPlayers[0]?.calls.some((c) => c.startsWith('src:'))).toBe(false);
     expect(ctx.adPlayers[0]?.deinitialized).toBe(true);
+    expect(ctx.session.state).toBe('interrupted');
+    expect(ctx.events).toEqual([]);
   });
 });
 
