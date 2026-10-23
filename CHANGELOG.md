@@ -4,6 +4,10 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ## [Unreleased]
 
+### Fixed
+
+- WebVTT captions: tags are removed in one pass. Before, a long caption line full of "<" from an ad server took seconds to read (found by CodeQL).
+
 ## [0.1.3] - 2026-10-23
 
 ### Fixed
