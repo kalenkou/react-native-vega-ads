@@ -790,6 +790,324 @@ describe('AdBreakSession: back-to-back ads on two ad players', () => {
   });
 });
 
+describe('AdBreakSession: back-to-back ads, more cases', () => {
+  const POD3 = (): string => fixture('pod-optimized.xml').replace('<Ad id="buffet">', '<Ad id="pod-3" sequence="3">');
+  const NO_FILE_FOR_POD2 = (): string =>
+    fixture('pod-optimized.xml').replace(
+      /type="video\/mp4"([^>]*><!\[CDATA\[https:\/\/cdn\.test\/pod-2)/,
+      'type="video/webm"$1',
+    );
+
+  async function playFirst(ctx: ReturnType<typeof setup>): Promise<FakePlayer> {
+    const first = await loadReady(ctx);
+    await ctx.session.start();
+    await first.flush();
+    await settle();
+    return first;
+  }
+
+  /** Plays the first ad and hands over to the prebuffered second one at 9.6 s. */
+  async function handOver(ctx: ReturnType<typeof setup>): Promise<[FakePlayer, FakePlayer]> {
+    const first = await playFirst(ctx);
+    const second = ctx.adPlayers[1] as FakePlayer;
+    second.emitCanPlay();
+    await settle();
+    first.emitTime(9.6);
+    await settle();
+    await second.flush();
+    await settle();
+    return [first, second];
+  }
+
+  it('an error of the new ad during the hand-over fails only the new ad', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true });
+    const [first, second] = await handOver(ctx);
+    second.emitError();
+    await settle();
+    expect(adsOf(ctx, 'error:405')).toEqual(['pod-2']);
+    expect(first.deinitialized).toBe(false);
+  });
+
+  it('the finishing ad still reports its quartiles after an early hand-over', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true, handOverLeadMs: 3000 });
+    const first = await playFirst(ctx);
+    const second = ctx.adPlayers[1] as FakePlayer;
+    second.emitCanPlay();
+    await settle();
+    first.emitTime(7.1);
+    await settle();
+    expect(second.calls).toContain('play');
+    expect(adsOf(ctx, 'thirdQuartile')).toEqual([]);
+    first.emitTime(7.6);
+    expect(adsOf(ctx, 'thirdQuartile')).toEqual(['pod-1']);
+  });
+
+  it('releases a finishing ad that never ends one second after its planned end', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true });
+    const [first] = await handOver(ctx);
+    ctx.clock.advance(1_300);
+    await settle();
+    expect(first.deinitialized).toBe(false);
+    ctx.clock.advance(200);
+    await settle();
+    expect(first.deinitialized).toBe(true);
+    expect(adsOf(ctx, 'complete')).toEqual(['pod-1']);
+  });
+
+  it('tries the second ad player only once when the device cannot create it', async () => {
+    const ctx = setup(POD3(), { standby: true, maxPlayers: 1 });
+    const first = await playFirst(ctx);
+    first.emitEnded();
+    await settle();
+    await first.flush();
+    await settle();
+    expect(first.src).toBe('https://cdn.test/pod-2.mp4');
+    expect(ctx.adPlayers).toHaveLength(2);
+    expect(ctx.events.filter((e) => e === 'standby:unavailable')).toHaveLength(1);
+  });
+
+  it('prebuffers no next ad that would pass the break budget', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true, budgetMs: 20_000 });
+    await playFirst(ctx);
+    expect(ctx.adPlayers).toHaveLength(1);
+  });
+
+  it('counts only the rest of the current ad when it checks the budget for the next one', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true, budgetMs: 22_000 });
+    const first = await loadReady(ctx);
+    await ctx.session.start();
+    first.emitTime(4); // the first frame comes at 4 s: 6 s of the ad are left
+    await first.flush();
+    await settle();
+    expect(ctx.adPlayers).toHaveLength(2);
+  });
+
+  it('prebuffers nothing for a next ad without a playable file, and then plays the spare ad', async () => {
+    const ctx = setup(NO_FILE_FOR_POD2(), { standby: true });
+    const first = await playFirst(ctx);
+    expect(ctx.adPlayers).toHaveLength(1);
+    first.emitEnded();
+    await settle();
+    expect(adsOf(ctx, 'error:403')).toEqual(['pod-2']);
+    expect(first.src).toBe('https://cdn.test/buffet.mp4');
+  });
+
+  it('prebuffers nothing when the ad changed while the finishing ad was still on screen', async () => {
+    const ctx = setup(POD3(), { standby: true });
+    const [first, second] = await handOver(ctx);
+    second.emitError();
+    await settle();
+    expect(second.src).toBe('https://cdn.test/buffet.mp4');
+    first.emitEnded();
+    await settle();
+    expect(ctx.adPlayers).toHaveLength(2);
+  });
+
+  it.each([
+    ['the ad is skipped', (ctx: ReturnType<typeof setup>) => void ctx.session.skip()],
+    ['the break is left', (ctx: ReturnType<typeof setup>) => void ctx.session.interrupt()],
+  ])('releases a second ad player that finishes starting after %s', async (_name, leave) => {
+    let started = (): void => undefined;
+    let created = 0;
+    const ctx = setup(fixture('pod-optimized.xml'), {
+      standby: true,
+      holdInit: (player) => {
+        if (created++ === 1) {
+          player.initialize = async () => {
+            await new Promise<void>((resolve) => (started = resolve));
+            await FakePlayer.prototype.initialize.call(player);
+          };
+        }
+      },
+    });
+    const first = await playFirst(ctx);
+    first.emitTime(5);
+    leave(ctx);
+    await settle();
+    started();
+    await settle();
+    const second = ctx.adPlayers[1] as FakePlayer;
+    expect(second.src).toBeNull();
+    expect(second.deinitialized).toBe(true);
+  });
+
+  it('an error of the ad that came from the second player fails that ad, not a standby', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true });
+    const first = await playFirst(ctx);
+    const next = ctx.adPlayers[1] as FakePlayer;
+    next.emitCanPlay();
+    first.emitEnded();
+    await settle();
+    await next.flush();
+    next.emitError();
+    await settle();
+    expect(ctx.events).not.toContain('standby:error');
+    expect(adsOf(ctx, 'error:405')).toEqual(['pod-2']);
+  });
+
+  it('tells the app when a second ad player breaks', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true });
+    await playFirst(ctx);
+    (ctx.adPlayers[1] as FakePlayer).emitError();
+    await settle();
+    expect(ctx.events).toContain('standby:error');
+  });
+
+  it('hands over at the VAST duration, not at the length the player reports', async () => {
+    const ctx = setup(POD3(), { standby: true });
+    const [first, second] = await handOver(ctx);
+    first.emitEnded();
+    await settle();
+    const third = ctx.adPlayers[2] as FakePlayer;
+    third.emitCanPlay();
+    await settle();
+    second.emitTime(9.6); // the player says 10 s; the VAST says 15 s
+    await settle();
+    expect(third.calls).not.toContain('play');
+    second.emitTime(14.6);
+    await settle();
+    expect(third.calls).toContain('play');
+  });
+
+  it('tracks an ad that starts under the finishing one from where it is when it shows', async () => {
+    const ctx = setup(POD3(), { standby: true });
+    const [first, second] = await handOver(ctx);
+    first.emitEnded();
+    await settle();
+    const third = ctx.adPlayers[2] as FakePlayer;
+    third.emitCanPlay();
+    await settle();
+    second.emitTime(14.6);
+    await settle();
+    await third.flush();
+    third.emitTime(2);
+    expect(adsOf(ctx, 'start')).not.toContain('pod-3');
+    second.emitEnded();
+    await settle();
+    expect(adsOf(ctx, 'impression')).toContain('pod-3');
+    expect(adsOf(ctx, 'firstQuartile')).toContain('pod-3');
+    third.emitTime(3.1);
+    expect(adsOf(ctx, 'midpoint')).toContain('pod-3');
+  });
+
+  it('hands over exactly at the lead time, and not to a next ad that is not buffered yet', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true });
+    const first = await playFirst(ctx);
+    const next = ctx.adPlayers[1] as FakePlayer;
+    first.emitTime(9.6);
+    await settle();
+    expect(next.calls).not.toContain('play');
+
+    const exact = setup(fixture('pod-optimized.xml'), { standby: true });
+    const one = await playFirst(exact);
+    const two = exact.adPlayers[1] as FakePlayer;
+    two.emitCanPlay();
+    one.emitTime(9.5);
+    await settle();
+    expect(two.calls).toContain('play');
+  });
+
+  it('does not hand over early when neither the VAST nor the player knows the ad length', async () => {
+    const noDuration = fixture('pod-optimized.xml').replace(
+      '<Linear skipoffset="00:00:05"><Duration>00:00:10</Duration>',
+      '<Linear skipoffset="00:00:05">',
+    );
+    const ctx = setup(noDuration, { standby: true, holdInit: (player) => (player.getDuration = () => 0) });
+    const first = await playFirst(ctx);
+    const next = ctx.adPlayers[1] as FakePlayer;
+    next.emitCanPlay();
+    first.emitTime(1);
+    await settle();
+    expect(next.calls).not.toContain('play');
+  });
+
+  it('hands over to the next ad only while it still fits the break budget', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true, budgetMs: 30_000 });
+    const first = await playFirst(ctx);
+    const next = ctx.adPlayers[1] as FakePlayer;
+    next.emitCanPlay();
+    ctx.clock.advance(9_600);
+    first.emitTime(9.6);
+    await settle();
+    expect(next.calls).toContain('play');
+
+    const late = setup(fixture('pod-optimized.xml'), { standby: true, budgetMs: 27_500 });
+    const slow = await playFirst(late);
+    const unused = late.adPlayers[1] as FakePlayer;
+    unused.emitCanPlay();
+    late.clock.advance(12_600); // the ad stopped for 3 s on the way
+    slow.emitTime(9.6);
+    await settle();
+    expect(unused.calls).not.toContain('play');
+  });
+
+  it('plays the next ad on the same player while it fits the break budget', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { budgetMs: 30_000 });
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    ctx.clock.advance(10_000);
+    player.emitTime(10);
+    player.emitEnded();
+    await settle();
+    expect(player.src).toBe('https://cdn.test/pod-2.mp4');
+  });
+
+  it('on Back, releases the prebuffered player too and detaches both surfaces', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { standby: true });
+    const first = await playFirst(ctx);
+    const next = ctx.adPlayers[1] as FakePlayer;
+    next.emitCanPlay();
+    await ctx.session.cancel();
+    expect([first.deinitialized, next.deinitialized]).toEqual([true, true]);
+    expect([first.surface, next.surface]).toEqual([null, null]);
+  });
+
+  it('gives media controls to an ad only while it is still the one on screen', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitEnded();
+    await settle();
+    ctx.clock.advance(0);
+    expect(player.calls).not.toContain('focus');
+    await player.flush();
+    ctx.clock.advance(0);
+    expect(player.calls.filter((c) => c === 'focus')).toHaveLength(1);
+
+    const left = setup(fixture('inline.xml'));
+    const gone = await loadReady(left);
+    await left.session.start();
+    await gone.flush();
+    await left.session.cancel();
+    left.clock.advance(0);
+    expect(gone.calls).not.toContain('focus');
+  });
+
+  it('ignores an error of a skipped ad while the unused second player is released', async () => {
+    let release = (): void => undefined;
+    let created = 0;
+    const ctx = setup(fixture('pod-optimized.xml'), {
+      standby: true,
+      holdInit: (player) => {
+        if (created++ === 1) {
+          player.deinitialize = () => new Promise<void>((resolve) => (release = resolve));
+        }
+      },
+    });
+    const first = await playFirst(ctx);
+    first.emitTime(5);
+    expect(ctx.session.skip()).toBe(true);
+    await settle();
+    first.emitError();
+    release();
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    expect(first.src).toBe('https://cdn.test/pod-2.mp4');
+  });
+});
+
 describe('AdBreakSession: remote play/pause from the app key handler', () => {
   it('pauses and resumes the ad on togglePause, with pixels', async () => {
     const ctx = setup(fixture('inline.xml'));
