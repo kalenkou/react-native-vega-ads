@@ -1872,6 +1872,98 @@ describe('AdBreakSession: viewer rules and event details', () => {
   });
 });
 
+describe('AdBreakSession: snapshot fields', () => {
+  it('names the ad only while it plays, with the same object for the whole ad', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    expect(last(ctx.states)?.ad).toBeNull();
+    await ctx.session.start();
+    await player.flush();
+    const ad = last(ctx.states)?.ad;
+    expect(ad).toMatchObject({ id: 'ad-1', title: 'Inline linear 10s', duration: 10 });
+    player.emitTime(1);
+    expect(last(ctx.states)?.ad).toBe(ad);
+    player.emitEnded();
+    await settle();
+    expect(last(ctx.states)?.ad).toBeNull();
+  });
+
+  it('after the break shows no ad, but still counts the ads of the break', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await ctx.session.cancel();
+    expect(player.deinitialized).toBe(true);
+    expect(last(ctx.states)).toEqual({
+      state: 'finished',
+      position: 0,
+      total: 2,
+      adTime: 0,
+      adDuration: 0,
+      canSkip: false,
+      skipIn: null,
+      adSurface: null,
+      why: { blockedAfterScene: [], sceneSignals: [], repeatsLeftOut: 0, quieter: false },
+      caption: '',
+      ad: null,
+    });
+  });
+
+  it('sends no snapshot when a caption file arrives before its ad is on screen', async () => {
+    const vtt = 'https://cdn.test/ad.en.vtt';
+    const body = fixture('inline.xml').replace(
+      '</MediaFiles>',
+      `<ClosedCaptionFiles><ClosedCaptionFile type="text/vtt" language="en"><![CDATA[${vtt}]]></ClosedCaptionFile></ClosedCaptionFiles></MediaFiles>`,
+    );
+    const ctx = setup(body);
+    let answer = (): void => undefined;
+    const get = ctx.http.get.bind(ctx.http);
+    ctx.http.get = (url, options) =>
+      url === vtt
+        ? new Promise((resolve) => (answer = () => resolve({ status: 200, ok: true, text: async () => 'WEBVTT\n' })))
+        : get(url, options);
+    void ctx.session.load([{ kind: 'url', url: TAG }]);
+    await settle();
+    const before = ctx.states.length;
+    answer();
+    await settle();
+    expect(ctx.states).toHaveLength(before);
+  });
+});
+
+describe('AdBreakSession: volume', () => {
+  const withLoudness = (lufs: string): string =>
+    fixture('inline.xml').replace(
+      '</Linear>',
+      `</Linear><CreativeExtensions><CreativeExtension type="loudness"><IntegratedLoudness unit="LUFS">${lufs}</IntegratedLoudness></CreativeExtension></CreativeExtensions>`,
+    );
+
+  it('leaves the volume alone when the app gives no content loudness', async () => {
+    const ctx = setup(withLoudness('-16'));
+    const player = await loadReady(ctx);
+    expect(player.calls.filter((c) => c.startsWith('volume'))).toEqual([]);
+  });
+
+  it('plays the ad on a player that cannot set its volume', async () => {
+    const ctx = setup(withLoudness('-16'), {
+      contentLoudness: -24,
+      holdInit: (player) => Object.assign(player, { setVolume: undefined }),
+    });
+    const player = await loadReady(ctx);
+    expect(player.src).toBe('https://cdn.test/ad-720.mp4');
+  });
+
+  it('does not turn up an ad quieter than the content, and reports no loudness change', async () => {
+    const ctx = setup(withLoudness('-30'), { contentLoudness: -24 });
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    expect(player.calls.filter((c) => c.startsWith('volume'))).toEqual(['volume:1']);
+    expect(ctx.events.filter((e) => e.startsWith('loudness'))).toEqual([]);
+    expect(last(ctx.states)?.why?.quieter).toBe(false);
+  });
+});
+
 describe('AdBreakSession: a player call that fails', () => {
   const twoSkippable = (): string => {
     const ad = (n: number) => `<Ad id="a${n}" sequence="${n}"><InLine><AdSystem>x</AdSystem><AdTitle>t${n}</AdTitle>
