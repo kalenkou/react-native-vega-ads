@@ -15,7 +15,7 @@ Four themes repeat:
 
 Severity: high = a core feature fails for viewers. Medium = wrong behaviour or hours lost, with a workaround. Low = friction, found early.
 
-| ID | Problem | Area | Severity |
+| Entry&nbsp;ID | Problem | Area | Severity |
 |---|---|---|---|
 | FL-01 | An HTTP 403 reaches JS as error 4 with an empty message | w3cmedia | medium |
 | FL-02 | The system log drops app `console.log` lines during playback | Logging | medium |
