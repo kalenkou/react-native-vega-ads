@@ -120,6 +120,33 @@ describe('DetailsScreen', () => {
     },
   );
 
+  it('asks for the ad plan after 5 s when the poster never loads', () => {
+    jest.useFakeTimers();
+    try {
+      const onDrawn = jest.fn();
+      const renderer = render(onDrawn);
+      act(() => {
+        jest.advanceTimersByTime(4999);
+      });
+      expect(mockUseAdPlan).not.toHaveBeenCalled();
+      act(() => {
+        jest.advanceTimersByTime(1);
+      });
+      expect(mockUseAdPlan).toHaveBeenCalledWith(
+        {vmapUrl: movie.vmapUrl},
+        {adId: mockRetriever},
+      );
+      expect(
+        renderer.root.findAllByProps({testID: 'ad-plan'}).length,
+      ).toBeGreaterThan(0);
+      // The poster is still not drawn: only its own callbacks report the first screen.
+      expect(onDrawn).not.toHaveBeenCalled();
+      renderer.unmount();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it("never draws the previous movie's plan after Next", () => {
     const props = {next: 'x', onPlay: jest.fn(), onNext: jest.fn()};
     let renderer!: TestRenderer.ReactTestRenderer;

@@ -40,6 +40,9 @@ interface TitlePlan {
   plan: AdPlan | null;
 }
 
+/** The ad plan request waits this long for the poster, like the splash in launch.ts. */
+const PLAN_WAIT_MS = 5000;
+
 /**
  * Asks for the ad plan and hands it to the page. The page mounts it only after the poster is drawn:
  * on a cold start on React Native 0.83 the first read of `AdIdRetriever` loads its Turbo Module,
@@ -89,6 +92,11 @@ export const DetailsScreen = ({
     setDrawn(true);
     onDrawn?.();
   }, [onDrawn]);
+  // A poster that never loads must not keep the ads away: ask anyway after PLAN_WAIT_MS.
+  useEffect(() => {
+    const timer = setTimeout(() => setDrawn(true), PLAN_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <View style={styles.root}>
