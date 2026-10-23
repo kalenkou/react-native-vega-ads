@@ -498,6 +498,7 @@ Muted demo on React Native 0.83 (`apps/demo`), the same stick.
 |---|---|
 | Cold launch before the ad plan fix, 30 launches (`kpi-visualizer --certification --kpi cool-start-latency`) | launch to first frame P90 0.88 s. Fully drawn P90 6.3 s, mean 4.0 s, max 11.8 s. Traces: the first `AdIdRetriever` read held the JavaScript thread for 0.5 to 2.6 s (FL-38) |
 | Cold launch with the fix (`8acfbcc`), 30 launches | 28 counted: first frame P90 717 ms, fully drawn P90 5.5 s, mean 3.0 s, max 7.5 s. The tool reported launches 6 and 29 as "crashed" with no crash log, and the stick's crash history has no entry for the app |
+| Cold launch again, 30 launches, the build of `40876ce` | 29 counted (the tool dropped one for a trace marker error), no crash: first frame P90 772 ms, fully drawn P90 5.6 s, mean 3.2 s, max 7.7 s |
 | The next movie after Next (`20d230b`) | PASS: the movie page draws only the plan of the movie on screen |
 | Whole film, Tears of Steel with no key pressed (`5495f91`) | PASS: 5 impressions and 5 completes, no VAST error. The repeated ad was left out, all 5 ads were turned down (up to 7.8 dB), the player closed by itself. PSS 96, 93, 76, 73, 56 and 58 MB. The system log reader stopped for 6 minutes, so the first mid-roll has no sample |
 | A first try of the same run | stopped by the TV. 7 s into the pre-roll the stick logged "Marking window 3 as Unbound due to output removal". The audio sink went away and the system ended the app. HOME woke the display again (`DISPLAY ON`, One Touch Play) |
