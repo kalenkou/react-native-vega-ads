@@ -71,7 +71,7 @@ const LENGTHS = new Set([
   'letterSpacing',
   'shadowRadius',
   'textShadowRadius',
-  // The logical and outline lengths that React Native 0.83 adds.
+  // The logical lengths (by block and inline), and the outline lengths of React Native 0.83.
   'inset',
   'insetBlock',
   'insetBlockStart',
@@ -140,9 +140,10 @@ function mapRecord(
 /**
  * Styles written for the 1920-wide layout, with every length multiplied by `scale`, so they look
  * the same on React Native 0.72 and 0.83. Lengths are positions and insets, sizes, padding, margin
- * (also by block and inline), borders, outlines, gaps, font size, line height, letter spacing, shadow radius and offset, and `translateX` and
- * `translateY`. Percentages, z-order, opacity, flex and `scale` or `rotate` transforms stay as they
- * are.
+ * (also by block and inline), borders, outlines, gaps, font size, line height, letter spacing,
+ * shadow radius and offset, and `translateX` and `translateY`. Percentages, z-order, opacity, flex
+ * and `scale` or `rotate` transforms stay as they are. So do `boxShadow`, `filter`,
+ * `transformOrigin` and `perspective`: scale those by hand with `layoutScale()`.
  */
 export function scaleStyles<T extends Record<string, object>>(styles: T, scale: number = layoutScale()): T {
   const scaled: Record<string, object> = {};
