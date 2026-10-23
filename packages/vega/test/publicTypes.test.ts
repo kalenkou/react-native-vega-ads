@@ -38,6 +38,7 @@ describe('public types', () => {
       | AdSkipButtonProps
       | undefined
     > = [];
+    // The real check is the type check of this file (ts-jest compiles it): it fails to compile if a type is not exported.
     expect([schedule, macros, media, port, used]).toHaveLength(5);
   });
 
@@ -56,6 +57,8 @@ describe('public types', () => {
     const seen: string[] = [];
     const handler: AdEventHandler = (name) => seen.push(name);
     handler('an event from a newer version', {});
-    expect([names.length, typo, seen]).toEqual([7, 'impresion', ['an event from a newer version']]);
+    // The names and the typo are checked when this file compiles. At run time only the handler is.
+    void [names, typo];
+    expect(seen).toEqual(['an event from a newer version']);
   });
 });

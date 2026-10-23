@@ -21,7 +21,12 @@ beforeEach(() => {
   g.window = g;
   delete g.Image;
 });
+// Every render is unmounted after its test: a live player keeps timers that would fire after the run.
+const mounted: TestRenderer.ReactTestRenderer[] = [];
 afterEach(() => {
+  act(() => {
+    mounted.splice(0).forEach((r) => r.unmount());
+  });
   delete g.window;
   delete g.Image;
 });
@@ -53,6 +58,7 @@ function setup(props: Partial<VegaAdsPlayerProps> = {}) {
   act(() => {
     renderer = TestRenderer.create(<VegaAdsPlayer {...base} {...props} />);
   });
+  mounted.push(renderer);
   /** The three KeplerVideoSurfaceViews report their surfaces, as on the device. */
   const surfacesReady = (): void => {
     const views = renderer.root.findAll((node) => (node.type as unknown) === 'KeplerVideoSurfaceView');

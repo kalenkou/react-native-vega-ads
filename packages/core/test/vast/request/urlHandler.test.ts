@@ -48,7 +48,7 @@ describe('urlHandler (R4, R16)', () => {
     expect(describeFailure((result as { error: Error }).error)).toEqual({ kind: 'timeout' });
   });
 
-  it('times out even when the HTTP port ignores the abort signal (C4-5)', async () => {
+  it('times out even when the HTTP port ignores the abort signal', async () => {
     const clock = new FakeClock();
     const deaf: HttpPort = { get: () => new Promise(() => undefined) };
     const handler = createUrlHandler({ http: deaf, clock, timeoutMs: 4000 });

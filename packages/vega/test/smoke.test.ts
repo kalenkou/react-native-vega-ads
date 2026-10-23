@@ -12,7 +12,7 @@ describe('package smoke test', () => {
     expect(useVegaVideoPlayer).toBe(useVideoPlayer);
   });
 
-  it('exports the default maxRedirects, so an app can raise it without a direct dependency on core', () => {
+  it('exports the default maxRedirects (5)', () => {
     expect(MAX_REDIRECTS).toBe(5);
   });
 

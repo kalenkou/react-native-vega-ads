@@ -74,7 +74,7 @@ describe('requestVmap (R18)', () => {
     ]);
   });
 
-  it('replaces the VMAP 1.0.1 [ERROR_CODE] macro too, every occurrence (C2-1)', async () => {
+  it('replaces the VMAP 1.0.1 [ERROR_CODE] macro too, every occurrence', async () => {
     const doc = `<?xml version="1.0"?>
 <vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
   <vmap:AdBreak timeOffset="soon" breakType="linear" breakId="x">
@@ -113,7 +113,7 @@ describe('requestVmap (R18)', () => {
     ]);
   });
 
-  it('gives breaks without breakId their own ids (C2-3)', async () => {
+  it('gives breaks without breakId their own ids', async () => {
     const doc = `<?xml version="1.0"?>
 <vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
   <vmap:AdBreak timeOffset="00:00:30" breakType="linear">
@@ -143,7 +143,7 @@ describe('requestVmap (R18)', () => {
     expect(result.breaks.map((b) => b.id)).toEqual(['midroll', 'midroll@t600']);
   });
 
-  it('allows multiple ads when the AdSource leaves allowMultipleAds out (C2-9)', async () => {
+  it('allows multiple ads when the AdSource leaves allowMultipleAds out', async () => {
     const doc = `<?xml version="1.0"?>
 <vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
   <vmap:AdBreak timeOffset="start" breakType="linear" breakId="pre">
@@ -183,7 +183,7 @@ describe('requestVmap (R18)', () => {
     ]);
   });
 
-  it('skips an AdBreak without AdSource quietly, with no 1005 (C2-8)', async () => {
+  it('skips an AdBreak without AdSource quietly, with no 1005', async () => {
     const doc = `<?xml version="1.0"?>
 <vmap:VMAP xmlns:vmap="http://www.iab.net/videosuite/vmap" version="1.0">
   <vmap:AdBreak timeOffset="00:00:30" breakType="linear" breakId="tracking-only">

@@ -183,7 +183,7 @@ describe('BreakScheduler (R10, R24)', () => {
     ]);
   });
 
-  it('plays one break, not two, when a seek over a mid-roll lands exactly on the next (C2-7)', () => {
+  it('plays one break, not two, when a seek over a mid-roll lands exactly on the next', () => {
     const scheduler = new BreakScheduler([
       { id: 'm30', offset: at(30) },
       { id: 'm60', offset: at(60) },

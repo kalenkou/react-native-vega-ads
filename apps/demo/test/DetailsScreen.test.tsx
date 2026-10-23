@@ -63,6 +63,14 @@ const tears = {
 const plan = {label: '4 ad breaks', breaks: 4, preroll: null, marks: [162]};
 const tearsPlan = {...plan, label: '3 ad breaks', marks: [140]};
 
+// Every render is unmounted after its test: the screen's 5 s plan timer must not fire after the run.
+const mounted: TestRenderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  act(() => {
+    mounted.splice(0).forEach((r) => r.unmount());
+  });
+});
+
 describe('DetailsScreen', () => {
   beforeEach(() => {
     mockReadAdId.mockClear();
@@ -87,6 +95,7 @@ describe('DetailsScreen', () => {
         />,
       );
     });
+    mounted.push(renderer);
     return renderer;
   }
 
@@ -172,6 +181,7 @@ describe('DetailsScreen', () => {
         <DetailsScreen movie={sintel} {...props} />,
       );
     });
+    mounted.push(renderer);
     act(() => {
       renderer.root.findByType(Image).props.onLoad();
     });

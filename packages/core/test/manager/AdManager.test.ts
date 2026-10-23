@@ -905,7 +905,7 @@ describe('AdManager', () => {
     expect(ctx.manager.togglePause()).toBe(false);
   });
 
-  it('after the post-roll the content is not played again from the start (C2-5)', async () => {
+  it('after the post-roll the content is not played again from the start', async () => {
     const ctx = setup({ 'https://ads.test/post.xml': fixture('vast/inline.xml') });
     await ctx.manager.start(manual([{ offset: 'end', vastUrl: 'https://ads.test/post.xml' }]));
     ctx.content.emitTime(590);
@@ -1174,7 +1174,7 @@ describe('AdManager', () => {
     expect(ctx.details).toContainEqual(['break:break-1:interrupted', { breakId: 'break-1' }]);
   });
 
-  it('suspend() while the last ad player is being released: the content stays paused, one breakEnd after wake() (C3-8)', async () => {
+  it('suspend() while the last ad player is being released: the content stays paused, one breakEnd after wake()', async () => {
     const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
     const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
     await settle();
@@ -1208,7 +1208,7 @@ describe('AdManager', () => {
     expect(ctx.content.calls).not.toContain('play');
   });
 
-  it('dispose() while the VAST request is in flight leaves no live ad player (C3-7)', async () => {
+  it('dispose() while the VAST request is in flight leaves no live ad player', async () => {
     const ctx = setup({});
     let answer: (body: string) => void = () => undefined;
     const get = ctx.http.get.bind(ctx.http);
@@ -1230,7 +1230,7 @@ describe('AdManager', () => {
     expect(ctx.content.calls).not.toContain('play');
   });
 
-  it('sends the VMAP breakStart and breakEnd pixels of a played break (C2-2)', async () => {
+  it('sends the VMAP breakStart and breakEnd pixels of a played break', async () => {
     const pixels = new FakeHttp();
     delete g.Image;
     installImagePolyfill(pixels, g);
@@ -1471,7 +1471,7 @@ describe('AdManager', () => {
   });
 
   // VMAP 1.0.1 defines 1000-1008 only; 1009 is the Google IMA SDK's own code for an empty VAST.
-  it('sends the VMAP error pixel with 1004 when a break has no ads (C2-2)', async () => {
+  it('sends the VMAP error pixel with 1004 when a break has no ads', async () => {
     const pixels = new FakeHttp();
     delete g.Image;
     installImagePolyfill(pixels, g);

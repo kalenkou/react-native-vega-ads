@@ -46,6 +46,7 @@ describe('adEventAd', () => {
   });
 
   it('reports a missing or negative duration as 0', () => {
+    expect(adEventAd(linear({}, { duration: undefined })).duration).toBe(0);
     expect(adEventAd(linear({}, { duration: 0 })).duration).toBe(0);
     expect(adEventAd(linear({}, { duration: -1 })).duration).toBe(0);
     expect(adEventAd(linear({}, { duration: 0.5 })).duration).toBe(0.5);

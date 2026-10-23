@@ -1,7 +1,13 @@
 {
   "preset": "react-native",
   "transform": {
-    "^.+\\.tsx?$": "ts-jest"
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        "babelConfig": true,
+        "diagnostics": true
+      }
+    ]
   },
   "setupFiles": [
     "./node_modules/@amazon-devices/react-native-kepler/jest/setup.js",
@@ -25,11 +31,5 @@
   "transformIgnorePatterns": [
     "node_modules/(?!(react-native|@react-native|@amazon-devices|@amzn)/)"
   ],
-  "coverageDirectory": ".tmp/coverage",
-  "globals": {
-    "ts-jest": {
-      "babelConfig": true,
-      "diagnostics": true
-    }
-  }
+  "coverageDirectory": ".tmp/coverage"
 }

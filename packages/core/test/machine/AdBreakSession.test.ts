@@ -1232,7 +1232,7 @@ describe('AdBreakSession: remote play/pause from the app key handler', () => {
   });
 });
 
-describe('AdBreakSession: stuck players never keep the content paused (goal 7, R7)', () => {
+describe('AdBreakSession: stuck players never keep the content paused (R7)', () => {
   it('sends 405 and returns to content when the ad shows no frame in time', async () => {
     const ctx = setup(fixture('inline.xml'));
     await contentAt(ctx.content, 42.5);
@@ -1348,7 +1348,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     return first;
   }
 
-  it('an ad that stalls after its first frame does not hold the content forever (C3-1)', async () => {
+  it('an ad that stalls after its first frame does not hold the content forever', async () => {
     const ctx = setup(fixture('inline.xml'));
     const player = await playFirst(ctx);
     player.emitTime(3); // then nothing: no timeupdate, no error, no ended
@@ -1408,7 +1408,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     expect(ctx.session.state).toBe('playing');
   });
 
-  it('skip and ended in the same tick move on by one ad (C3-2)', async () => {
+  it('skip and ended in the same tick move on by one ad', async () => {
     const ctx = setup(POD3(), { standby: true });
     const first = await playFirst(ctx);
     expect(ctx.adPlayers).toHaveLength(2); // standby created, no canplay yet
@@ -1419,7 +1419,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     expect(srcs(first)).toEqual(['src:https://cdn.test/pod-1.mp4', 'src:https://cdn.test/pod-2.mp4']);
   });
 
-  it('a late ended of the skipped ad does not complete the next ad (C3-3)', async () => {
+  it('a late ended of the skipped ad does not complete the next ad', async () => {
     const ctx = setup(fixture('pod-optimized.xml'));
     const player = await playFirst(ctx);
     player.emitTime(5);
@@ -1433,7 +1433,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     expect(ctx.session.state).toBe('playing');
   });
 
-  it('without <Duration> the hand-over waits for the end the player reports (C3-4)', async () => {
+  it('without <Duration> the hand-over waits for the end the player reports', async () => {
     const noDuration = fixture('pod-optimized.xml').replace(
       '<Linear skipoffset="00:00:05"><Duration>00:00:10</Duration>',
       '<Linear skipoffset="00:00:05">',
@@ -1452,7 +1452,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     expect(next.calls).toContain('play');
   });
 
-  it('without a valid <Duration> tracks start and quartiles from the length the player reports (C1-7)', async () => {
+  it('without a valid <Duration> tracks start and quartiles from the length the player reports', async () => {
     const ctx = setup(
       fixture('inline.xml').replace('<Duration>00:00:10.000</Duration>', '<Duration>00:00:00</Duration>'),
     );
@@ -1463,7 +1463,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     expect(sent()).toEqual(['https://t.test/start', 'https://t.test/q1']);
   });
 
-  it('the active ad is shown even when the finishing one never sends ended (C3-5)', async () => {
+  it('the active ad is shown even when the finishing one never sends ended', async () => {
     const ctx = setup(POD3(), { standby: true });
     const first = await playFirst(ctx);
     const second = ctx.adPlayers[1] as FakePlayer;
@@ -1490,7 +1490,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     expect(second.deinitialized).toBe(true);
   });
 
-  it('releasing the players during a hand-over settles the wait for the finishing one (C3-11)', async () => {
+  it('releasing the players during a hand-over settles the wait for the finishing one', async () => {
     const ctx = setup(POD3(), { standby: true });
     const first = await playFirst(ctx);
     const second = ctx.adPlayers[1] as FakePlayer;
@@ -1508,7 +1508,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     expect(settled).toBe(true);
   });
 
-  it('an error of the finishing ad after the hand-over sends 405 for it, not complete (C1-3)', async () => {
+  it('an error of the finishing ad after the hand-over sends 405 for it, not complete', async () => {
     const imp1 = '<Impression><![CDATA[https://t.test/imp-pod-1]]></Impression>';
     const body = fixture('pod-optimized.xml').replace(
       imp1,
@@ -1531,7 +1531,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     expect(ctx.session.state).toBe('playing');
   });
 
-  it('a media error before canplay fails the ad at once, not after 8 s (C4-1)', async () => {
+  it('a media error before canplay fails the ad at once, not after 8 s', async () => {
     const ctx = setup(fixture('inline.xml'));
     let result: string | null = null;
     void ctx.session.load([{ kind: 'url', url: TAG }]).then((r) => (result = r));
@@ -1542,7 +1542,7 @@ describe('AdBreakSession: event order and stuck players', () => {
     expect(ctx.events).toContain('error:400');
   });
 
-  it('the pause that comes with the natural end sends no pause pixel (C1-2)', async () => {
+  it('the pause that comes with the natural end sends no pause pixel', async () => {
     const ctx = setup(fixture('inline.xml'));
     const player = await playFirst(ctx);
     player.emitTime(10);
@@ -1640,7 +1640,7 @@ describe('AdBreakSession: stall timeouts, more cases', () => {
 });
 
 describe('AdBreakSession: calls in the wrong state', () => {
-  it('cancel() before start() leaves the content alone (C3-6)', async () => {
+  it('cancel() before start() leaves the content alone', async () => {
     const ctx = setup(fixture('inline.xml'));
     await contentAt(ctx.content, 42);
     const player = await loadReady(ctx);
@@ -1649,7 +1649,7 @@ describe('AdBreakSession: calls in the wrong state', () => {
     expect(player.deinitialized).toBe(false);
   });
 
-  it('Back while the last ad player is being released sends one breakEnd (C3-12)', async () => {
+  it('Back while the last ad player is being released sends one breakEnd', async () => {
     const ctx = setup(fixture('inline.xml'));
     const player = await loadReady(ctx);
     await ctx.session.start();
@@ -1663,7 +1663,7 @@ describe('AdBreakSession: calls in the wrong state', () => {
 });
 
 describe('AdBreakSession: ad request macros', () => {
-  it('fills the app macros in the ad tag (C1-1)', async () => {
+  it('fills the app macros in the ad tag', async () => {
     const tag = 'https://ads.test/tag.xml?lat=[LIMITADTRACKING]&ifa=[IFA]';
     const http = new FakeHttp().on('https://ads.test/tag.xml?lat=1&ifa=', { body: fixture('inline.xml') });
     const session = new AdBreakSession({
@@ -2062,7 +2062,7 @@ describe('AdBreakSession: an app that listens to nothing', () => {
     expect(ctx.session.state).toBe('finished');
   });
 
-  it('leaves out ads and fails ads without throwing', async () => {
+  it('starts a cut pod and fails a break with no playable file without throwing', async () => {
     const cut = quiet(fixture('pod-optimized.xml'), { maxAds: 1 });
     await ready(cut);
     const webmOnly = quiet(fixture('inline.xml').replace(/type="video\/mp4"/g, 'type="video/webm"'));

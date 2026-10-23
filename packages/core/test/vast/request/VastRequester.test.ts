@@ -236,7 +236,7 @@ describe('requestVast', () => {
     expect(http.requests[0]).toBe('https://ads.test/tag?cb=12345678');
   });
 
-  it('fills app macros, [TIMESTAMP] and [CACHEBUSTING] in the ad tag and in every wrapper URL (C1-1)', async () => {
+  it('fills app macros, [TIMESTAMP] and [CACHEBUSTING] in the ad tag and in every wrapper URL', async () => {
     const tag = 'https://ads.test/w1?lat=[LIMITADTRACKING]&ifa=[IFA]&ts=[TIMESTAMP]&cb=[CACHEBUSTING]&x=[UNKNOWN]';
     const next = 'https://ads.test/inline.xml?lat=[LIMITADTRACKING]&cb=[CACHEBUSTING]';
     const http = new FakeHttp()
@@ -260,7 +260,7 @@ describe('requestVast', () => {
   it.each([
     ['an ad without a linear creative (200)', 'nonlinear-only.xml', 'https://t.test/err-nl?code=200&ifa=abc'],
     ['an empty VAST (303, sent by vast-client)', 'empty.xml', 'https://t.test/empty?code=303&ifa=abc'],
-  ])('fills the app macros in the Error URL of %s (C1-5)', async (_label, name, expected) => {
+  ])('fills the app macros in the Error URL of %s', async (_label, name, expected) => {
     const body = fixture(name).replace('?code=[ERRORCODE]', '?code=[ERRORCODE]&ifa=[IFA]');
     await requestVast(INLINE, {
       http: new FakeHttp().on(INLINE, { body }),

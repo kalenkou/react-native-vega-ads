@@ -76,7 +76,7 @@ describe('AdTracker (R1, R2, R8, R20)', () => {
     expect(sent()).toEqual(['https://t.test/complete']);
   });
 
-  it('without a valid <Duration>, tracks start and quartiles from the duration set later (C1-7)', async () => {
+  it('without a valid <Duration>, tracks start and quartiles from the duration set later', async () => {
     const tracker = new AdTracker(
       await loadAd(INLINE.replace('<Duration>00:00:10.000</Duration>', '<Duration>00:00:00</Duration>')),
     );
