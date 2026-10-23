@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {Text, View} from 'react-native';
+import {ActivityIndicator, Image, Text, View} from 'react-native';
 import {
   useAdAnnouncements,
   type VegaAds,
@@ -14,6 +14,8 @@ import {Timeline} from './Timeline';
 
 const SEEK_SECONDS = 10;
 const HIDE_AFTER_MS = 4000;
+// The loading screen never stays longer, even if the player sends no event.
+const LOADING_MAX_MS = 8000;
 
 export interface PlayerChromeProps {
   title: string;
@@ -23,11 +25,18 @@ export interface PlayerChromeProps {
   showWhy?: boolean;
   /** The viewer's caption setting, for the ad captions. */
   captions?: CaptionSettings;
+  /** Shown behind "Loading" until the first ad or movie frame. */
+  poster?: string;
 }
 
 /** Position, duration and play state of the content player, from its events. */
 function usePlayback(player: W3cVideoPlayer | null) {
-  const [state, setState] = useState({position: 0, duration: 0, paused: false});
+  const [state, setState] = useState({
+    position: 0,
+    duration: 0,
+    paused: false,
+    started: false,
+  });
   useEffect(() => {
     if (!player) {
       return undefined;
@@ -37,13 +46,17 @@ function usePlayback(player: W3cVideoPlayer | null) {
         position: player.currentTime,
         duration: player.duration > 0 ? player.duration : previous.duration,
         paused: paused ?? previous.paused,
+        started: previous.started || player.currentTime > 0,
       }));
+    const playing = () =>
+      setState((previous) => ({...previous, started: true}));
     const listeners: Array<[string, () => void]> = [
       ['timeupdate', update()],
       ['loadedmetadata', update()],
       ['seeked', update()],
       ['pause', update(true)],
       ['play', update(false)],
+      ['playing', playing],
       // For the device log: what the movie player did around each break.
       ...['play', 'playing', 'pause', 'seeked', 'ended', 'error'].map(
         (type): [string, () => void] => [
@@ -78,8 +91,21 @@ export const PlayerChrome = ({
   ads,
   showWhy = false,
   captions,
+  poster,
 }: PlayerChromeProps) => {
-  const {position, duration, paused} = usePlayback(player);
+  const {position, duration, paused, started} = usePlayback(player);
+  // Until the first ad or movie frame the screen is black: show the poster and "Loading"
+  // instead of "Playing 00:00:00" over nothing.
+  const [loadingOver, setLoadingOver] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoadingOver(true), LOADING_MAX_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (ads.playing || started) {
+      setLoadingOver(true);
+    }
+  }, [ads.playing, started]);
   useAdAnnouncements(ads.ui);
   const [visible, setVisible] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -146,6 +172,21 @@ export const PlayerChrome = ({
       </View>
     );
   }
+  if (!loadingOver) {
+    return (
+      <View style={styles.loading} pointerEvents="none" testID="player-loading">
+        {poster && (
+          <Image source={{uri: poster}} style={styles.poster} blurRadius={2} />
+        )}
+        <View style={styles.scrim} />
+        <Text style={styles.loadingTitle}>{title}</Text>
+        <View style={styles.loadingRow}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={styles.loadingText}>Loading…</Text>
+        </View>
+      </View>
+    );
+  }
   if (!(visible || paused)) {
     return null;
   }
@@ -173,6 +214,34 @@ export const PlayerChrome = ({
 
 const styles = layoutStyles({
   root: {position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 5},
+  loading: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
+    justifyContent: 'center',
+    paddingLeft: 96,
+    backgroundColor: colors.background,
+  },
+  poster: {position: 'absolute', top: 0, bottom: 0, left: 0, right: 0},
+  scrim: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.scrim,
+  },
+  loadingTitle: {color: colors.text, fontFamily: fonts.display, fontSize: 64},
+  loadingRow: {flexDirection: 'row', alignItems: 'center', marginTop: 24},
+  loadingText: {
+    color: colors.muted,
+    fontFamily: fonts.body,
+    fontSize: 30,
+    marginLeft: 20,
+  },
   title: {
     position: 'absolute',
     top: 54,

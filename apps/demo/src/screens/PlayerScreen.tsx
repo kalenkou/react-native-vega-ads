@@ -128,6 +128,7 @@ export const PlayerScreen = ({
           />
           <PlayerChrome
             title={movie.title}
+            poster={movie.poster}
             player={player}
             ads={ads}
             showWhy={mode.showWhy}
