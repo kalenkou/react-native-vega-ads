@@ -156,7 +156,8 @@ if (!rows.every((r) => Array.isArray(r.label.signals))) {
 
 const same = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
 const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-const cell = (text) => String(text).replace(/\|/g, '\\|');
+// A Markdown table cell: backslashes first, then the pipes that would end the cell.
+const cell = (text) => String(text).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
 
 console.log('| Film | Break | Labelled | Model | Evidence | Match |');
 console.log('|---|---|---|---|---|---|');
