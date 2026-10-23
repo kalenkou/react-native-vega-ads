@@ -107,6 +107,8 @@ async function contentAt(content: FakePlayer, seconds: number): Promise<void> {
 
 const sent = (): string[] => pixels.requests.splice(0);
 const last = (states: SessionSnapshot[]): SessionSnapshot | undefined => states[states.length - 1];
+const adsOf = (ctx: ReturnType<typeof setup>, event: string): Array<string | undefined> =>
+  ctx.details.filter(([name]) => name === event).map(([, info]) => info.ad?.id);
 
 describe('AdBreakSession: loading (R10)', () => {
   it('prebuffers the chosen file in a fresh ad player without playing it', async () => {
@@ -1272,6 +1274,80 @@ describe('AdBreakSession: why the break looks as it does', () => {
     player.emitEnded(); // pod-2 has no loudness: full volume
     await settle();
     expect(last(ctx.states)?.why?.quieter).toBe(false);
+  });
+});
+
+describe('AdBreakSession: blocked categories and spare ads', () => {
+  const ad = (id: string, options: { sequence?: number; category?: string } = {}): string =>
+    `<Ad id="${id}"${options.sequence ? ` sequence="${options.sequence}"` : ''}><InLine><AdSystem>fx</AdSystem><AdTitle>${id}</AdTitle>` +
+    (options.category ? `<Category authority="https://iabtechlab.com">${options.category}</Category>` : '') +
+    `<Impression><![CDATA[https://t.test/imp-${id}]]></Impression><Creatives><Creative><Linear><Duration>00:00:10</Duration><MediaFiles>` +
+    `<MediaFile delivery="progressive" type="video/mp4" width="1280" height="720"><![CDATA[https://cdn.test/${id}.mp4]]></MediaFile>` +
+    `</MediaFiles></Linear></Creative></Creatives></InLine></Ad>`;
+  const vast = (...ads: string[]): string => `<VAST version="4.2">${ads.join('')}</VAST>`;
+
+  /** Plays every ad of the break to its end; returns the files in the order they played. */
+  async function playAll(ctx: ReturnType<typeof setup>): Promise<string[]> {
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    for (let i = 0; i < 5 && ctx.session.state === 'playing'; i++) {
+      await player.flush();
+      player.emitEnded();
+      await settle();
+    }
+    expect(ctx.session.state).toBe('finished');
+    return player.calls.filter((c) => c.startsWith('src:')).map((c) => c.slice('src:https://cdn.test/'.length));
+  }
+
+  it('gives the places of blocked pod ads to the spare ads, lowest place first', async () => {
+    const body = vast(
+      ad('x', { sequence: 3, category: '1571' }),
+      ad('y', { sequence: 1, category: '1571' }),
+      ad('z', { sequence: 2 }),
+      ad('s1'),
+      ad('s2'),
+    );
+    const ctx = setup(body, { blockedAdCategories: ['1571'] });
+    expect(await playAll(ctx)).toEqual(['s1.mp4', 'z.mp4', 's2.mp4']);
+    expect(ctx.states.filter((s) => s.state === 'playing').map((s) => s.position)).toEqual(
+      expect.arrayContaining([1, 2, 3]),
+    );
+  });
+
+  it('keeps spare ads as spares when no ad of the break is blocked', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'), { blockedAdCategories: ['1571'] });
+    expect(await playAll(ctx)).toEqual(['pod-1.mp4', 'pod-2.mp4']);
+  });
+
+  it('frees no place for a blocked spare ad', async () => {
+    const ctx = setup(vast(ad('x', { sequence: 1 }), ad('s1', { category: '1571' }), ad('s2')), {
+      blockedAdCategories: ['1571'],
+    });
+    expect(await playAll(ctx)).toEqual(['x.mp4']);
+    expect(last(ctx.states)?.total).toBe(1);
+  });
+
+  it('leaves out an ad with any blocked category, with error 205 and skipped:category', async () => {
+    const pod = fixture('pod-cat.xml').replace(
+      '<Category authority="https://iabtechlab.com">1571</Category>',
+      '<Category authority="https://iabtechlab.com">1004</Category><Category authority="https://iabtechlab.com">1571</Category>',
+    );
+    const ctx = setup(pod, { blockedAdCategories: ['1571'] });
+    const player = await loadReady(ctx);
+    expect(player.src).toBe('https://cdn.test/coffee.mp4');
+    expect(sent()).toContain('https://t.test/err-car?code=205');
+    expect(adsOf(ctx, 'skipped:category')).toEqual(['car']);
+    expect(last(ctx.states)?.why?.sceneSignals).toEqual([]);
+  });
+
+  it('names the advertiser of a blocked ad without the spaces around it', async () => {
+    const pod = fixture('pod-cat.xml').replace(
+      '<AdTitle>car</AdTitle>',
+      '<AdTitle>car</AdTitle><Advertiser>  Voltaro  </Advertiser>',
+    );
+    const ctx = setup(pod, { blockedAdCategories: ['1571'] });
+    await loadReady(ctx);
+    expect(last(ctx.states)?.why?.blockedAfterScene).toEqual(['Voltaro']);
   });
 });
 
