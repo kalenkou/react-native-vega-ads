@@ -35,7 +35,7 @@ Amazon requires an app to release its media players in the background, or the sy
 | `source` | `{ vmapUrl }` or `{ breaks: [{ offset, vastUrl }] }`. `null` waits. |
 | `contentPlayer` | Your initialized content `VideoPlayer` (`autoplay = false`), or any `PlayerPort`. |
 | `startAt` | Continue a viewing here, in seconds: no pre-roll and no earlier breaks. The content player is moved there first. In core: `AdManager.start(schedule, { resumeAt })`. |
-| `macros` | Ad tag macros, for example `adIdMacros(source)` for `IFA` and `LIMITADTRACKING`. |
+| `macros` | Ad tag macros, for example `adIdMacros(source)` for `IFA`, `IFATYPE` and `LIMITADTRACKING`. |
 | `prefetchSeconds` | How early a break is loaded and buffered. Default 15. |
 | `maxRedirects` | How many VAST wrappers to follow before the ad is left out with VAST error 302. Default 5, as the IAB recommends. Raise it if your demand chains more wrappers. A whole number from 0. A negative or non-finite value (such as `Infinity`) keeps the default. The same option as `maxRedirects` in Google IMA, where the default is 4. |
 | `countdownSeconds` | How many seconds before a mid-roll `timeline.nextBreakIn` counts down. Default 5. |
@@ -133,7 +133,7 @@ The type of `name` is `AdEventName`, so your editor completes the names. It stil
 | Export | What it is |
 |---|---|
 | `LAYOUT_WIDTH` | 1920, the width the built-in ad UI is drawn for |
-| `layoutScale(width?)` | the window width over 1920: 1 on React Native 0.72 on Vega, 0.5 on 0.83, 1 when the width is not known. Read once, when the package loads |
+| `layoutScale(width?)` | the window width over 1920: 1 on React Native 0.72 on Vega, 0.5 on 0.83, 1 when the width is not known. It reads the window on each call. The built-in styles are scaled once, when the package loads |
 | `scaleStyles(styles, scale?)` | the same styles with every length multiplied by `scale`: positions, insets, sizes, padding, margin, borders, outlines, gaps, font size, line height, letter spacing, shadow radius and offset, `translateX` and `translateY`. Percentages, flex, opacity and z-order stay. `boxShadow`, `filter`, `transformOrigin` and `perspective` stay too: scale them by hand |
 
 The built-in ad UI scales itself. `adStyles`, `styles` and `pauseAdStyle` are not scaled.

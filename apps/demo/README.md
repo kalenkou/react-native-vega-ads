@@ -62,7 +62,7 @@ You need:
    `npm ci` at the root is needed for `use-core`):
 
    ```sh
-   npm install
+   npm ci
    npm run use-core
    npm run build:release
    ```
@@ -82,7 +82,7 @@ You need:
 
 ## Launch
 
-The system shows `assets/raw/SplashScreenImages.zip` (one frame: the app's background and a small break map) from the first frame until the movie page has its poster. Then the app reports fully drawn and hides the splash (`src/launch.ts`). On a Fire TV Stick 4K Select, 30 cold launches with this look: first frame P90 1.09 s, fully drawn P90 3.46 s.
+The system shows `assets/raw/SplashScreenImages.zip` (one frame: the app's background and a small break map) from the first frame until the movie page has its poster. Then the app reports fully drawn and hides the splash (`src/launch.ts`). On a Fire TV Stick 4K Select, 30 cold launches on React Native 0.83 (23.10, 29 counted): first frame P90 0.77 s, fully drawn P90 5.6 s. On React Native 0.72 (16.10) the same look gave 1.09 s and 3.46 s.
 
 ## Look
 

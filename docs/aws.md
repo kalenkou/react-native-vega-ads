@@ -24,5 +24,5 @@ deployed the stack and 960 MB of media in about 10 minutes. Then 3 of 3 runs on 
 4K Select played the movie and every ad from CloudFront, and the report counted every pixel:
 pre-roll, a two-ad mid-roll pod, the repeated ad left out.
 
-Checked again on 23.10.2026 with the demo build of release v0.1.3 (React Native 0.83), installed
-with `vega device install-app`: 3 of 3 runs passed in the same way.
+Checked again on 23.10.2026 with a copy of the release v0.1.3 demo build with the sound off (React
+Native 0.83), installed with `vega device install-app`: 3 of 3 runs passed in the same way.

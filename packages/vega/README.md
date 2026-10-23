@@ -184,7 +184,7 @@ content.setSrc(movieUrl); // no autoplay: the library starts the movie after the
 </VegaAdsPlayer>;
 ```
 
-Checked on a Fire TV Stick 4K Select (muted): pre-roll, seek, a two-ad mid-roll pod with the
+Checked on a Fire TV Stick 4K Select (muted, React Native 0.72): pre-roll, seek, a two-ad mid-roll pod with the
 hand-over between ads, a repeated ad left out, the content back at the break time. The position
 comes from the service 4 times a second, so a break starts at most about 0.25 s after its time.
 Ad players from `createAdPlayer` take the remote through the service: `adPause` and the built-in
@@ -221,7 +221,7 @@ for `n%` and `end` breaks. Leave it out while unknown and pass it when the playe
 duration: those breaks are placed then, without loading the VMAP again. Break times come from the
 VMAP only, not from SCTE-35 or HLS/DASH ad markers.
 
-Checked on a Fire TV Stick 4K Select (muted), a 110 s stream with a 10 s pre-roll and a 10 s
+Checked on a Fire TV Stick 4K Select (muted, React Native 0.72), a 110 s stream with a 10 s pre-roll and a 10 s
 mid-roll at 1:10: impression, start, quartiles and skip of the pre-roll (skip at 5 s moved the
 player to 0:10), the full mid-roll to `complete`. In 4 of 5 runs all 11 pixels reached the ad server. One run sent no event after Skip. The cause is not known.
 
@@ -239,8 +239,8 @@ import { scaleStyles } from 'react-native-vega-ads';
 const styles = StyleSheet.create(scaleStyles({ title: { fontSize: 48, marginBottom: 24 } }));
 ```
 
-`layoutScale()` gives the factor itself: 1 on React Native 0.72, 0.5 on 0.83. It is read once, when
-the package loads. Styles you pass in `adStyles` (on `VegaAdsPlayer`), `styles` (on each part) or
+`layoutScale()` gives the factor itself: 1 on React Native 0.72, 0.5 on 0.83. The built-in styles use
+it once, when the package loads. Styles you pass in `adStyles` (on `VegaAdsPlayer`), `styles` (on each part) or
 `pauseAdStyle` are yours and are not scaled. In Jest, mock `Dimensions.get('window')` to 1920x1080
 before the import, or the built-in UI renders at the size of the mock's window.
 

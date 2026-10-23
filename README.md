@@ -32,7 +32,7 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 
 | React Native | Vega SDK | Tested on |
 | --- | --- | --- |
-| 0.72 | 0.23 and 0.24 | Fire TV Stick 4K Select, Vega OS 2.0 |
+| 0.72 | 0.24 | Fire TV Stick 4K Select, Vega OS 2.0 |
 | 0.83 | 0.24 | Fire TV Stick 4K Select, Vega OS 2.0 |
 
 The API can change before 1.0.

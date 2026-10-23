@@ -24,7 +24,7 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ### Example apps
 
-- The demo asks for the ad plan after the movie page is drawn. After Next it never shows the plan of the previous movie. On React Native 0.83 the P90 of fully drawn fell from 6.3 s to 5.5 s in 30 cold launches.
+- The demo asks for the ad plan after the movie page is drawn. After Next it never shows the plan of the previous movie. On React Native 0.83 the P90 of fully drawn fell from 6.3 s to 5.5 s in 30 cold launches (28 counted).
 - `apps/streaming-kit`: Back from a movie returns the focus to its poster.
 
 ## [0.1.2] - 2026-10-23
