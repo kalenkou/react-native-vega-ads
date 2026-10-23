@@ -1964,6 +1964,103 @@ describe('AdBreakSession: volume', () => {
   });
 });
 
+describe('AdBreakSession: an app that listens to nothing', () => {
+  function quiet(body: string, options: Partial<ConstructorParameters<typeof AdBreakSession>[0]> = {}) {
+    const adPlayers: FakePlayer[] = [];
+    const clock = new FakeClock(1_000_000);
+    const content = new FakePlayer({ duration: 600 });
+    void content.initialize();
+    const session = new AdBreakSession({
+      http: new FakeHttp().on(TAG, { body }),
+      clock,
+      content,
+      adSurface: SURFACE,
+      createAdPlayer: () => {
+        const player = new FakePlayer({ duration: 10 });
+        adPlayers.push(player);
+        return player;
+      },
+      ...options,
+    });
+    return { session, adPlayers, clock };
+  }
+
+  async function ready(ctx: ReturnType<typeof quiet>): Promise<FakePlayer> {
+    const loading = ctx.session.load([{ kind: 'url', url: TAG }]);
+    await settle();
+    const player = ctx.adPlayers[ctx.adPlayers.length - 1] as FakePlayer;
+    player.emitCanPlay();
+    await expect(loading).resolves.toBe('ready');
+    return player;
+  }
+
+  it('plays a turned down ad after a blocked one, to the end', async () => {
+    const pod = fixture('pod-cat.xml').replace(
+      /(coffee\.mp4\]\]><\/MediaFile>\s*<\/MediaFiles>)<\/Linear>/,
+      '$1</Linear><CreativeExtensions><CreativeExtension type="loudness"><IntegratedLoudness unit="LUFS">-16</IntegratedLoudness></CreativeExtension></CreativeExtensions>',
+    );
+    const ctx = quiet(pod, { blockedAdCategories: ['1571'], contentLoudness: -24 });
+    const player = await ready(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitEnded();
+    await settle();
+    expect(ctx.session.state).toBe('finished');
+  });
+
+  it('leaves out ads and fails ads without throwing', async () => {
+    const cut = quiet(fixture('pod-optimized.xml'), { maxAds: 1 });
+    await ready(cut);
+    const webmOnly = quiet(fixture('inline.xml').replace(/type="video\/mp4"/g, 'type="video/webm"'));
+    await expect(webmOnly.session.load([{ kind: 'url', url: TAG }])).resolves.toBe('empty');
+  });
+
+  it('plays back-to-back ads when the second player breaks or cannot start', async () => {
+    const ctx = quiet(fixture('pod-optimized.xml'), { standbySurface: STANDBY });
+    const first = await ready(ctx);
+    await ctx.session.start();
+    await first.flush();
+    await settle();
+    (ctx.adPlayers[1] as FakePlayer).emitError();
+    await settle();
+    expect(ctx.adPlayers[1]?.deinitialized).toBe(true);
+
+    let created = 0;
+    const single = quiet(fixture('pod-optimized.xml'), {
+      standbySurface: STANDBY,
+      createAdPlayer: () => {
+        const player = new FakePlayer({ duration: 10 });
+        if (created++ > 0) {
+          player.initialize = () => Promise.reject(new Error('no decoder available'));
+        }
+        single.adPlayers.push(player);
+        return player;
+      },
+    });
+    const only = await ready(single);
+    await single.session.start();
+    await only.flush();
+    await settle();
+    expect(single.session.state).toBe('playing');
+  });
+
+  it('fails a finishing ad after the hand-over without throwing', async () => {
+    const ctx = quiet(fixture('pod-optimized.xml'), { standbySurface: STANDBY });
+    const first = await ready(ctx);
+    await ctx.session.start();
+    await first.flush();
+    await settle();
+    const second = ctx.adPlayers[1] as FakePlayer;
+    second.emitCanPlay();
+    first.emitTime(9.6);
+    await settle();
+    first.emitError();
+    await settle();
+    expect(first.deinitialized).toBe(true);
+    expect(ctx.session.state).toBe('playing');
+  });
+});
+
 describe('AdBreakSession: a player call that fails', () => {
   const twoSkippable = (): string => {
     const ad = (n: number) => `<Ad id="a${n}" sequence="${n}"><InLine><AdSystem>x</AdSystem><AdTitle>t${n}</AdTitle>
