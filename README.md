@@ -37,7 +37,19 @@ Screenshots of the demo app on a Fire TV Stick 4K Select, React Native 0.83. Fil
 
 The API can change before 1.0.
 
-Measured on that stick with React Native 0.72: the switch from the movie to an ad takes 56-151 ms. In an 11-minute stress test with 27 ads, memory peaked at 91 MB. Then it stayed at 65-68 MB. On React Native 0.83 a whole film with 5 ads used 56-96 MB in 6 samples (the log missed the first mid-roll). More: [device results](docs/device-results.md).
+## Proof
+
+Checked on a Fire TV Stick 4K Select with Vega OS 2.0. Dates and details: [device results](docs/device-results.md) and the [device test log](apps/spike/DEVICE-TESTS.md).
+
+| What | Result |
+| --- | --- |
+| Tests | 1,024 unit tests in the packages and tools, 44 in the demo. [Stryker](.github/workflows/mutation.yml) catches 89 % of 3,452 small changes to the core code. Property tests feed the parsers random input |
+| Ads on the device, React Native 0.83 | Pre-roll, a mid-roll pod and the repeat rule: 3 of 3 runs. A whole film with 5 ads: every ad to the end, memory 56-96 MB in 6 samples |
+| Movie to ad, React Native 0.72 | 56-151 ms, no black frame on a phone video. An 11-minute stress test with 27 ads: memory peak 91 MB, then 65-68 MB |
+| Cold launch of the demo, 30 launches with Amazon's tool | React Native 0.83: first frame P90 0.77 s, fully drawn P90 5.6 s. React Native 0.72: 1.09 s and 3.46 s. Amazon's targets: 1.5 s and 8 s |
+| Release build with the optional AWS ad server | A copy of the v0.1.3 demo with the sound off played its movie and ads from CloudFront in 3 of 3 runs. DynamoDB counted every pixel |
+| Fixes in other libraries | 7 open pull requests, listed [below](#fixes-in-other-libraries). The [streaming kit](apps/streaming-kit) runs three of them in one app |
+| Problems found on the way | 39 entries in the [friction log](docs/friction-log.md), each with steps and a workaround |
 
 ## Features
 
