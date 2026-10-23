@@ -4,6 +4,10 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ## [Unreleased]
 
+### Documentation
+
+- Friction log checked again, now 33 entries: FL-07, FL-14 and FL-23 are merged into FL-06, FL-10 and FL-33. FL-15, FL-20 and FL-37 are removed: a rare case, a fully drawn marker the demo sent itself, and a topic Amazon's dp page covers.
+
 ## [0.1.6] - 2026-10-23
 
 ### Fixed

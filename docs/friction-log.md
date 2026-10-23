@@ -2,18 +2,20 @@
 
 Platform issues found while building vega-ads on a Fire TV Stick 4K Select (Vega OS 2.0). Each entry has the task, steps, expected and actual results, severity, workaround and a suggestion.
 
-Test setup: Fire TV Stick 4K Select with Vega OS 2.0 (TV Ship/515) and Vega SDK 0.24.12112. The first test app, and the demo app until 2026-10-22, use `@amazon-devices/react-native-w3cmedia` 2.1 with React Native 0.72. Since 2026-10-22 the demo app uses w3cmedia 2.3.2 with React Native 0.83 (FL-36, FL-37). The other entries that name React Native 0.83 come from separate test apps.
+Test setup: Fire TV Stick 4K Select with Vega OS 2.0 (TV Ship/515) and Vega SDK 0.24.12112. The first test app, and the demo app until 2026-10-22, use `@amazon-devices/react-native-w3cmedia` 2.1 with React Native 0.72. Since 2026-10-22 the demo app uses w3cmedia 2.3.2 with React Native 0.83 (FL-36). The other entries that name React Native 0.83 come from separate test apps.
 
 ## Summary
 
 Four themes repeat:
 
 1. Failures reach the app without a reason: FL-01, FL-08, FL-11, FL-30, FL-31, FL-32, FL-33.
-2. Media controls and Alexa do not fit an ad on a second player: FL-03, FL-06, FL-07, FL-09, FL-10, FL-14.
+2. Media controls and Alexa do not fit an ad on a second player: FL-03, FL-06, FL-09, FL-10.
 3. Amazon's React Native 0.83 packages and guides do not match npm: FL-28, FL-29, FL-34, FL-36, FL-39.
 4. The Virtual Device differs from the stick: FL-13, FL-32, FL-35.
 
 Severity: high = a core feature fails for viewers. Medium = wrong behaviour or hours lost, with a workaround. Low = friction, found early.
+
+The log has 33 entries. Entry IDs are stable. IDs of merged and removed entries stay free.
 
 | Entry&nbsp;ID | Problem | Area | Severity |
 |---|---|---|---|
@@ -22,38 +24,32 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 | FL-03 | Media controls with two players need two steps, and nothing warns | Media controls, CSAI guide | high |
 | FL-04 | The media control page uses a deprecated API | Docs | low |
 | FL-05 | A surface turns empty after `ended`, and content shows between ads | Video surfaces | medium |
-| FL-06 | Play/pause reaches both media controls and JS | Media controls, input | medium |
-| FL-07 | Without media controls, a legacy session still pauses the player | Media controls, input | high |
+| FL-06 | The play/pause key has no single owner | Media controls, input | high |
 | FL-08 | w3cmedia refuses http media, and the cleartext rule is documented only for WebView | w3cmedia, manifest | medium |
 | FL-09 | `setMediaControlFocus` blocks JS for 1-2 s on a cold launch | Media controls, performance | medium |
 | FL-10 | "Alexa, next" never reaches the app during an ad | Alexa, media controls | medium |
 | FL-11 | Video freezes during an Alexa request without any media event | Alexa, w3cmedia | medium |
-| FL-12 | The video sample's DRM title never asks for hardware security | Sample app | medium |
+| FL-12 | The video sample's DRM title never asks for hardware security | Sample app | low |
 | FL-13 | VVD media keys in the docs differ from the SDK mapping | Virtual Device, docs | low |
-| FL-14 | No table of Alexa phrases to media commands for Vega | Alexa, docs | medium |
-| FL-15 | The screenshot tool hangs or writes 0 bytes with the TV off | Device tools | low |
 | FL-16 | Amazon's device testing services do not take Vega packages | Appstore testing | medium |
 | FL-17 | A default release build fails `vpt validate` (build number 0) | Build, template | low |
 | FL-18 | The media controls manifest check sometimes says `false` | Media controls | low |
 | FL-19 | A later video surface is drawn on top, whatever its zIndex | Video surfaces, CSAI guide | medium |
-| FL-20 | The launch KPI reports "fully drawn" for an app that never reports it | Performance tools | low |
-| FL-21 | w3cmedia events differ from HTML5 in four places | w3cmedia | medium |
+| FL-21 | w3cmedia events differ from HTML5 in three places | w3cmedia | medium |
 | FL-22 | URL mode never reports the video size | w3cmedia | low |
-| FL-23 | react-native-video v7 crashes at import without naming the cause | Third-party libraries | medium |
 | FL-24 | `setSrcWithCustomHeaders` works but is hidden | w3cmedia, docs | low |
 | FL-25 | react-native-keyevent is marked Vega-compatible but gets no keys | Library catalog, input | low |
 | FL-26 | The a11y settings README imports a default export that does not exist | Docs | low |
 | FL-27 | The headless playback sample does not compile | Docs | low |
 | FL-28 | The RN 0.83 headless guide lists versions that are not on npm | Docs, npm | medium |
-| FL-29 | The RN 0.83 player packages break `npm install` | npm packages | medium |
+| FL-29 | The RN 0.83 player client cannot be installed without an override | npm packages | medium |
 | FL-30 | A seek before the media loads is lost without an error | w3cmedia | medium |
 | FL-31 | A background kill for an open player is logged as low memory | App lifecycle, logs | medium |
 | FL-32 | The VVD refuses http media that the stick plays | Virtual Device | medium |
 | FL-33 | 10 of 13 popular native libraries crash at import | Runtime, build | medium |
-| FL-34 | The `moduleName` splash API finds no splash in an RN 0.83 app | Splash screen API | medium |
+| FL-34 | The `moduleName` splash API finds no splash in an RN 0.83 app | Splash screen API | low |
 | FL-35 | The VVD lacks the player modules, and a build rewrites `manifest.toml` | Virtual Device, build | low |
 | FL-36 | Amazon's RN 0.83 package builds print ERROR about their own versions | npm packages, build | low |
-| FL-37 | The dp migration has no path for a library on both 0.72 and 0.83 | RN 0.83 docs | low |
 | FL-38 | The first `AdIdRetriever` read blocks JS for up to 2.6 s on RN 0.83 | Ads API, performance | medium |
 | FL-39 | The a11y settings package installs React Native 0.60.6 | npm packages | low |
 
@@ -83,7 +79,7 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
   - C. Both → commands delivered. During content the content pauses/resumes. During the ad only the ad pauses/resumes. "Alexa, pause" works.
   - D. Neither → 0.
 - **Expected:** the CSAI guide for Vega covers media controls for the two-player pattern. Or the runtime warns when one of the two steps is missing.
-- **Actual:** the CSAI JS guide (implement-csai-js-vega, last modified 2026-03-13) does not mention media controls, `setMediaControlFocus`, Alexa or the manifest entry. The W3C Media "media control" page (last modified 2026-01-27) does say to add manifest entries and call `setMediaControlFocus`. But the manifest snippet is on another page. In `dist/MediaPlayer.d.ts` the method is marked `@hidden`, while `interface/VideoPlayer.d.ts` documents it. With one step missing there is no error or warning. The only hint is `isSessionInForeground :0` in the system log. The remote key reaches the app (`KEY_PLAYPAUSE` in inputd) and is dropped.
+- **Actual:** neither CSAI page in the 0.24 docs mentions media controls, `setMediaControlFocus`, Alexa or the manifest entry. The pages are "Client-side ad insertion in Vega" and "Implement client-side ad insertion using the JS approach". The W3C Media "media control" page does say to add manifest entries and call `setMediaControlFocus`. But the manifest snippet is on another page. In `dist/MediaPlayer.d.ts` the method is marked `@hidden`, while `interface/VideoPlayer.d.ts` documents it. With one step missing there is no error or warning. The only hint is `isSessionInForeground :0` in the system log. The remote key reaches the app (`KEY_PLAYPAUSE` in inputd) and is dropped.
 - **Severity:** high for ad-supported apps (a basic remote and voice feature silently does nothing).
 - **Workaround:** both steps (variant C). Call `setMediaControlFocus` on the ad player at ad start and on the content player at resume. Focus switch takes 197-217 ms.
 - **Suggestion:** add a "media controls with two players" section to the CSAI guide, with the manifest snippet. Remove `@hidden` from `setMediaControlFocus` in `MediaPlayer.d.ts`. Log a warning when `setMediaControlFocus` is called and the manifest has no `IMediaPlaybackServer` (and vice versa).
@@ -98,7 +94,7 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Suggestion:** update the media control page and samples to the non-deprecated API.
 
 ## FL-05 · A video surface turns empty after `ended`. Content shows through between two ads (2026-10-11)
-- **Task:** play two ads back to back (pod) on two w3cmedia players with two `KeplerVideoSurfaceView`s above the content surface. The CSAI guide suggests this for "seamless back-to-back ad playback".
+- **Task:** play two ads back to back (pod) on two w3cmedia players with two `KeplerVideoSurfaceView`s above the content surface. Amazon's CSAI overview suggests two ad players for back-to-back ads without a gap.
 - **Steps:** ad 1 on surface A. Ad 2 prebuffered on surface B (`autoplay=false`, `canplay`). On ad 1 `ended` call `play()` on ad 2 and bring surface B on top when ad 2 fires `playing`.
 - **Expected:** ad 1's last frame stays on screen until ad 2 renders (like a paused player keeps its frame).
 - **Actual:** phone video, frame by frame: after `ended` surface A is empty. The paused content frame below is visible for ~0.4-0.6 s (time from `play()` to `playing` of a prebuffered player: ~370-450 ms).
@@ -106,23 +102,17 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Workaround:** start the next ad ~500 ms before the current one ends and let the current one finish hidden. Measured: next first frame 85 ms before the previous `ended`, `complete` still accurate.
 - **Suggestion:** document in the CSAI guide that a surface does not keep the last frame after `ended`. Also give the typical `play()` → first frame latency of a prebuffered player. Or add an option to keep the last frame.
 
-## FL-06 · Play/pause key reaches both media controls and JS key handlers (2026-10-11)
-- **Task:** decide whether an app (or an ad library) should handle the remote play/pause key itself or rely on Vega Media Controls. Setup: Fire TV Stick 4K Select, Vega OS 2.0.
-- **Steps:** `useTVEventHandler` logger. `inputd-cli button_press KEY_PLAYPAUSE`. Builds with and without the manifest media-controls entries. During content and during an ad.
-- **Expected:** one owner per key press: either media controls consume it, or it reaches JS (like Android `onKeyDown` returning true), and docs say which.
-- **Actual:** the key always reaches JS (`eventType: 'playpause'`, down and up). With the manifest entries, media controls also pause the focused player (224 ms after key down). Apps that already map `playpause` in their own remote handler (common with spatial navigation libraries) toggle twice. Without the entries, media controls do nothing and only the JS handler works, so "Alexa, pause" is lost.
-- **Severity:** medium (double toggle or silent loss of voice control, depending on setup).
-- **Workaround:** keep the manifest entries and media controls. Ignore `playpause` in the app's own key handler while media controls own the player (for ads: while the ad break is playing).
-- **Suggestion:** document the routing (key event and media control command both fire), or add a way to mark the key as consumed by media controls.
-
-## FL-07 · Without media controls entries, a legacy player session still pauses the player on play/pause (2026-10-11)
-- **Task:** let an app own the remote play/pause key (spatial navigation remote handler) without the media controls manifest entries. Setup: Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1.
-- **Steps:** manifest without `com.amazon.category.kepler.media` / `IMediaPlaybackServer`. No `setMediaControlFocus` call. App toggles the player on `useTVEventHandler` `playpause` key down. Live log with `loggingctl log -f`.
-- **Expected:** with no media controls declared, the key goes only to the app.
-- **Actual:** the key reaches JS, and then inputd's MediaController also handles it when the player session is in foreground: "isSessionInForeground :1", then w3cmedia "Player Session is performing pause operation on Media Player". A paused player is not resumed by the system (session not in foreground), so the app's resume is undone ~450 ms later. The viewer sees play start and stop. FL-06 is the same key with the entries present.
-- **Severity:** high for apps with their own remote handling (looks like a broken resume).
-- **Workaround:** use the manifest entries and media controls as the only owner of play/pause. Ignore `playpause` in the app's own key handler while media controls own the player.
-- **Suggestion:** document the legacy player session behaviour (which keys, when it acts) next to the media controls docs. Or give a way to opt out of it. Log which component consumed the key.
+## FL-06 · The play/pause key has no single owner: media controls and JS both act on it (2026-10-11)
+- **Task:** decide whether an app (or an ad library) should handle the remote play/pause key itself or leave it to Vega Media Controls. Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1.
+- **Steps:** a `useTVEventHandler` logger, and an app handler that toggles the player on `playpause` key down. Two builds: with and without the media controls manifest entries (`com.amazon.category.kepler.media`, `IMediaPlaybackServer`). No `setMediaControlFocus` call in the build without them. Key sent with `inputd-cli button_press KEY_PLAYPAUSE`, during content and during an ad. Live log with `loggingctl log -f`.
+- **Expected:** one owner per key press, and docs that say which. Either media controls consume the key, or only JS gets it (like Android `onKeyDown` returning true).
+- **Actual:**
+  - The key always reaches JS (`eventType: 'playpause'`, down and up).
+  - With the entries, media controls also pause the focused player, 224 ms after key down. An app that maps `playpause` in its own handler toggles twice.
+  - Without the entries, inputd's MediaController still acts when the player session is in foreground: `isSessionInForeground :1`, then w3cmedia `Player Session is performing pause operation on Media Player`. The system does not resume a paused player, so the app's resume is undone about 450 ms later. The viewer sees play start and stop. "Alexa, pause" does not work in this setup.
+- **Severity:** high for apps with their own remote handling (a double toggle or a resume that stops at once).
+- **Workaround:** keep the manifest entries and let media controls own play/pause. Ignore `playpause` in the app's own key handler while media controls own the player (for ads: during the ad break).
+- **Suggestion:** document the routing for both setups next to the media controls docs. Add a way to mark the key as consumed, or to opt out of the legacy player session. Log which component handled the key.
 
 ## FL-08 · w3cmedia refuses http:// media. The cleartext manifest policy is documented only for WebView (2026-10-11)
 - **Task:** play VAST ad media files and a content movie served over plain HTTP on the local network. This is typical for development. Many ad servers still return `http://` MediaFile URLs. Setup: Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1, SDK 0.24.
@@ -146,10 +136,10 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Task:** let the viewer skip a skippable ad by voice, Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1, SDK 0.24.
 - **Steps:** manifest `IMediaPlaybackServer` with `command_options = ["Next"]` (the "Attributes and features" page says optional commands arrive only when listed). A `KeplerMediaControlHandler` subclass for the ad player with `handleNext` overridden. The ad player's published actions set to PLAY, PAUSE, TOGGLE_PLAY_PAUSE, STOP, NEXT before `setMediaControlFocus` (w3cmedia publishes SEEK, FAST_FORWARD, SKIP_FORWARD... but not NEXT by default). During a skippable ad, past its skip offset, say "Alexa, next" and "Alexa, skip". Every app event mirrored to a server log because the device log drops app lines.
 - **Expected:** `handleNext` is called, or a documented reason why not. A table of Alexa phrases → media control commands.
-- **Actual:** with the default actions Alexa answers "Next is not supported". With NEXT published, Alexa says nothing. `handleNext` is never called (no app event in four runs). No Vega page maps Alexa phrases to commands.
-- **Severity:** medium (voice skip of skippable ads is not possible. "multi-modal" ad UX limited to pause/play).
+- **Actual:** with the default actions Alexa answers "Next is not supported". With NEXT published, Alexa says nothing. `handleNext` is never called (no app event in four runs). No Vega page maps Alexa phrases to media controls commands. The only such table is for Fire TV on Android (Video Skills Kit, 2021), where "skip" leads to Next in some locales.
+- **Severity:** medium (a viewer cannot skip a skippable ad by voice, and developers have to test phrase by phrase).
 - **Workaround:** Skip button with D-pad focus. "Alexa, pause/play" works.
-- **Suggestion:** publish the Alexa phrase → command table for Vega. Deliver Next when listed in `command_options`. Let apps set supported actions through a public API (today only `mediaControlStateUtil.capabilities`, an undocumented field).
+- **Suggestion:** publish the Alexa phrase to command table for Vega, with locales. Say which commands reach the app while a second player (an ad) has media controls focus. Deliver Next when it is listed in `command_options`. Let apps set the supported actions through a public API (today only `mediaControlStateUtil.capabilities`, an undocumented field).
 
 ## FL-11 · Video freezes during an Alexa voice interaction without any media event (2026-10-11)
 - **Task:** keep an ad playing correctly while the viewer talks to Alexa, Fire TV Stick 4K Select, Vega OS 2.0, w3cmedia ~2.1.
@@ -164,8 +154,8 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Task:** use Amazon's Vega video sample as a reference for DRM playback next to a clear ad player.
 - **Steps:** read how the sample's Shaka player picks the Widevine robustness for a title marked secure (`src/w3cmedia/shakaplayer/ShakaPlayer.ts`, line 418). Also read how titles are marked (`src/types/VideoSource.ts` line 31, `src/data/local/premiumCollection.ts` line 51).
 - **Expected:** a title with `secure: true` gets the hardware-secure robustness.
-- **Actual:** the player compares `content.secure` with the string `'true'`, but the type and the data use the boolean `true`. The comparison is always false, so the sample's DRM title runs with the software robustness. The docs for the sample describe `secure` as the string `"true"`. Found by reading the code. Not confirmed in a device log.
-- **Severity:** medium (a developer who copies the sample believes they test the secure path, and does not).
+- **Actual:** the player compares `content.secure` with the string `'true'`. The type and the data use the boolean `true`. So the comparison is always false, and the sample's DRM title gets the software robustness. Found by reading the code. Not checked in a device log.
+- **Severity:** low (a developer who copies the sample may believe they test the secure path).
 - **Workaround:** none in `react-native-vega-ads` (it does not use the sample's player). An app should check the robustness it really gets.
 - **Suggestion:** compare with the boolean, or accept both, and make the docs and the type agree. Fix proposed in AmazonAppDev/vega-video-sample PR #14.
 
@@ -173,28 +163,10 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Task:** test remote play/pause and seek of an ad on the Vega Virtual Device with the Mac keyboard.
 - **Steps:** compare the media keys listed in the docs with the mapping in the SDK. Docs: https://developer.amazon.com/docs/vega/0.24/run-apps.html (F3 rewind, F4 play/pause, F5 fast forward). SDK 0.24.12112: `vvd/images/tv/vmtools/scripts/vvrp_agent_run.sh`, lines 66-76.
 - **Expected:** the same keys in both.
-- **Actual:** the script maps F2 to volume down, F3 to volume up, F4 to menu and F5 to previous. It maps F6 to rewind, F7 to play/pause, F8 to fast forward and F9 to next. By this mapping, F4 sends Menu, not Play/Pause.
+- **Actual:** the script maps F2 to volume down, F3 to volume up, F4 to menu and F5 to previous. It maps F6 to rewind, F7 to play/pause, F8 to fast forward and F9 to next. The docs list F2 as Menu and F4 as Play/Pause. I compared the two files. I did not test the keys one by one on the VVD.
 - **Severity:** low (lost time. A tester may think media controls do not work on the virtual device).
 - **Workaround:** use the script's keys, or `inputd-cli button_press KEY_PLAYPAUSE` over `vega exec vda`.
 - **Suggestion:** generate the docs table from the mapping, or fix one of them.
-
-## FL-14 · No table of Alexa phrases to media controls commands for Vega (2026-10-11)
-- **Task:** decide which Alexa phrases an ad player must handle (for example "skip" during an ad) through Vega media controls.
-- **Steps:** search the Vega 0.21-0.24 docs for which phrase reaches which `IMediaPlaybackServer` command.
-- **Expected:** a table such as phrase → command (`handlePlay`, `handlePause`, `handleNext`, `handleSkipForward`...), with locales.
-- **Actual:** this is the docs side of FL-10. There is no such table for Vega. The only one is for Fire TV on Android (Video Skills Kit, 2021), where "skip" leads to Next in some locales. On Vega, "Alexa, next" and "Alexa, skip" did not reach `handleNext` during an ad (FL-10), and the docs do not say whether that is expected.
-- **Severity:** medium (voice is a main input on Fire TV. Developers have to guess and test phrase by phrase).
-- **Workaround:** support the remote keys only, and say so (as `react-native-vega-ads` does).
-- **Suggestion:** publish the phrase → command table for Vega, and which commands are delivered while a second player (an ad) has media controls focus.
-
-## FL-15 · With the TV off, the screenshot tool hangs or writes an empty file, without an error (2026-10-12)
-- **Task:** run a scripted test on a Fire TV Stick 4K Select, judged by screenshots and the app's network requests.
-- **Steps:** with the TV (HDMI sink) switched off, `vega run-app` the app, press keys with `inputd-cli`, then `gwsi-tool-screenshooter /tmp/a.png` over `vega exec vda`.
-- **Expected:** an error that no display is connected, or a black frame.
-- **Actual:** the app sent no network request after launch. One `gwsi-tool-screenshooter` call did not return for more than 4 minutes. A later call returned at once and wrote a 0-byte file. No message in either case. With the TV on, the same script passed.
-- **Severity:** low (lost time. A test looks like an app bug).
-- **Workaround:** keep the TV on and awake during scripted runs. Put a timeout on every `vega exec vda` call. Treat a 0-byte screenshot as "no display".
-- **Suggestion:** make the screenshot tool fail with a clear message when no display is active.
 
 ## FL-16 · Amazon's automated device testing does not take Vega packages (2026-10-12)
 - **Task:** get the same evidence other Fire TV apps can show: Amazon installs, launches and measures the app on its own devices.
@@ -214,12 +186,12 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Workaround:** `--build-number 1` in the `build:release` script. All three then pass with 0 errors (info only: no app icon).
 - **Suggestion:** start the template's build number at 1, or make `build-vega --build-type Release` warn when it is 0.
 
-## FL-18 · The media controls manifest check sometimes answers `false`, with no reason (2026-10-11, checked again 2026-10-22)
+## FL-18 · The media controls manifest check sometimes answers `false`, with no reason (2026-10-11)
 - **Task:** make remote and Alexa play/pause reach my players, Fire TV Stick 4K Select, Vega OS 2.0.
-- **Steps:** launch my test app many times with the media controls entry in `manifest.toml`. Read `checkClientManifestForKMC: ... has KMC:` in the system log.
+- **Steps:** launch a test app with the media controls entry in `manifest.toml` many times. Read `checkClientManifestForKMC: ... has KMC:` in the system log.
 - **Expected:** `true` each time.
-- **Actual:** on 2026-10-11, 4 of 20 launches logged `false`, all within 20 minutes, with no reason. The package was installed again before each launch. In these 4 launches the log has no `MediaControlHandler` setup line, though the app logged 35 to 96 lines of its own. Since then every launch in my saved logs said `true`: 175 launches of 5 apps from 2026-10-12 to 2026-10-22. On 2026-10-22 I checked one possible cause, `command_options = ["Next"]`, used in the voice tests of 2026-10-11 (FL-10). The answer was `true`.
-- **Severity:** low (seen on one day only. When it happens, remote and voice commands may not reach the app, and the app gets no error).
+- **Actual:** on 2026-10-11, 4 of 20 launches logged `false`, all within 20 minutes. The package was installed again before each launch. These 4 launches have no `MediaControlHandler` setup line. In 175 later launches of 5 apps (2026-10-12 to 2026-10-22) the answer was always `true`. I did not find the cause.
+- **Severity:** low (seen on one day. When it happens, remote and voice commands may not reach the app, and the app gets no error).
 - **Workaround:** when a media controls test fails, look for this line first and launch the app again.
 - **Suggestion:** log why the check returns `false`, and document what it reads.
 
@@ -232,23 +204,14 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Workaround:** create the ad surfaces after the content surface (`AdSurfaceLayers` docs now say so). Shown in AmazonAppDev/react-native-multi-tv-app-sample PR #139.
 - **Suggestion:** document how video surfaces are ordered (creation order, not zIndex), or apply zIndex to video surfaces.
 
-## FL-20 · The launch tool reports "fully drawn" for an app that never reports it (2026-10-16)
-- **Task:** measure the demo's cold launch on a Fire TV Stick 4K Select, Vega OS 2.0, with `vega exec perf kpi-visualizer --kpi cool-start-latency --certification` (Perf CLI 0.24.0). Then follow Amazon's slow-launch workflow.
-- **Steps:** run 30 cold launches of an app that does not call `useReportFullyDrawn()` (no `@amazon-devices/kepler-performance-api` in the app). Read the report, then the Perfetto trace of an iteration.
-- **Expected:** no "fully drawn" value, or a clear note that the marker is missing. Amazon's TTFD workflow says: "If TTFD KPI values are null/undefined, this indicates missing or incorrect `useReportFullyDrawn()` API usage."
-- **Actual:** the report showed "Application launch to fully drawn" for 29 of 30 launches, marked statistically sound (√). The values were almost equal to first frame (mean 2398.2 ms vs 2393.4 ms, max 4243.8 ms vs 4243.7 ms). In the two traces I read, a `fully_drawn` slice from the `stem-init` process comes 67-87 ms before the app's `gwsi_firstFrame`, although the app never asked for one. After I added the hook, the trace has two `fully_drawn` slices per launch. The tool reported fully drawn at mean 2129 ms, P90 2494 ms.
-- **Severity:** low (a developer can believe the TTFD KPI is met and implemented, and the TTFD workflow's own check for a missing marker never fires).
-- **Workaround:** check the app code for `useReportFullyDrawn()` instead of trusting a non-empty TTFD value.
-- **Suggestion:** report TTFD as missing when the app did not emit the marker, or document which component emits the automatic `fully_drawn` and when.
-
-## FL-21 · w3cmedia events differ from HTML5 in four places, without a note in the docs (2026-10-11, again 2026-10-17)
+## FL-21 · w3cmedia events differ from HTML5 in three places, without a note in the docs (2026-10-11, again 2026-10-17)
 - **Task:** play MP4 by URL with `VideoPlayer` from `@amazon-devices/react-native-w3cmedia` 2.3.2 (React Native 0.83 template) on a Fire TV Stick 4K Select. Then map its events to a player API written for HTML5 (react-native-video v7's web backend does this for `<video>`).
 - **Steps:** log every media event with `currentTime`, `readyState` and `paused`. `src` → `play()`. `currentTime = 40` after 5 s. Let the video play to its end.
-- **Expected:** HTML5 order and values, as the docs describe the player as an HTMLMediaElement: one `loadstart` per source. `durationchange` after `loadedmetadata`. `seeked` with `currentTime` at the new position. After `ended`, `paused === true`.
-- **Actual:** `loadstart` came twice (at `src`, `readyState` 0, and again after the metadata, `readyState` 3). `durationchange` came before `loadedmetadata`. At `seeked` `currentTime` was 5.31-5.32 although the seek went to 40 (the picture from 40 followed ~0.6 s later). After `ended` there was no `pause` event, `paused` stayed `false` and `readyState` stayed 2. Same in 2 runs on 2026-10-11 (w3cmedia 2.1.99, React Native 0.72). Same in 5 runs on 2026-10-17 (w3cmedia 2.3.2, React Native 0.83).
+- **Expected:** HTML5 behaviour, as the docs describe the player as an HTMLMediaElement. One `loadstart` per source. `seeked` with `currentTime` at the new position. At the end, `paused` becomes `true` and a `pause` event comes before `ended`.
+- **Actual:** `loadstart` came twice (at `src`, `readyState` 0, and again after the metadata, `readyState` 3). At `seeked`, `currentTime` was 5.31 to 5.32 although the seek went to 40. The picture from 40 followed about 0.6 s later. After `ended` there was no `pause` event, `paused` stayed `false` and `readyState` stayed 2. Same in 2 runs on 2026-10-11 (w3cmedia 2.1.99, React Native 0.72). Same in 5 runs on 2026-10-17 (w3cmedia 2.3.2, React Native 0.83).
 - **Severity:** medium (a player built on HTML5 semantics reports a double load, a wrong seek position and "still playing" at the end).
 - **Workaround:** react-native-video's Vega backend sends `onLoadStart` once per source, `onLoad` after the metadata, `onSeek` with the seek target, and keeps its own "ended" flag.
-- **Suggestion:** fix these four to match HTML5, or list the differences on the w3cmedia API page.
+- **Suggestion:** fix these three to match HTML5, or list the differences on the w3cmedia API page.
 
 ## FL-22 · w3cmedia in URL mode never reports the video size (2026-10-17)
 - **Task:** fill `onLoad` (width and height) for react-native-video v7 on Vega, from w3cmedia `VideoPlayer` 2.3.2. Setup: Fire TV Stick 4K Select, MP4 720p by URL.
@@ -258,15 +221,6 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Severity:** low (apps cannot pick a layout or show the resolution from the player).
 - **Workaround:** none in the player. The app must know the size from its catalog.
 - **Suggestion:** fill `videoWidth`/`videoHeight` in URL mode, or document that they are MSE-only.
-
-## FL-23 · react-native-video v7 crashes a Vega app at import. The only advice is "remove it" (2026-10-11, again 2026-10-17)
-- **Task:** use react-native-video v7 (`7.0.0-beta.12`, the npm `beta` tag) in a Vega app made from the React Native 0.83 template.
-- **Steps:** `npm install react-native-video react-native-nitro-modules`, import `useVideoPlayer` and `VideoView`, build, run on the stick.
-- **Expected:** a build error or a clear runtime message that the package has no Vega support. The Amazon Devices Builder Tools knowledge base (`vega_media_playback_api.md`, migration notes) says: "`react-native-video` must be removed: It has native Android code (ExoPlayer) that does not work on Vega. There is no compatibility layer."
-- **Actual:** the build passes. The app aborts ~1 s after launch (SIGABRT): `react-native-nitro-modules` calls `TurboModuleRegistry.getEnforcing('NitroModules')`. Building its error message fails in React Native for Vega with "__fbBatchedBridgeConfig is not set, cannot invoke native modules".
-- **Severity:** medium (the most used React Native video library cannot be tried on Vega, and the crash does not name the cause).
-- **Workaround:** a Vega backend for v7 built like its web one (`*.kepler.ts` platform files on w3cmedia), proposed upstream as react-native-video PR #5171. It plays MP4 on the stick with the v7 API.
-- **Suggestion:** list Nitro-based libraries as unsupported in the Vega compatibility docs, and make `getEnforcing` failures readable.
 
 ## FL-24 · Request headers for media work, but the only API for them is hidden (2026-10-17)
 - **Task:** play an MP4 that needs a request header (for example a token), with `VideoPlayer` from `@amazon-devices/react-native-w3cmedia` 2.3.2 in URL mode. Setup: Fire TV Stick 4K Select, Vega OS 2.0.
@@ -299,7 +253,7 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Task:** move ad playback into a headless JS service. Guide: "Implement Headless JavaScript Playback" (developer.amazon.com, Vega 0.24), section "Create the headless service file".
 - **Steps:** copied the sample service class into a TypeScript project and ran `tsc`.
 - **Expected:** the sample compiles.
-- **Actual:** `handleClearTextView(sessionId?)` calls `onCaptionViewDestroyed(handle.handle)`, but this method has no `handle` parameter. TypeScript stops with "Cannot find name 'handle'". Next to it, `handleSetTextView` logs "handleSetVideoView called". Still the same on 2026-10-19.
+- **Actual:** `handleClearTextView(sessionId?)` calls `onCaptionViewDestroyed(handle.handle)`, but this method has no `handle` parameter. TypeScript stops with "Cannot find name 'handle'". Next to it, `handleSetTextView` logs "handleSetVideoView called". Still the same on 2026-10-23.
 - **Severity:** low (found at the first build).
 - **Workaround:** removed the argument.
 - **Suggestion:** compile the doc samples with `tsc` before publishing.
@@ -308,19 +262,19 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Task:** install the headless playback packages for a React Native 0.83 Vega app with the same guide, tab "RN 0.83".
 - **Steps:** added the listed versions: `@amazon-devices/kepler-player-server` and `@amazon-devices/kepler-player-client` `~4.0.0`, `@amazon-devices/react-native-w3cmedia` `~4.0.0`. Ran `npm install`.
 - **Expected:** the install works.
-- **Actual:** `npm install` fails. On npm the player packages have only `latest` 2.2.14 and `rn83-alpha` 2.3.0-rn-83. The w3cmedia package has 2.3.2 and 2.3.4-rn-83. There is no 4.x. Still the same on 2026-10-19.
+- **Actual:** `npm install` fails. On npm the player packages have only `latest` 2.2.14 and `rn83-alpha` 2.3.0-rn-83. The w3cmedia package has 2.3.2 and 2.3.4-rn-83. There is no 4.x. Still the same on 2026-10-23.
 - **Severity:** medium (an RN 0.83 app cannot follow the guide).
 - **Workaround:** the `rn83-alpha` versions (`2.3.0-rn-83`), with the override from FL-29.
 - **Suggestion:** list the published versions or the dist tag in the guide.
 
-## FL-29 · The RN 0.83 builds of the player packages break the install and warn at build time (2026-10-18)
-- **Task:** use `@amazon-devices/kepler-player-client@2.3.0-rn-83` and `headless-task-manager@1.2.8-rn-83.1` in an RN 0.83 app, Vega SDK 0.24.
-- **Steps:** `npm install`, then `react-native build-vega`.
-- **Expected:** a clean install and build.
-- **Actual:** `kepler-player-client@2.3.0-rn-83` depends on `kepler-player-server@^2.3.0`. The prerelease `2.3.0-rn-83` does not match `^2.3.0`, so npm stops with `notarget No matching version found for @amazon-devices/kepler-player-server@^2.3.0`. With an override the build passes. But it prints this message for player-client, player-server and headless-task-manager: "Validation errors … The version is set to 2.3.0-rn-83 but that value is not part of it's 'kepler-compatibility.json' file".
-- **Severity:** medium (the install fails until you find the override. The warnings look like errors).
-- **Workaround:** `"overrides": { "@amazon-devices/kepler-player-server": "2.3.0-rn-83" }` in the app's `package.json`. Ignore the warnings: the modules are in the manifest.
-- **Suggestion:** depend on `2.3.0-rn-83` exactly, and add the rn83 versions to `kepler-compatibility.json`.
+## FL-29 · The RN 0.83 build of the player client cannot be installed without an override (2026-10-18)
+- **Task:** use `@amazon-devices/kepler-player-client@2.3.0-rn-83` in an RN 0.83 app, Vega SDK 0.24.
+- **Steps:** add `"@amazon-devices/kepler-player-client": "2.3.0-rn-83"` to `package.json`. Run `npm install`.
+- **Expected:** a clean install.
+- **Actual:** `kepler-player-client@2.3.0-rn-83` depends on `@amazon-devices/kepler-player-server@^2.3.0`. The only 2.3 version of the server on npm is the prerelease `2.3.0-rn-83`, and npm does not match a prerelease to `^2.3.0`. So npm stops with `notarget No matching version found for @amazon-devices/kepler-player-server@^2.3.0`. Still the same on 2026-10-23 (`npm view`).
+- **Severity:** medium (the RN 0.83 headless player cannot be installed until you find the override).
+- **Workaround:** `"overrides": { "@amazon-devices/kepler-player-server": "2.3.0-rn-83" }` in the app's `package.json`. The build then prints the ERROR from FL-36.
+- **Suggestion:** depend on `2.3.0-rn-83` exactly, or publish a 2.3.0 release of the server.
 
 ## FL-30 · A seek on a new player before the media loads is lost without an error (2026-10-19)
 - **Task:** continue a movie at the same second after the app comes back from the background. Use a new w3cmedia `VideoPlayer` (Fire TV Stick 4K Select, Vega OS 2.0).
@@ -356,21 +310,22 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Actual:**
   - 10 build, then crash at `require()`. Without the handler the app closes, even inside `try`/`catch`.
   - 5 of these name the missing module. They are react-native-config 1.7.2, react-native-blob-util 0.25.1 and react-native-audio-api 0.13.6. The other two are react-native-bootsplash 7.3.4 and react-native-sound 0.13.0. Example: `TurboModuleRegistry.getEnforcing(...): 'RNSound' could not be found`.
-  - 5 show only "__fbBatchedBridgeConfig is not set, cannot invoke native modules". These are react-native-fs 2.20.0, react-native-restart 0.0.29 and react-native-background-timer 2.4.1. The other two are react-native-tts 4.1.1 and react-native-track-player 4.1.2. react-native-video v7 shows the same message (FL-23).
+  - 5 show only "__fbBatchedBridgeConfig is not set, cannot invoke native modules". These are react-native-fs 2.20.0, react-native-restart 0.0.29 and react-native-background-timer 2.4.1. The other two are react-native-tts 4.1.1 and react-native-track-player 4.1.2.
+  - react-native-video 7.0.0-beta.12 (npm tag `beta`) shows the same message about 1 s after launch, when `react-native-nitro-modules` calls `TurboModuleRegistry.getEnforcing('NitroModules')`. The Amazon Devices Builder Tools knowledge base (`vega_media_playback_api.md`) says: "`react-native-video` must be removed: It has native Android code (ExoPlayer) that does not work on Vega. There is no compatibility layer." The crash does not name the package.
   - 2 do not build: @react-native-community/blur 4.4.1 (`Unable to resolve module ./components/BlurView`) and react-native-image-colors 2.6.1 (needs `expo-modules-core`).
   - 1 builds and imports but draws nothing: @react-native-picker/picker 2.11.4. Its `Picker` returns `null` on a platform it does not know, without a warning.
 - **Severity:** medium (a developer finds out on the device, one library at a time, and half of the crashes do not name the package).
-- **Workaround:** try each native library on the device before building on it. For sound and video, use w3cmedia directly (`AudioPlayer`, `VideoPlayer`).
+- **Workaround:** try each native library on the device before building on it. For sound and video, use w3cmedia directly (`AudioPlayer`, `VideoPlayer`). For react-native-video v7, a Vega backend on w3cmedia (`*.kepler.ts` files) is proposed upstream as react-native-video PR #5171.
 - **Suggestion:** at build time, warn about packages that have Android or iOS native code but no `.kepler` files and no Amazon port. Make the `__fbBatchedBridgeConfig` error name the module that was asked for.
 
 ## FL-34 · The moduleName API of SplashScreenManager finds no splash screen in a React Native 0.83 app (2026-10-22)
 - **Task:** keep the native splash screen until the app is ready, from plain JavaScript and not from a hook. The `hide()` of react-native-bootsplash needs this. Fire TV Stick 4K Select, Vega OS 2.0, React Native 0.83 (`@amazon-devices/react-native-kepler` 4.0.1), release build, `SplashScreenImages.zip` in `assets/raw`.
 - **Steps:** at module scope, `SplashScreenManager.preventAutoHideAsync(name)` with the `name` from `app.json` (for example `com.example.test.main`). Later `hideAsync(name)`.
-- **Expected:** the 0.83 SplashScreenManager page says the "moduleName parameter maps to the name field in your app's app.json file". The splash stays until `hideAsync`.
+- **Expected:** the 0.83 SplashScreenManager page says the "moduleName parameter maps to the name field in your app's app.json file". The same page marks `preventAutoHideAsync` as "Replaced by the usePreventHideSplashScreen() hook". A library such as react-native-bootsplash has no component for a hook, so for it this is the only documented API. The splash should stay until `hideAsync`.
 - **Actual:** `preventAutoHideAsync` rejects with "[SplashScreenManager] No registered splash screen for module: <name>". `hideAsync` rejects with "Splash screen not found or already dismissed". The splash hides on the first frame. The comment in the source says the name must match the "screenKey that users register in app's main.cpp create() method". A React Native app has no such file. `AppRegistry.getAppKeys()[0]` is `LogBox`, not the app.
-- **Severity:** medium (the documented API without hooks does nothing in a React Native 0.83 app, and the hooks work only inside a component).
+- **Severity:** low (the hooks work inside a component. Code outside a component has no working documented API).
 - **Workaround:** the native module also has `preventAutoHideV2(rootTag)` and `hideV2(rootTag)`, which the hooks use. `AppRegistry.setWrapperComponentProvider` gets the root tag before the first render. With it the splash stayed until `hideV2`: screenshots show it, and the system log has the app's `state-change/foreground` right after the hide. Our open PR #808 to react-native-bootsplash works this way.
-- **Suggestion:** make the moduleName API work with the `app.json` name, or mark it as not for React Native apps. Add a documented API by root tag that works outside a component.
+- **Suggestion:** make the moduleName API work with the `app.json` name, or remove the `app.json` sentence and say it is not for React Native apps. Document an API by root tag that works outside a component, such as `preventAutoHideV2(rootTag)` and `hideV2(rootTag)`.
 
 ## FL-35 · The VVD lacks the player client and server modules, and a build puts them back into manifest.toml (2026-10-22)
 - **Task:** test a seek fix of react-native-video v7 on the Vega Virtual Device (VVD, SDK 0.24.12112). The test app also has a headless player mode with `@amazon-devices/kepler-player-client` and `kepler-player-server` 2.3.0-rn-83.
@@ -381,38 +336,29 @@ Severity: high = a core feature fails for viewers. Medium = wrong behaviour or h
 - **Workaround:** for a VVD build, move both packages out of `node_modules`, replace the service entry file with a stub and remove the needs from `manifest.toml`. Restore everything after the test. With that, the VVD showed the bug with the old code and the fix with the new code.
 - **Suggestion:** ship these modules in the VVD, or let a build option skip them for the VVD. Do not rewrite the source `manifest.toml` during a build without saying so in the output.
 
-## FL-36 · Amazon's React Native 0.83 package builds miss their own compatibility file, and the build prints ERROR (2026-10-22)
-- **Task:** move the demo app from React Native 0.72 to 0.83 (`@amazon-devices/react-native-kepler` 4.0.1, Vega SDK 0.24.12112). The app uses `@amazon-devices/kepler-adid-retriever` and `@amazon-devices/react-native-async-storage__async-storage`.
-- **Steps:** install the versions that npm tags `rn83-alpha`: `kepler-adid-retriever@1.0.17-rn-83` and `react-native-async-storage__async-storage@2.1.9000000000-rn-83`. Then `npm run build:release`.
-- **Expected:** Amazon's own 0.83 builds of the packages build without errors. If the error is real, the build stops.
-- **Actual:** `build-vega` prints "ERROR" and "Library @amazon-devices/kepler-adid-retriever is not properly configured". It goes on: "The version is set to 1.0.17-rn-83 but that value is not part of it's 'kepler-compatibility.json' file. This library must be updated to correct the error!" The same for async-storage. Then the build goes on. It makes the package and ends with exit code 0. The `kepler-compatibility.json` of each package lists `1.0.17` and `2.1.9000000000` without the `-rn-83` suffix. `@amazon-devices/headless-task-manager@1.2.8-rn-83.1` prints the same in our React Native 0.83 test app. FL-29 shows the same message for the player packages.
+## FL-36 · Amazon's RN 0.83 package builds miss their own compatibility file, and the build prints ERROR (2026-10-18, 2026-10-22)
+- **Task:** build React Native 0.83 apps with the `-rn-83` packages that npm tags `rn83-alpha`. Vega SDK 0.24.12112, `@amazon-devices/react-native-kepler` 4.0.1.
+- **Steps:** install `kepler-adid-retriever@1.0.17-rn-83` and `react-native-async-storage__async-storage@2.1.9000000000-rn-83` (demo app). In a test app, install `kepler-player-client@2.3.0-rn-83`, `kepler-player-server@2.3.0-rn-83` and `headless-task-manager@1.2.8-rn-83.1`. Run `react-native build-vega --build-type Release`.
+- **Expected:** Amazon's own 0.83 builds of the packages build without errors. If an error is real, the build stops.
+- **Actual:** the build prints "ERROR" and "Validation errors found while scanning node_modules for this application". Then, for each package: "Library <name> is not properly configured. The version is set to <version> but that value is not part of it's 'kepler-compatibility.json' file. This library must be updated to correct the error!" Then the build goes on, makes the package and ends with exit code 0. The `kepler-compatibility.json` of each package lists its version without the `-rn-83` suffix.
 - **Severity:** low (the app builds and runs. But the ERROR asks for an update, and real errors in the same output are easy to miss).
-- **Workaround:** use the latest versions without the suffix: `kepler-adid-retriever` 1.0.18 (it ships Hermes bundles for 0.72 and 0.83) and async-storage 2.1.9000000001. They build without the message. With them the demo on React Native 0.83 passed the full demo run on the stick. A saved place also survived a kill of the app.
-- **Suggestion:** list the `-rn-83` versions in their own `kepler-compatibility.json`, or drop the `rn83-alpha` tag when the stable versions cover 0.83. Print a warning, not "ERROR", when the build goes on. Say on "Supported Libraries and Services" which version of each package to use on 0.83.
-
-## FL-37 · The 0.83 migration guide halves pixel values, which a library for both 0.72 and 0.83 cannot do (2026-10-22)
-- **Task:** keep the built-in ad UI of react-native-vega-ads the same size on 0.72 and 0.83 with one code base. The UI is the ad label, Skip, the countdown, captions and the pause ad. Same stick.
-- **Steps:** run the demo app, drawn for 1920x1080 on 0.72, on 0.83 without changes.
-- **Expected:** a note for library authors on how to support both lines. The "Density-Independent Pixels" page says to replace fixed 1920x1080 geometry with `useWindowDimensions()`, Flexbox or percentages. It assumes the app moves to 0.83.
-- **Actual:** every size is twice as big. The break map moves off the screen and the ad texts overlap. Step 4.9 of the migration guide ("Convert layout values to density-independent pixels") says to divide all hardcoded pixel values by 2. That fixes 0.83 and breaks 0.72. The "Library Developer Guidance" page covers `peerDependencies` ranges. It does not mention layout and does not link the dp page.
-- **Severity:** low (each library finds its own way, and the change is small).
-- **Workaround:** scale by the window width. `Dimensions.get('window').width / 1920` is 1 on 0.72 and 0.5 on 0.83. react-native-vega-ads now does this for its built-in UI and exports it as `layoutScale()` and `scaleStyles()`. The demo uses the same helper for its own styles.
-- **Suggestion:** on the Library Developer Guidance page, link the dp page. Show how a library scales the same styles on 0.72 and 0.83, or ship a helper in `react-native-kepler`.
+- **Workaround:** for the ad ID and async storage, use the latest versions without the suffix: `kepler-adid-retriever` 1.0.18 (it ships Hermes bundles for 0.72 and 0.83) and async-storage 2.1.9000000001. They build without the message. With them the demo on React Native 0.83 passed the full demo run on the stick. The player packages have no such version yet, so ignore the message there. The modules are in the manifest.
+- **Suggestion:** list the `-rn-83` versions in their own `kepler-compatibility.json`, or drop the `rn83-alpha` tag when the stable version covers 0.83. Print a warning, not "ERROR", when the build goes on. Say on "Supported Libraries and Services" which version of each package to use on 0.83.
 
 ## FL-38 · On React Native 0.83 the first AdIdRetriever read blocks JavaScript for up to 2.6 s (2026-10-23)
 - **Task:** show the demo's movie page fast on a cold start and ask for its ad plan with the advertising ID. Same stick, demo app on React Native 0.83, `@amazon-devices/kepler-adid-retriever` 1.0.18.
 - **Steps:** read `AdIdRetriever` while the first screen renders. Measure 30 cold launches with `vega exec perf kpi-visualizer --certification --kpi cool-start-latency`. Open the traces of the slow launches.
 - **Expected:** the module loads in tens of milliseconds, as on 0.72 (40 ms in the 2026-10-16 run).
-- **Actual:** `TurboModuleBinding::moduleProvider` for `AmazonAdIdRetrieverTurboModule` took 0.5 to 2.6 s on the JavaScript thread. In that time the system started `com.amazon.admanager.service`. The poster request waited for it. Fully drawn P90 was 6.3 s, against 3.46 s on 0.72. Nothing in the API reference says that the first call waits for a service.
+- **Actual:** in the traces of the slow launches, `TurboModuleBinding::moduleProvider` for `AmazonAdIdRetrieverTurboModule` took 0.5 to 2.6 s on the JavaScript thread. In that time the system started `com.amazon.admanager.service`. The poster request waited for it. Nothing in the API reference says that the first call waits for a service.
 - **Severity:** medium (it delays the first screen of an app that asks for ads with the ID at launch).
-- **Workaround:** read `AdIdRetriever` only after the first screen is drawn. The demo's movie page now asks for the ad plan when the poster has loaded. After the change (28 counted launches): fully drawn P90 5.5 s and mean 3.0 s, before 6.3 s and 4.0 s. The read now comes after fully drawn. The wait itself remains, right after fully drawn: 0.2 to 1.1 s in three traces, so a key pressed then waits. The deferral works because Metro's inline requires, the default in `@react-native/metro-config`, load the module at its first read.
+- **Workaround:** read `AdIdRetriever` only after the first screen is drawn. The demo's movie page now asks for the ad plan when the poster has loaded. After the change the read comes after fully drawn. Fully drawn P90 went from 6.3 s to 5.5 s (28 counted launches, stdev 1.9 s). The wait itself remains, right after fully drawn: 0.2 to 1.1 s in three traces, so a key pressed then waits. The deferral works because Metro's inline requires, the default in `@react-native/metro-config`, load the module at its first read.
 - **Suggestion:** load the module without blocking the JavaScript thread. Or say in the API reference that its first load waits for the ad ID service.
 
 ## FL-39 · The accessibility settings package installs React Native 0.60.6 into every app that uses it (2026-10-23)
-- **Task:** read the caption and audio description settings in the demo app. Demo app on React Native 0.83 with `@amazon-devices/kepler-a11y-settings-interface-turbo` 1.0.0.
-- **Steps:** `npm install`, then `npm ls react-native-tscodegen-types` and `npm audit`. Push the lockfile to GitHub with Dependabot alerts on.
-- **Expected:** a TurboModule package installs only what the app needs at run time. `@amazon-devices/react-native-w3cmedia` 2.3.2 does so. Its version 2.1.99 also installed `react-native-tscodegen-types`.
-- **Actual:** the package lists `react-native-tscodegen-types` 0.66.0 under `dependencies`, and that package depends on `react-native` ^0.60.6. So every app that uses the package gets a second React Native, 0.60.6, with its 28 dependencies (47 MB in `node_modules`). npm audit and Dependabot report that tree in the app, including the advisory for React Native below 0.62.3. The version `1.0.0-rn-83` has the same dependency.
-- **Severity:** low (the old tree is not in the app bundle, but it adds security alerts and install size to each app).
-- **Workaround:** none in the app that keeps the package. The alerts are explained in this repository's `SECURITY.md`.
-- **Suggestion:** move `react-native-tscodegen-types` to `devDependencies`, or drop it from the published package.
+- **Task:** read the caption and audio description settings in the demo app (React Native 0.83) with `@amazon-devices/kepler-a11y-settings-interface-turbo` 1.0.0.
+- **Steps:** `npm install`, then `npm ls react-native` and `npm audit`.
+- **Expected:** a TurboModule package installs only what it needs at run time. `@amazon-devices/react-native-w3cmedia` 2.3.2 does so. Its version 2.1.99 still listed `react-native-tscodegen` and `react-native-tscodegen-types` under `dependencies`.
+- **Actual:** the package lists `react-native-tscodegen-types` 0.66.0 under `dependencies`, not `devDependencies`. That package depends on `react-native` ^0.60.6. So npm installs a second React Native, 0.60.6, in `node_modules/react-native-tscodegen-types/node_modules`: 130 packages, 47 MB. The package's own code in `dist` never imports `react-native-tscodegen-types`. npm audit and Dependabot then report the old tree in the app. One example is GHSA-7f53-fmmv-mfjv (React Native from 0.59.0 up to 0.62.3). The version `1.0.0-rn-83` (npm tag `rn83-alpha`) has the same dependency.
+- **Severity:** low (the old tree is not in the app bundle. But every app that uses the package gets the install size and the alerts).
+- **Workaround:** none that keeps the package. This repository explains the alerts in `SECURITY.md`.
+- **Suggestion:** move `react-native-tscodegen-types` to `devDependencies`, as w3cmedia 2.3.2 did, or drop it from the published package.

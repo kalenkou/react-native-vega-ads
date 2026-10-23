@@ -49,7 +49,7 @@ Checked on a Fire TV Stick 4K Select with Vega OS 2.0. Dates and details: [devic
 | Cold launch of the demo, 30 launches with Amazon's tool | React Native 0.83: first frame P90 0.77 s, fully drawn P90 5.6 s. React Native 0.72: 1.09 s and 3.46 s. Amazon's targets: 1.5 s and 8 s |
 | Release build with the optional AWS ad server | The v0.1.4 release file of the demo played its movie and ads from CloudFront in 3 of 3 runs. DynamoDB counted every pixel |
 | Fixes in other libraries | 7 open pull requests, listed [below](#fixes-in-other-libraries). The [streaming kit](apps/streaming-kit) runs three of them in one app |
-| Problems found on the way | 39 entries in the [friction log](docs/friction-log.md), each with steps and a workaround |
+| Problems found on the way | 33 entries in the [friction log](docs/friction-log.md), each with steps and a workaround |
 
 ## Features
 

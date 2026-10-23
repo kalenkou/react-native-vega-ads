@@ -32,6 +32,6 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11 to 23.10.2026, on React Native 0.72 unl
 | 0.24 | 0.72 | Verified on Fire TV Stick 4K Select, Vega OS 2.0 (`apps/spike`, and `apps/demo` until 22.10, built with SDK 0.24.12112) |
 | 0.24 | 0.83 | Verified on the same device (`apps/demo` since 22.10: the full demo run, a saved place after a kill, ad captions, the screens checked against 0.72), and in Amazon's vega-video-sample with Shaka (`examples/vega-video-sample`) |
 
-On React Native 0.83 the layout is in dp on a 960x540 canvas. The built-in ad UI and the demo scale their 1920x1080 sizes with `layoutScale()` and `scaleStyles()` (FL-37).
+On React Native 0.83 the layout is in dp on a 960x540 canvas. The built-in ad UI and the demo scale their 1920x1080 sizes with `layoutScale()` and `scaleStyles()`.
 
 The device reports Vega OS 2.0 (`/etc/os-release`: "OS 2.0 (TV Ship/515)", read on 11.10.2026). The Vega Virtual Device of SDK 0.24 runs Vega OS 1.2 (`/etc/os-release`, read on 22.10.2026).
