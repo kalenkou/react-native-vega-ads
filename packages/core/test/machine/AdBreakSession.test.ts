@@ -490,6 +490,83 @@ describe('AdBreakSession: viewer actions (R8, R13, R23)', () => {
   });
 });
 
+describe('AdBreakSession: viewer actions, more cases', () => {
+  it('refuses a second start()', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    await loadReady(ctx);
+    await ctx.session.start();
+    await expect(ctx.session.start()).rejects.toThrow('not ready');
+  });
+
+  it('allows no Skip after the break was left', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitTime(6);
+    await ctx.session.interrupt();
+    expect(ctx.session.skip()).toBe(false);
+    expect(ctx.events).not.toContain('skip');
+  });
+
+  it('pauses on the first press even before the ad shows a frame', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    player.calls.length = 0;
+    expect(ctx.session.togglePause()).toBe(true);
+    expect(player.calls).toEqual(['pause']);
+  });
+
+  it('goes through resuming to finished on Back', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    const from = ctx.states.length;
+    await ctx.session.cancel();
+    expect(ctx.states.slice(from).map((s) => s.state)).toEqual(['resuming', 'resuming', 'finished']);
+  });
+
+  it('after a post-roll gives media controls back but does not play the content again', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start({ resumeContent: false });
+    await player.flush();
+    ctx.content.calls.length = 0;
+    player.emitEnded();
+    await settle();
+    expect(ctx.content.calls).toEqual(['focus']);
+    expect(ctx.session.state).toBe('finished');
+  });
+
+  it('reports no impression for a break left before its first frame', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    await loadReady(ctx);
+    await ctx.session.start();
+    await expect(ctx.session.interrupt()).resolves.toEqual({ impressed: false });
+  });
+
+  it('plays the content when it comes back from a break left before it started', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    await loadReady(ctx);
+    await ctx.session.interrupt();
+    await ctx.session.resumeContent();
+    expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
+  });
+
+  it('plays the next ad of the pod on the same player at once', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitEnded();
+    await settle();
+    expect(player.src).toBe('https://cdn.test/pod-2.mp4');
+    expect(player.autoplay).toBe(true);
+  });
+});
+
 describe('AdBreakSession: back-to-back ads on two ad players', () => {
   async function playFirst(ctx: ReturnType<typeof setup>): Promise<FakePlayer> {
     const first = await loadReady(ctx);
