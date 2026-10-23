@@ -1,5 +1,5 @@
 # Dependency updates. Security updates (turned on in the repository settings) cover every
-# lockfile, including the Vega apps; version updates below are kept small on purpose.
+# lockfile, including the Vega apps. The version updates below are kept small on purpose.
 version: 2
 updates:
   # Library packages and tools (npm workspaces).

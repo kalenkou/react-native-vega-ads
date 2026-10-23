@@ -27,9 +27,9 @@ The build needs the internet. It copies the VAST, VMAP and WebVTT files of the C
 
 The workflow `.github/workflows/web-demo.yml` publishes `dist/` to GitHub Pages after the type check and the tests of `packages/core` and `tools/web-demo`.
 
-## How it differs from the TV
+## Differences from the TV app
 
-- `HtmlVideoPort` is the browser stand-in for the w3cmedia `VideoPlayer`. It implements the same `PlayerPort`.
-- One ad surface. The TV prebuffers the next ad of a pod on a second surface.
-- Browsers may refuse sound before the viewer uses the page. Then the video plays muted and the page offers a button to turn the sound on.
-- The page sends real tracking pixels. They count in the pixel collector's daily report, together with the TV's.
+- In the browser, `HtmlVideoPort` takes the place of the w3cmedia `VideoPlayer`. Both implement `PlayerPort`.
+- The page has one ad surface. On the TV, the next ad of a pod buffers on a second surface.
+- A browser can block sound until the viewer clicks the page. Then the video plays muted, and the page shows a button that turns the sound on.
+- The page sends real tracking pixels. The pixel collector's daily report counts them together with the pixels from the TV.
