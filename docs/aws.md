@@ -1,6 +1,6 @@
 # On AWS
 
-No ad server yet? The demo's whole ad backend runs on AWS from one script, and the library
+For apps without an ad server, the demo's whole ad backend runs on AWS from one script. The library
 needs nothing AWS-specific: it reads the VAST and VMAP files from any HTTPS host.
 
 ```

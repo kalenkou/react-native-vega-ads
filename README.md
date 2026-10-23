@@ -87,11 +87,7 @@ How to use it:
 3. Put the VMAP file next to the movie on any HTTPS host.
 4. Give its URL to the player: `ads={{ vmapUrl }}`.
 
-What your ad server needs:
-
-- An IAB category in each ad's VAST (`<Category>`). `make-vmap` uses IAB Ad Product Taxonomy 2.0 codes, for example `1571` for electric vehicles. An ad without a category is never left out.
-- `[BLOCKEDADCATEGORIES]` in your VAST tag URL. The player fills it with the blocked categories of the break, so the ad server can send fitting ads up front.
-- Spare ads in the response are a good idea: ads without `sequence` (a VAST 4 "ad buffet"). One of them takes the place of a blocked ad, in a pod too. Without them the break plays one ad less.
+Your ad server needs an IAB category in each ad and a few VAST details: see [what your ad server needs](tools/make-vmap/README.md#what-your-ad-server-needs).
 
 Everything runs on your computer. No cloud, no cost, no viewer data. On an Apple M5 Pro, Sintel (15 min, 2 mid-roll breaks) takes 31 s with all three steps. Commands: [tools/make-vmap](tools/make-vmap). How well the model does: [how the breaks are placed](docs/how-breaks-are-placed.md).
 
@@ -108,6 +104,9 @@ This also installs `react-native-ads-core`. Your Vega app already has the peer d
 ### 2. Add entries to `manifest.toml`
 
 Without these entries, the remote and Alexa do not work during ads.
+
+<details>
+<summary>The <code>manifest.toml</code> entries (click to open)</summary>
 
 ```toml
 [[components.interactive]]
@@ -133,6 +132,8 @@ command_options = []
 attribute_options = []
 features = []
 ```
+
+</details>
 
 Ad and movie URLs must be HTTPS. The w3cmedia player refuses `http://` media and gives the app only a generic error. For a development server, add its address to the manifest:
 
@@ -165,7 +166,7 @@ export function PlayerScreen({ uri, vmapUrl, onClose }: { uri: string; vmapUrl: 
 - `onEvent` gets every ad event, such as `impression`, the quartiles, `skip`, `breakStart`, `breakEnd` and `error:<code>`. The second argument tells which break and which ad. All events: [API reference](docs/api.md#events-onevent).
 - `onEnd` runs when the movie and its post-roll are over.
 - `adId` is optional. Without it, no advertising ID is sent.
-- No ad server yet? Google's public IMA sample VMAP has a pre-roll, a mid-roll and a post-roll: `https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/vmap_ad_samples&sz=640x480&cust_params=sample_ar%3Dpremidpost&ciu_szs=300x250&gdfp_req=1&ad_rule=1&output=vmap&unviewed_position_start=1&env=vp&impl=s&cmsid=496&vid=short_onecue&correlator=[CACHEBUSTING]`. The player fills `[CACHEBUSTING]` itself.
+- For a first test without your own ad server, use Google's public IMA sample VMAP. It has a pre-roll, a mid-roll and a post-roll: `https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/vmap_ad_samples&sz=640x480&cust_params=sample_ar%3Dpremidpost&ciu_szs=300x250&gdfp_req=1&ad_rule=1&output=vmap&unviewed_position_start=1&env=vp&impl=s&cmsid=496&vid=short_onecue&correlator=[CACHEBUSTING]`. The player fills `[CACHEBUSTING]` itself.
 
 Your own controls, ad overlay or player (Shaka, react-native-video v7) and ads loaded on the title page: see the [Guide](docs/guide.md).
 
@@ -218,18 +219,7 @@ The core talks to the player through a small `PlayerPort` interface. So it can d
 
 ## Development
 
-You need Node.js 22 and npm 10. The demo app also needs the Vega SDK.
-
-```sh
-npm ci
-npm run check   # lint, format, types and the tests of the packages and tools
-# the demo app's tests (the demo is not a workspace)
-cd apps/demo && npm ci && cp src/media.example.ts src/media.local.ts && npm run use-core && npm test
-```
-
-`npm run test:mutation` runs Stryker on `react-native-ads-core`. It makes 3,452 small changes to the code, one at a time, and the tests catch 89 % of them (23.10.2026). Property tests with fast-check feed the VAST, VMAP and WebVTT parsers random input.
-
-Before a pull request run `npm run format` and `npm run check`. See [CONTRIBUTING.md](CONTRIBUTING.md). The demo app's 50 tests run with the commands above. All device runs, failures too: [`apps/spike/DEVICE-TESTS.md`](apps/spike/DEVICE-TESTS.md).
+You need Node.js 22 and npm 10. Run `npm ci`, then `npm run check` for lint, format, types and the tests. The demo app's tests, the mutation tests and the steps before a pull request are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Credits
 
@@ -238,6 +228,9 @@ Films:
 - *Tears of Steel*, (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org), CC BY 3.0. Soundtrack (C) Joram Letwory, www.tearsofsteel.org, CC BY-ND 3.0.
 - *Sintel*, © copyright Blender Foundation | [durian.blender.org](https://durian.blender.org), CC BY 3.0.
 - *Big Buck Bunny* (eval only), (CC) Blender Foundation | [www.bigbuckbunny.org](https://www.bigbuckbunny.org), CC BY 3.0.
+
+<details>
+<summary>Fonts, libraries and the tools that <code>make-vmap</code> runs</summary>
 
 Fonts: the demo ads use Inter. The demo app ships [IBM Plex](https://github.com/IBM/plex). Both are under the SIL Open Font License 1.1. The IBM Plex TTF files are unchanged from IBM's releases, with the license in `apps/demo/assets/fonts`.
 
@@ -250,6 +243,8 @@ The packages depend on [@dailymotion/vast-client](https://github.com/dailymotion
 - [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) with [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (Apache-2.0)
 
 They are not in this repository or in the npm packages. You install them yourself.
+
+</details>
 
 ## License
 

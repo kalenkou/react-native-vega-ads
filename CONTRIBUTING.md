@@ -11,7 +11,15 @@ npm ci
 npm run check   # lint, format, types and the tests of the packages and tools
 ```
 
-The demo app has its own steps: [apps/demo](apps/demo/README.md).
+The demo app also needs the Vega SDK. It is not a workspace, so its 50 tests run on their own:
+
+```sh
+cd apps/demo && npm ci && cp src/media.example.ts src/media.local.ts && npm run use-core && npm test
+```
+
+More demo steps: [apps/demo](apps/demo/README.md).
+
+`npm run test:mutation` runs Stryker on `react-native-ads-core`. It makes 3,452 small changes to the code, one at a time, and the tests catch 89 % of them (23.10.2026). Property tests with fast-check feed the VAST, VMAP and WebVTT parsers random input.
 
 ## Before a pull request
 

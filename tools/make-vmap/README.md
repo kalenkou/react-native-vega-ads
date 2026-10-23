@@ -110,6 +110,15 @@ The identity needs these actions:
 
 Rekognition reads the video from S3 with the caller's permissions, so `s3:GetObject` must allow the video object. The bucket must be in the same region as the Rekognition call.
 
+## What your ad server needs
+
+The player can leave out an ad only when it knows the ad's category.
+
+
+- An IAB category in each ad's VAST (`<Category>`). `make-vmap` uses IAB Ad Product Taxonomy 2.0 codes, for example `1571` for electric vehicles. An ad without a category is never left out.
+- `[BLOCKEDADCATEGORIES]` in your VAST tag URL. The player fills it with the blocked categories of the break, so the ad server can send fitting ads up front.
+- Spare ads in the response are a good idea: ads without `sequence` (a VAST 4 "ad buffet"). One of them takes the place of a blocked ad, in a pod too. Without them the break plays one ad less.
+
 ## Code
 
 The steps are separate functions in `src/`: `ffmpegSegments` (`ffmpegSegments.ts`), `whisperTranscript` (`whisperSpeech.ts`), `rekognitionSegments` (`rekognition.ts`), `pickBreaks` (`pickBreaks.ts`), `breakContexts` (`breakContext.ts`) and `buildVmap` (`buildVmap.ts`). `buildVmap` also accepts `custParams` per break, for example scene labels. It appends them to the tag URL as one URL-encoded `cust_params` value.
