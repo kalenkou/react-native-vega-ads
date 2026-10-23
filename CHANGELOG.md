@@ -4,6 +4,24 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-10-23
+
+The library code is the same as in 0.1.4. This release brings new builds of the demo.
+
+### Example apps
+
+- The demo shows the movie poster, a spinner and "Loading..." until the first frame of the ad or the movie. Before, the screen was black with "Playing 00:00:00" for about 3 s while the ad plan and the first ad loaded. The loading screen goes away after 8 s at the latest, and it never comes back after an ad has played.
+- The demo keeps one font weight on its buttons, also in focus. Before, the focused button used a wider font, and the buttons next to it moved.
+
+### Tests
+
+- Each test unmounts what it renders, so Jest exits on its own. A duplicate smoke test file is gone, and 13 export checks are now one test.
+
+### Documentation
+
+- Friction log: a summary table of the 39 entries, with a severity for each. Entries with an inexact version, link or ID are fixed.
+- README: the test counts (1,002 in the packages and 50 in the demo).
+
 ## [0.1.4] - 2026-10-23
 
 ### Fixed
@@ -109,7 +127,8 @@ First release.
 - `vegaAdIdSource` for the Fire TV advertising ID. `preloadVegaAds` and `useAdPlan` for the title page. `rnvPlayerPort` for react-native-video v7.
 - Preview: `useStitchedAds` (IAB tracking of ads stitched into the stream by a server). `HeadlessPlayerService` and `HeadlessPlayerAdapter` (Amazon's headless player approach). `createAdPlayer` for ad players that are any `PlayerPort`.
 
-[Unreleased]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.1...v0.1.2
