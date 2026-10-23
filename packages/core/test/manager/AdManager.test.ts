@@ -41,6 +41,7 @@ function setup(
     | 'macros'
     | 'captionLanguage'
     | 'maxRedirects'
+    | 'prefetchSeconds'
   > = {},
 ) {
   const http = new FakeHttp();
@@ -818,7 +819,7 @@ describe('AdManager', () => {
     const second = ctx.lastAdPlayer();
     expect(second).not.toBe(first);
     expect(first.deinitialized).toBe(true); // at once: one ad decoder at a time
-    expect(ctx.events).toContain('break:break-1:superseded');
+    expect(ctx.details).toContainEqual(['break:break-1:superseded', { breakId: 'break-1' }]);
     expect(ctx.events).not.toContain('break:break-1:interrupted'); // that one means Home
     first.emitCanPlay(); // the first one would have been ready first
     await settle();
@@ -994,7 +995,7 @@ describe('AdManager', () => {
     expect(ctx.content.calls.slice(-2)).toEqual(['play', 'focus']);
     expect(ctx.content.calls).not.toContain('seek:0');
     expect(ctx.last()).toEqual(IDLE_SNAPSHOT);
-    expect(ctx.events).toContain('break:break-1:interrupted');
+    expect(ctx.details).toContainEqual(['break:break-1:interrupted', { breakId: 'break-1' }]);
     expect(ctx.http.requests.filter((u) => u === 'https://ads.test/pre.xml')).toHaveLength(1);
   });
 
@@ -1151,7 +1152,7 @@ describe('AdManager', () => {
 
     await ctx.manager.wake();
     expect(ctx.content.calls).toContain('play');
-    expect(ctx.events).toContain('break:break-1:interrupted');
+    expect(ctx.details).toContainEqual(['break:break-1:interrupted', { breakId: 'break-1' }]);
     ctx.content.emitTime(20);
     await settle();
     expect(ctx.http.requests).toContain('https://ads.test/mid.xml');
@@ -1169,6 +1170,7 @@ describe('AdManager', () => {
     await settle();
     expect(ctx.content.calls).toContain('play');
     expect(ctx.adPlayers.every((p) => p.deinitialized)).toBe(true);
+    expect(ctx.details).toContainEqual(['break:break-1:interrupted', { breakId: 'break-1' }]);
   });
 
   it('suspend() while the last ad player is being released: the content stays paused, one breakEnd after wake() (C3-8)', async () => {
@@ -1731,5 +1733,175 @@ describe('AdManager', () => {
       expect(ctx.adPlayers).toHaveLength(0);
       expect(ctx.content.calls).toContain('play');
     });
+  });
+});
+
+describe('AdManager: viewing state and break ends', () => {
+  const PRE = 'https://ads.test/pre.xml';
+  const MID = 'https://ads.test/mid.xml';
+  const POST = 'https://ads.test/post.xml';
+
+  /** Starts a manual schedule whose pre-roll is ready, but has not shown a frame yet. */
+  async function preRollReady(ctx: Ctx, breaks: Parameters<typeof manual>[0] = []): Promise<void> {
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: PRE }, ...breaks]));
+    await settle();
+    expect(ctx.content.calls).not.toContain('play');
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+  }
+
+  it('has an empty idle snapshot', () => {
+    expect(IDLE_SNAPSHOT).toEqual({
+      state: 'idle',
+      position: 0,
+      total: 0,
+      adTime: 0,
+      adDuration: 0,
+      canSkip: false,
+      skipIn: null,
+      adSurface: null,
+      caption: '',
+      ad: null,
+    });
+  });
+
+  it('viewingStarted turns true with the first ad frame, not with an ad that failed before it', async () => {
+    const pod = fixture('vast/pod-optimized.xml').replace(
+      /type="video\/mp4"([^>]*><!\[CDATA\[https:\/\/cdn\.test\/pod-1)/,
+      'type="video/webm"$1',
+    );
+    const ctx = setup({ [PRE]: pod });
+    expect(ctx.manager.viewingStarted).toBe(false);
+    await preRollReady(ctx);
+    expect(ctx.events).toContain('error:403');
+    expect(ctx.manager.viewingStarted).toBe(false);
+    await ctx.lastAdPlayer().flush();
+    expect(ctx.manager.viewingStarted).toBe(true);
+  });
+
+  it('viewingStarted is true once a pre-roll left with Back gave the content back', async () => {
+    const ctx = setup({ [PRE]: fixture('vast/inline.xml') });
+    await preRollReady(ctx);
+    await ctx.manager.back();
+    expect(ctx.manager.viewingStarted).toBe(true);
+    expect(ctx.events).not.toContain('content:ended');
+  });
+
+  it('after wake() from a pre-roll left before its first frame, the viewing has started and the content has not ended', async () => {
+    const ctx = setup({ [PRE]: fixture('vast/inline.xml') });
+    await preRollReady(ctx);
+    await ctx.manager.suspend();
+    await ctx.manager.wake();
+    expect(ctx.manager.viewingStarted).toBe(true);
+    expect(ctx.events).not.toContain('content:ended');
+  });
+
+  it('a pre-roll played to its end does not end the content', async () => {
+    const ctx = setup({ [PRE]: fixture('vast/inline.xml') });
+    await preRollReady(ctx);
+    await playAdToEnd(ctx);
+    expect(ctx.events).toContain('breakEnd');
+    expect(ctx.events).not.toContain('content:ended');
+  });
+
+  it('reports content:ended only after the post-roll, once', async () => {
+    const ctx = setup({ [POST]: fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 'end', vastUrl: POST }]));
+    ctx.content.emitTime(590);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    ctx.content.emitEnded();
+    await settle();
+    expect(ctx.events).not.toContain('content:ended');
+    await playAdToEnd(ctx);
+    expect(ctx.events.filter((e) => e === 'content:ended')).toHaveLength(1);
+  });
+
+  it('reports content:ended when the post-roll is not loaded when the content ends', async () => {
+    const ctx = setup({});
+    ctx.http.hang(POST);
+    await ctx.manager.start(manual([{ offset: 'end', vastUrl: POST }]));
+    ctx.content.emitTime(590);
+    await settle();
+    ctx.content.emitEnded();
+    await settle();
+    expect(ctx.events).toContain('break:break-1:late');
+    expect(ctx.events).toContain('content:ended');
+  });
+
+  it('reports content:ended for a post-roll without ads, and does not play the content again', async () => {
+    const ctx = setup({ [POST]: fixture('vast/empty.xml') });
+    await ctx.manager.start(manual([{ offset: 'end', vastUrl: POST }]));
+    ctx.content.emitTime(590);
+    await settle();
+    const plays = ctx.content.calls.filter((c) => c === 'play').length;
+    ctx.content.emitEnded();
+    await settle();
+    expect(ctx.events).toContain('break:break-1:empty');
+    expect(ctx.events).toContain('content:ended');
+    expect(ctx.content.calls.filter((c) => c === 'play')).toHaveLength(plays);
+  });
+
+  it('does not play the playing content again for a mid-roll without ads', async () => {
+    const ctx = setup({ [MID]: fixture('vast/empty.xml') });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: MID }]));
+    ctx.content.emitTime(20);
+    await settle();
+    const plays = ctx.content.calls.filter((c) => c === 'play').length;
+    ctx.content.emitTime(30);
+    await settle();
+    expect(ctx.events).toContain('break:break-1:empty');
+    expect(ctx.content.calls.filter((c) => c === 'play')).toHaveLength(plays);
+  });
+
+  it('does not count down to a mid-roll without ads', async () => {
+    const ctx = setup({ [MID]: fixture('vast/empty.xml') });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: MID }]));
+    ctx.content.emitTime(20);
+    await settle();
+    ctx.content.emitTime(22);
+    ctx.content.emitTime(24);
+    ctx.content.emitTime(26);
+    await settle();
+    expect(ctx.timelines.every((t) => t.nextBreakIn === null)).toBe(true);
+  });
+
+  it('counts down from exactly 5 s before a mid-roll', async () => {
+    const ctx = setup({ [MID]: fixture('vast/inline.xml') });
+    await ctx.manager.start(manual([{ offset: 30, vastUrl: MID }]));
+    ctx.content.emitTime(23);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    ctx.content.emitTime(25);
+    await settle();
+    expect(ctx.timelines[ctx.timelines.length - 1]?.nextBreakIn).toBe(5);
+  });
+
+  it('a content end while a mid-roll plays starts no post-roll over it', async () => {
+    const ctx = setup({ [MID]: fixture('vast/inline.xml'), [POST]: fixture('vast/inline.xml') });
+    await ctx.manager.start(
+      manual([
+        { offset: 30, vastUrl: MID },
+        { offset: 'end', vastUrl: POST },
+      ]),
+    );
+    ctx.content.emitTime(20);
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await settle();
+    ctx.content.emitTime(30);
+    await settle();
+    const mid = ctx.lastAdPlayer();
+    await mid.flush();
+    ctx.content.emitEnded(); // a late event of the paused content
+    await settle();
+    ctx.adPlayers.forEach((p) => p !== mid && p.emitCanPlay());
+    await settle();
+    expect(ctx.events.filter((e) => e.startsWith('break:'))).toEqual([]);
+    expect(ctx.events.filter((e) => e === 'breakStart')).toHaveLength(1);
+    expect(ctx.last()?.state).toBe('playing');
   });
 });
