@@ -332,6 +332,25 @@ export class AdBreakSession {
     return true;
   }
 
+  /** The ad on screen is paused, by the viewer or by its player. */
+  get paused(): boolean {
+    return this.state === 'playing' && this.adPaused;
+  }
+
+  /**
+   * A media controls command paused the ad. On Fire TV "Alexa, pause" finds the ad already
+   * frozen while Alexa listened, so its player sends no pause event: without this the ad would
+   * count as stuck and fail with 405.
+   */
+  pausedByCommand(): void {
+    if (this.state !== 'playing' || this.adPaused) {
+      return;
+    }
+    this.adPaused = true;
+    this.disarmWatchdog();
+    this.whilePlaying((c) => c.tracker.paused());
+  }
+
   /** Viewer pressed Back: leave the break without skip or close pixels (R23). */
   async cancel(): Promise<void> {
     // Only an ad on screen can be left; before start() or after the break there is nothing to do.

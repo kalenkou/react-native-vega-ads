@@ -905,6 +905,23 @@ describe('AdManager', () => {
     expect(ctx.manager.togglePause()).toBe(false);
   });
 
+  it('adPausedByCommand() marks the ad on screen paused; adPaused is false between breaks', async () => {
+    const ctx = setup({ 'https://ads.test/pre.xml': fixture('vast/inline.xml') });
+    const starting = ctx.manager.start(manual([{ offset: 'start', vastUrl: 'https://ads.test/pre.xml' }]));
+    await settle();
+    ctx.lastAdPlayer().emitCanPlay();
+    await starting;
+    await settle();
+    await ctx.lastAdPlayer().flush();
+    expect(ctx.manager.adPaused).toBe(false);
+    ctx.manager.adPausedByCommand();
+    expect(ctx.manager.adPaused).toBe(true);
+    ctx.manager.togglePause(); // resumes
+    await ctx.lastAdPlayer().flush();
+    await playAdToEnd(ctx);
+    expect(ctx.manager.adPaused).toBe(false);
+  });
+
   it('after the post-roll the content is not played again from the start', async () => {
     const ctx = setup({ 'https://ads.test/post.xml': fixture('vast/inline.xml') });
     await ctx.manager.start(manual([{ offset: 'end', vastUrl: 'https://ads.test/post.xml' }]));

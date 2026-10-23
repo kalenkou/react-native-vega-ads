@@ -317,6 +317,53 @@ describe('useVegaAds', () => {
     expect(handler.handled).toEqual([]);
   });
 
+  // On Fire TV "Alexa, pause" finds the ad frozen: no pause event, and the SDK still counts it as playing.
+  it('"Alexa, pause" holds the ad with no pause event, and the play/pause key then plays it', async () => {
+    const ctx = setup();
+    const ad = await ctx.prerollPlaying();
+    const handler = ad.mediaControlHandler as {
+      handlePause(): Promise<void>;
+      handleTogglePlayPause(): Promise<void>;
+      handled: string[];
+    };
+    await act(async () => {
+      await handler.handlePause();
+      ctx.clock.advance(60_000);
+    });
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    expect(ctx.ads().playing).toBe(true);
+    await act(async () => {
+      await handler.handleTogglePlayPause();
+    });
+    expect(handler.handled).toEqual(['pause', 'play']);
+  });
+
+  it('the play/pause key plays the content after "Alexa, pause", which sends no pause event', async () => {
+    const ctx = setup({ source: { breaks: [] } });
+    await ctx.surfacesReady();
+    act(() => {
+      ctx.content.emit('playing');
+    });
+    const handler = ctx.content.mediaControlHandler as {
+      handlePause(): Promise<void>;
+      handleTogglePlayPause(): Promise<void>;
+      handled: string[];
+    };
+    await act(async () => {
+      await handler.handlePause();
+      await handler.handleTogglePlayPause();
+    });
+    expect(handler.handled).toEqual(['pause', 'play']);
+    act(() => {
+      ctx.content.emit('playing');
+    });
+    await act(async () => {
+      await handler.handleTogglePlayPause();
+    });
+    expect(handler.handled).toEqual(['pause', 'play', 'pause']);
+  });
+
   it('keeps the ads running when the app passes a new PlayerPort object on every render', async () => {
     const native = new FakeW3cPlayer(600);
     const out: { current: VegaAds | null } = { current: null };

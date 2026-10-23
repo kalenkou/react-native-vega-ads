@@ -1,7 +1,11 @@
 import { KeplerMediaControlHandler } from '@amazon-devices/react-native-w3cmedia';
 import { contentMediaControlHandler } from '../src/contentMediaControlHandler';
 
-type Handler = { handlePause(sessionId?: unknown, context?: { source?: string }): Promise<void>; handled: string[] };
+type Handler = {
+  handlePause(sessionId?: unknown, context?: { source?: string }): Promise<void>;
+  handleTogglePlayPause(sessionId?: unknown): Promise<void>;
+  handled: string[];
+};
 
 describe('contentMediaControlHandler', () => {
   it('pauses as the SDK does and reports a viewer pause, but not a system one (display off)', async () => {
@@ -36,5 +40,34 @@ describe('contentMediaControlHandler', () => {
     await app.handlePause();
     expect(firstScreen).not.toHaveBeenCalled();
     expect(secondScreen).toHaveBeenCalledTimes(1);
+  });
+
+  // After "Alexa, pause" the frozen player sends no pause event: the SDK still counts it as
+  // playing, and its play/pause key would pause again (and show the pause ad again).
+  it('play/pause decides by the paused state it is given, not by the SDK', async () => {
+    const paused = jest.fn();
+    let isPaused = true;
+    const handler = contentMediaControlHandler(undefined, paused, () => isPaused) as Handler;
+    await handler.handleTogglePlayPause();
+    expect(handler.handled).toEqual(['play']);
+    expect(paused).not.toHaveBeenCalled();
+    isPaused = false;
+    await handler.handleTogglePlayPause();
+    expect(handler.handled).toEqual(['play', 'pause']);
+    expect(paused).toHaveBeenCalledTimes(1);
+  });
+
+  it('play/pause is left to the handler when no paused state is given', async () => {
+    const handler = contentMediaControlHandler(undefined, jest.fn()) as Handler;
+    await handler.handleTogglePlayPause();
+    expect(handler.handled).toEqual(['toggle']);
+  });
+
+  it('a reused handler asks the player screen that uses it now', async () => {
+    const app = new KeplerMediaControlHandler() as unknown as Handler;
+    contentMediaControlHandler(app, jest.fn(), () => false);
+    contentMediaControlHandler(app, jest.fn(), () => true);
+    await app.handleTogglePlayPause();
+    expect(app.handled).toEqual(['play']);
   });
 });

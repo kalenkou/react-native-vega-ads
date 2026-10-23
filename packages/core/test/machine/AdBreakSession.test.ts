@@ -1230,6 +1230,34 @@ describe('AdBreakSession: remote play/pause from the app key handler', () => {
     expect(ctx.session.togglePause()).toBe(false);
     expect(player.calls).not.toContain('pause');
   });
+
+  // On Fire TV "Alexa, pause" finds the ad already frozen while Alexa listened: no pause event comes.
+  it('a pause command with no pause event holds the ad: it is not a stuck player', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    await ctx.session.start();
+    await player.flush();
+    player.emitTime(3);
+    sent();
+    expect(ctx.session.paused).toBe(false);
+    ctx.session.pausedByCommand();
+    expect(ctx.session.paused).toBe(true);
+    ctx.clock.advance(10 * 60_000);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    expect(ctx.session.state).toBe('playing');
+    expect(sent()).toEqual(['https://t.test/pause']);
+    player.calls.length = 0;
+    expect(ctx.session.togglePause()).toBe(true); // the play/pause key then plays
+    expect(player.calls).toEqual(['play']);
+  });
+
+  it('a pause command outside the ad does nothing', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    await loadReady(ctx);
+    ctx.session.pausedByCommand();
+    expect(ctx.session.paused).toBe(false);
+  });
 });
 
 describe('AdBreakSession: stuck players never keep the content paused (R7)', () => {

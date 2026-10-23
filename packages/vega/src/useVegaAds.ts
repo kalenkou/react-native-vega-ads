@@ -227,21 +227,39 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
     const componentInstance = o.componentInstance ?? (() => appState.current.getComponentInstance());
     const http = o.http ?? fetchHttp;
     installImagePolyfill(http);
-    // The content's handler also reports a viewer's pause command, for pause ads.
+    // The content's handler also reports a viewer's pause command, for pause ads. Play/pause
+    // decides by the state kept here: after "Alexa, pause" the player sends no pause event.
     let ownContentHandler: unknown;
-    const viewerPaused = (): void => manager.current?.viewerPaused();
+    let contentPaused = true;
+    const viewerPaused = (): void => {
+      contentPaused = true;
+      manager.current?.viewerPaused();
+    };
+    const isContentPaused = (): boolean => contentPaused;
     const contentHandler = (): unknown => {
       const app = latest.current.contentMediaControlHandler;
       if (app !== undefined) {
-        return contentMediaControlHandler(app, viewerPaused);
+        return contentMediaControlHandler(app, viewerPaused, isContentPaused);
       }
-      ownContentHandler ??= contentMediaControlHandler(undefined, viewerPaused);
+      ownContentHandler ??= contentMediaControlHandler(undefined, viewerPaused, isContentPaused);
       return ownContentHandler;
     };
     const content = isPlayerPort(contentPlayer)
       ? contentPlayer
       : new W3cPlayerAdapter(contentPlayer, componentInstance, contentHandler, o.mediaControls ?? true);
-    const adHandler = createAdMediaControlHandler({ allowPause: o.adPause ?? true });
+    const contentOffs = [
+      content.on('pause', () => {
+        contentPaused = true;
+      }),
+      content.on('playing', () => {
+        contentPaused = false;
+      }),
+    ];
+    const adHandler = createAdMediaControlHandler({
+      allowPause: o.adPause ?? true,
+      isPaused: () => manager.current?.adPaused ?? false,
+      onPause: () => manager.current?.adPausedByCommand(),
+    });
     const created = new AdManager({
       http,
       clock: o.clock ?? systemClock,
@@ -292,6 +310,7 @@ export function useVegaAds(options: UseVegaAdsOptions): VegaAds {
           : { preloaded: takePreload(sourceKey) },
     );
     return () => {
+      contentOffs.forEach((off) => off());
       manager.current = null;
       setSnapshot(IDLE_SNAPSHOT);
       setTimeline(NO_TIMELINE);

@@ -3,6 +3,13 @@ import { KeplerMediaControlHandler } from '@amazon-devices/react-native-w3cmedia
 export interface AdMediaControlOptions {
   /** The viewer may pause the ad (remote, voice). Default true; some publishers do not allow it. */
   allowPause: boolean;
+  /**
+   * The ad is paused, as the ad session knows it. Play/pause decides by it: after "Alexa, pause"
+   * the frozen ad sends no pause event, and the SDK would still count it as playing.
+   */
+  isPaused?: () => boolean;
+  /** Called after each pause this handler lets through, so the session holds the ad as paused. */
+  onPause?: () => void;
 }
 
 const ignore = async (): Promise<void> => undefined;
@@ -31,6 +38,7 @@ export function createAdMediaControlHandler(options: AdMediaControlOptions): unk
         return;
       }
       await super.handlePause(sessionId);
+      options.onPause?.();
     }
 
     override async handlePause(sessionId?: unknown, context?: { source?: string }): Promise<void> {
@@ -39,11 +47,16 @@ export function createAdMediaControlHandler(options: AdMediaControlOptions): unk
         return;
       }
       await super.handlePause(sessionId, context);
+      options.onPause?.();
     }
 
     override async handleTogglePlayPause(sessionId?: unknown): Promise<void> {
       if (!options.allowPause) {
         await super.handlePlay(sessionId);
+        return;
+      }
+      if (options.isPaused) {
+        await (options.isPaused() ? this.handlePlay(sessionId) : this.handlePause(sessionId));
         return;
       }
       await super.handleTogglePlayPause(sessionId);

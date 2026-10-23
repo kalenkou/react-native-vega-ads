@@ -237,6 +237,16 @@ export class AdManager {
     return this.active?.togglePause() ?? false;
   }
 
+  /** The ad on screen is paused. False between breaks. */
+  get adPaused(): boolean {
+    return this.active?.paused ?? false;
+  }
+
+  /** A media controls command paused the ad on screen, maybe with no pause event (Alexa on Fire TV). */
+  adPausedByCommand(): void {
+    this.active?.pausedByCommand();
+  }
+
   /** Viewer pressed Back while a pause ad shows: it goes away. False when none was on screen. */
   closePauseAd(): boolean {
     return this.pauseAds?.close() ?? false;
