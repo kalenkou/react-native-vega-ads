@@ -261,8 +261,9 @@ const styles = layoutStyles({
     borderColor: colors.text,
     transform: [{scale: 1.05}],
   },
-  buttonText: {color: colors.text, fontFamily: fonts.body, fontSize: 30},
-  buttonTextFocused: {color: colors.background, fontFamily: fonts.bodyStrong},
+  // One font in both states: a wider font in focus would resize the button and move its neighbours.
+  buttonText: {color: colors.text, fontFamily: fonts.bodyStrong, fontSize: 30},
+  buttonTextFocused: {color: colors.background},
   map: {position: 'absolute', left: 96, top: 690},
   credit: {
     position: 'absolute',

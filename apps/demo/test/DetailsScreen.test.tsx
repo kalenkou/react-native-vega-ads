@@ -1,5 +1,5 @@
 import React from 'react';
-import {Image} from 'react-native';
+import {Image, StyleSheet, Text} from 'react-native';
 import TestRenderer, {act} from 'react-test-renderer';
 
 const mockUseAdPlan = jest.fn();
@@ -89,6 +89,23 @@ describe('DetailsScreen', () => {
     });
     return renderer;
   }
+
+  // A wider font in focus makes the focused button wider and pushes its neighbours along the row.
+  it.each(['play', 'next'])(
+    'keeps the font of the %s button when it takes focus',
+    (testID) => {
+      const renderer = render();
+      const font = () =>
+        StyleSheet.flatten(
+          renderer.root.findByProps({testID}).findByType(Text).props.style,
+        ).fontFamily;
+      const before = font();
+      act(() => {
+        renderer.root.findByProps({testID}).props.onFocus();
+      });
+      expect(font()).toBe(before);
+    },
+  );
 
   it('does not read the ad ID module when the screen module loads', () => {
     expect(readsAtImport).toBe(0);
