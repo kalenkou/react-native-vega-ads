@@ -191,6 +191,38 @@ describe('AdBreakSession: loading, more cases', () => {
     expect(ctx.session.state).toBe('interrupted');
   });
 
+  it('asks no further source when the break is left while the first one answers', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    let answer = (): void => undefined;
+    const get = ctx.http.get.bind(ctx.http);
+    ctx.http.get = (url, options) => new Promise((resolve) => (answer = () => resolve(get(url, options))));
+    const loading = ctx.session.load([
+      { kind: 'url', url: TAG },
+      { kind: 'url', url: 'https://ads.test/second.xml' },
+    ]);
+    await settle();
+    await ctx.session.interrupt();
+    answer();
+    await expect(loading).resolves.toBe('empty');
+    expect(ctx.http.requests).toEqual([TAG]);
+  });
+
+  it('a media error of an ad that failed to load does not fail the next ad', async () => {
+    const ctx = setup(fixture('pod-optimized.xml'));
+    const loading = ctx.session.load([{ kind: 'url', url: TAG }]);
+    await settle();
+    (ctx.adPlayers[0] as FakePlayer).emitError();
+    await settle();
+    const player = ctx.adPlayers[1] as FakePlayer;
+    player.emitCanPlay();
+    await expect(loading).resolves.toBe('ready');
+    await ctx.session.start();
+    await player.flush();
+    expect(adsOf(ctx, 'error:400')).toEqual(['pod-1']);
+    expect(ctx.events).not.toContain('error:405');
+    expect(ctx.session.state).toBe('playing');
+  });
+
   it('loads nothing when the break is left while the viewing history is read', async () => {
     let restore = (): void => undefined;
     const memory = {
@@ -1083,6 +1115,28 @@ describe('AdBreakSession: back-to-back ads, more cases', () => {
     await left.session.cancel();
     left.clock.advance(0);
     expect(gone.calls).not.toContain('focus');
+  });
+
+  it('loads no next ad into a player released while the unused second player was released', async () => {
+    let release = (): void => undefined;
+    let created = 0;
+    const ctx = setup(fixture('pod-optimized.xml'), {
+      standby: true,
+      holdInit: (player) => {
+        if (created++ === 1) {
+          player.deinitialize = () => new Promise<void>((resolve) => (release = resolve));
+        }
+      },
+    });
+    const first = await playFirst(ctx);
+    first.deinitialize = () => new Promise<void>(() => undefined); // a slow release
+    first.emitTime(5);
+    expect(ctx.session.skip()).toBe(true);
+    await settle();
+    void ctx.session.interrupt();
+    release();
+    await settle();
+    expect(first.src).toBe('https://cdn.test/pod-1.mp4');
   });
 
   it('ignores an error of a skipped ad while the unused second player is released', async () => {
