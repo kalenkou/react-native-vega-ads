@@ -1184,6 +1184,89 @@ describe('AdBreakSession: event order and stuck players', () => {
   });
 });
 
+describe('AdBreakSession: stall timeouts, more cases', () => {
+  async function playFirst(ctx: ReturnType<typeof setup>): Promise<FakePlayer> {
+    const first = await loadReady(ctx);
+    await ctx.session.start();
+    await first.flush();
+    await settle();
+    return first;
+  }
+
+  it('an ad with no event at all after its first frame gets 30 s', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    await playFirst(ctx);
+    ctx.clock.advance(29_900);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    ctx.clock.advance(200);
+    await settle();
+    expect(ctx.events).toContain('error:405');
+  });
+
+  it('an ad resumed with togglePause after its first frame gets the stall timeout, not the first frame one', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await playFirst(ctx);
+    player.emitTime(3);
+    ctx.session.togglePause();
+    ctx.session.togglePause(); // no playing event follows
+    ctx.clock.advance(29_900);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    ctx.clock.advance(200);
+    await settle();
+    expect(ctx.events).toContain('error:405');
+  });
+
+  it('a paused ad that reports waiting or a late time is not stalled', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await playFirst(ctx);
+    player.emitTime(3);
+    player.emitPause();
+    player.emitWaiting();
+    player.emitTime(3.1);
+    ctx.clock.advance(10 * 60_000);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    expect(ctx.session.state).toBe('playing');
+  });
+
+  it('a ready ad player that reports playing before the break starts is not failed while it waits', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await loadReady(ctx);
+    void player.play();
+    await player.flush();
+    ctx.clock.advance(10 * 60_000);
+    await settle();
+    expect(ctx.events).not.toContain('error:405');
+    expect(ctx.session.state).toBe('ready');
+  });
+
+  it('a pause in the last quarter second is the natural end, earlier it is a viewer pause', async () => {
+    const ctx = setup(fixture('inline.xml'));
+    const player = await playFirst(ctx);
+    player.emitTime(9.74);
+    sent();
+    player.emitPause();
+    expect(sent()).toEqual(['https://t.test/pause']);
+
+    const atEnd = setup(fixture('inline.xml'));
+    const second = await playFirst(atEnd);
+    second.emitTime(9.75);
+    sent();
+    second.emitPause();
+    expect(sent()).toEqual([]);
+  });
+
+  it('a pause of a player that reports no length is a viewer pause', async () => {
+    const ctx = setup(fixture('inline.xml'), { holdInit: (player) => (player.getDuration = () => 0) });
+    const player = await playFirst(ctx);
+    sent();
+    player.emitPause();
+    expect(sent()).toEqual(['https://t.test/pause']);
+  });
+});
+
 describe('AdBreakSession: calls in the wrong state', () => {
   it('cancel() before start() leaves the content alone (C3-6)', async () => {
     const ctx = setup(fixture('inline.xml'));
