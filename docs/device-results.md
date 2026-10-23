@@ -5,6 +5,7 @@ Fire TV Stick 4K Select, Vega OS 2.0, 11 to 23.10.2026, on React Native 0.72 unl
 | Check | Result |
 |---|---|
 | Switch from content to ad | 56-151 ms, no dark frame on video at ~30 fps |
+| Break start to the ad on screen, React Native 0.83, 22-23.10 | 27 breaks in the app logs of 17 runs, from the `breakStart` event to the `impression` event (the library sends it when the ad plays on the visible surface): median 37 ms, P90 171 ms, max 292 ms. Pre-rolls included |
 | Content resume position | where it paused, within 0.25 s. A seek back only above that, because a seek re-buffers |
 | Mid-roll prefetch | pod of 3 ads ready in 1.6 s, 15 s before the break |
 | Gap between ads in a pod | next ad's first frame 85 ms before the previous ad ends. Late in an 11-minute run: 64 ms after it |
