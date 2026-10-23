@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "jest",
+  "jest": { "configFile": "jest.config.js", "enableFindRelatedTests": true, "config": { "collectCoverage": false } },
+  "coverageAnalysis": "perTest",
+  "mutate": ["src/**/*.ts", "!src/**/index.ts", "!src/vast/ports.ts", "!src/vast/types/**"],
+  "reporters": ["clear-text", "html", "progress"],
+  "htmlReporter": { "fileName": "reports/mutation/index.html" },
+  "thresholds": { "high": 80, "low": 60, "break": null },
+  "timeoutMS": 10000
+}

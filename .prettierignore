@@ -3,6 +3,8 @@
 **/coverage/
 **/build/
 **/.aws-sam/
+**/reports/
+**/.stryker-tmp/
 **/node_modules/
 **/package-lock.json
 tools/vast-samples/samples/

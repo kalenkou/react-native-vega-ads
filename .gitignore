@@ -21,3 +21,7 @@ tools/demo-ads/media/
 __pycache__/
 # npm pack output
 *.tgz
+
+# Stryker mutation testing: report and sandbox
+reports/
+.stryker-tmp/

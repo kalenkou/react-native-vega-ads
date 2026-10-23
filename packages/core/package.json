@@ -31,7 +31,8 @@
   "scripts": {
     "build": "tsc -b",
     "prepack": "tsc -b",
-    "test": "jest"
+    "test": "jest",
+    "test:mutation": "stryker run"
   },
   "files": [
     "dist",
