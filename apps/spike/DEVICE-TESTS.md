@@ -525,3 +525,4 @@ The release v0.1.4 demo build from CloudFront (23.10.2026, midday). The release 
 | Check | Result |
 |---|---|
 | 3 runs, each from a clean install | PASS 3 of 3: pre-roll, movie, the mid-roll pod without the repeated ad (`notUsed`), movie after the pod, no errors. One impression each for Kettlo, Brewnord and Voltaro in every run |
+| The streaming kit release file, clean install (`kit-release-run.sh`) | PASS: Tears of Steel with the pre-roll to the end, the movie moves, RIGHT on the seek bar past the first break plays the two-ad mid-roll with Skip Ad. The collector counted Kettlo, Brewnord and Voltaro |
