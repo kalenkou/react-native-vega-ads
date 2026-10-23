@@ -156,8 +156,9 @@ const THUMB_HALF = (THUMB + 4) / 2;
 
 /**
  * The slider with the mid-rolls of vega-ads marked on it, like a streaming app's seek bar.
- * The marks are drawn over the track. A mark under the thumb is not drawn, so the thumb
- * stays on top. Marks ahead are yellow, played ones grey: both show on either part of the track.
+ * Vega draws the focused slider over the views next to it, so the bar draws the track and
+ * the marks itself, under the slider, and the slider shows only its thumb. Marks ahead are
+ * yellow, played ones grey: both show on either part of the track.
  */
 function SeekBar({
   time,
@@ -177,19 +178,32 @@ function SeekBar({
   // A bar that goes away during a key hold (a break starts) ends the slide too.
   useEffect(() => onSlidingEnd, [onSlidingEnd]);
   const [width, setWidth] = useState(0);
-  // Where the thumb is while it moves: the label and the hidden mark follow it.
+  // Where the thumb is while it moves: the label and the played part follow it.
   const [moving, setMoving] = useState<number | null>(null);
   const shown = moving ?? time;
-  const underThumb = (mark: BreakMark) =>
-    (Math.abs(mark.time - shown) / duration) *
-      Math.max(0, width - 2 * THUMB_HALF) <
-    THUMB_HALF + 2;
+  const share = duration > 0 ? Math.min(1, Math.max(0, shown / duration)) : 0;
+  const played = THUMB_HALF + share * Math.max(0, width - 2 * THUMB_HALF);
   return (
     <View style={styles.bar}>
       <Text style={styles.time}>{clock(shown)}</Text>
       <View
         style={styles.seek}
         onLayout={({nativeEvent}) => setWidth(nativeEvent.layout.width)}>
+        <View style={styles.track} pointerEvents="none">
+          <View style={[styles.played, {width: played}]} />
+        </View>
+        <View style={styles.marks} pointerEvents="none">
+          {marks.map((mark) => (
+            <View
+              key={mark.id}
+              style={[
+                styles.mark,
+                {left: `${(mark.time / duration) * 100}%`},
+                mark.done && styles.markDone,
+              ]}
+            />
+          ))}
+        </View>
         <Slider
           hasTVPreferredFocus
           style={styles.slider}
@@ -203,8 +217,8 @@ function SeekBar({
               ? `Ad breaks at ${marks.map((mark) => clock(mark.time)).join(', ')}`
               : undefined
           }
-          minimumTrackTintColor="#f28c38"
-          maximumTrackTintColor="#3a404c"
+          minimumTrackTintColor="transparent"
+          maximumTrackTintColor="transparent"
           thumbTintColor="#ffffff"
           thumbSize={THUMB}
           onSlidingStart={onSlidingStart}
@@ -214,20 +228,6 @@ function SeekBar({
             onSeek(seconds);
           }}
         />
-        <View style={styles.marks} pointerEvents="none">
-          {marks.map((mark) =>
-            underThumb(mark) ? null : (
-              <View
-                key={mark.id}
-                style={[
-                  styles.mark,
-                  {left: `${(mark.time / duration) * 100}%`},
-                  mark.done && styles.markDone,
-                ]}
-              />
-            ),
-          )}
-        </View>
       </View>
       <Text style={styles.time}>{clock(duration)}</Text>
     </View>
@@ -434,6 +434,16 @@ const styles = StyleSheet.create({
   },
   time: {color: '#eef1f6', fontSize: 16, width: 56, textAlign: 'center'},
   seek: {flex: 1, height: 40, justifyContent: 'center'},
+  track: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 18,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#3a404c',
+  },
+  played: {height: 4, borderRadius: 2, backgroundColor: '#f28c38'},
   marks: {
     position: 'absolute',
     left: THUMB_HALF,

@@ -13,7 +13,7 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ### Example apps
 
-- Streaming kit: the ad break marks are drawn over the seek bar, not under its track. Marks ahead are yellow and played ones grey, so both show on the orange and the grey part. A mark under the thumb is hidden. After a seek the thumb no longer jumps back to the old time for a moment. The time label follows the thumb while it moves.
+- Streaming kit: the ad break marks are drawn over the seek bar, not under its track. Vega draws the focused slider over the views next to it. So the kit draws the track and the marks itself, and the slider shows only its thumb. Marks ahead are yellow and played ones grey, so both show on the orange and the grey part. A mark under the thumb is hidden. After a seek the thumb no longer jumps back to the old time for a moment. The time label follows the thumb while it moves.
 - Streaming kit: a smaller seek bar thumb (16 dp, 20 dp with focus), set with the new `thumbSize` prop of the slider port.
 
 ### Documentation
