@@ -508,3 +508,10 @@ The streaming kit (`apps/streaming-kit`), muted build.
 |---|---|
 | `kit-example-run.sh`, 2 runs | PASS 2 of 2: splash, posters, Sintel with the pre-roll pixels, the seek bar moves 10 s per press, a seek past 2:42 plays the mid-roll, Play/Pause pauses the movie and the ad, Back returns home |
 | Back from Sintel (`67f7a3f`) | PASS: the focus is on the Sintel poster again. One more Right keeps it there |
+
+The release v0.1.3 demo build from CloudFront (23.10.2026, night). A copy built with the sound off, installed with `vega device install-app` and started with `vega device launch-app`, as the release notes say. Pixels counted by the Lambda pixel collector in DynamoDB.
+
+| Check | Result |
+|---|---|
+| 3 runs, each from a clean install | PASS 3 of 3: pre-roll, movie, the mid-roll pod without the repeated ad (`notUsed`), movie after the pod, no errors. One impression each for Kettlo, Brewnord and Voltaro per run |
+| The same build installed over the local demo, without a clean install | every ad left out as a repeat (`skipped:repeat`): the local demo had shown them less than 30 minutes before, and an update keeps the app's storage. Expected, the repeat rule works across installs |
