@@ -15,6 +15,13 @@ describe('parseXml', () => {
     expect(parseXml('not xml')).toBeNull();
   });
 
+  // xmldom still builds a document after these errors: parseXml must not hand it on.
+  it('returns null when the parser reports an error or a fatal error', () => {
+    expect(parseXml('<a>&bogus;</a>')).toBeNull();
+    expect(parseXml('<?xml version="1.0"?><a/><b/>')).toBeNull();
+    expect(parseXml('<a x="1" x="2"/>')).toBeNull();
+  });
+
   // Ad servers send sloppy XML; like xmldom, an unclosed element is closed for you.
   it('repairs an unclosed element instead of failing', () => {
     expect(parseXml('<a><b></a>')?.documentElement.nodeName).toBe('a');
