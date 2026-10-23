@@ -37,7 +37,7 @@ Screenshots of the demo app on a Fire TV Stick 4K Select. Films: (CC) Blender Fo
 
 The API can change before 1.0.
 
-Measured on that stick with React Native 0.72: the switch from the movie to an ad takes 56-151 ms. In an 11-minute stress test with 27 ads, memory peaked at 91 MB. Then it stayed at 65-68 MB. On React Native 0.83 a whole film with 5 ads used 56-96 MB. More: [device results](docs/device-results.md).
+Measured on that stick with React Native 0.72: the switch from the movie to an ad takes 56-151 ms. In an 11-minute stress test with 27 ads, memory peaked at 91 MB. Then it stayed at 65-68 MB. On React Native 0.83 a whole film with 5 ads used 56-96 MB in 6 samples (the log missed the first mid-roll). More: [device results](docs/device-results.md).
 
 ## Features
 
