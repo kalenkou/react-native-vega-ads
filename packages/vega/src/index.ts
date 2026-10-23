@@ -1,4 +1,4 @@
-export const VERSION = '0.1.5';
+export const VERSION = '0.1.6';
 
 // Components
 export { VegaAdsPlayer } from './VegaAdsPlayer';

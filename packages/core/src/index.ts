@@ -1,4 +1,4 @@
-export const VERSION = '0.1.5';
+export const VERSION = '0.1.6';
 
 // Everything from the VAST layer, so apps get VAST and the break logic from one package.
 export * from './vast';

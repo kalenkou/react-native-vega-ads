@@ -4,6 +4,21 @@ All notable changes to `react-native-ads-core` and `react-native-vega-ads`. The 
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-10-23
+
+### Fixed
+
+- After "Alexa, pause" the play/pause key plays again. Fire TV freezes the picture while Alexa listens, so the player sends no pause event. The SDK's play/pause handler then still counted the video as playing. Each press paused again, and in the movie the pause ad came back. Play/pause now decides by the state that vega-ads keeps, for the ad and for the movie.
+- An ad paused with "Alexa, pause" stays paused. Before, with no pause event, the ad counted as stuck after 30 s, failed with VAST error 405, and the movie started.
+
+### Example apps
+
+- Streaming kit: the ad break marks are drawn over the seek bar, not under its track. A mark under the thumb is hidden. After a seek the thumb no longer jumps back to the old time for a moment. The time label follows the thumb while it moves.
+
+### Documentation
+
+- README: the test counts (1,013 in the packages and tools).
+
 ## [0.1.5] - 2026-10-23
 
 The library code is the same as in 0.1.4. This release brings new builds of the demo.
@@ -127,7 +142,8 @@ First release.
 - `vegaAdIdSource` for the Fire TV advertising ID. `preloadVegaAds` and `useAdPlan` for the title page. `rnvPlayerPort` for react-native-video v7.
 - Preview: `useStitchedAds` (IAB tracking of ads stitched into the stream by a server). `HeadlessPlayerService` and `HeadlessPlayerAdapter` (Amazon's headless player approach). `createAdPlayer` for ad players that are any `PlayerPort`.
 
-[Unreleased]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/kalenkou/react-native-vega-ads/compare/v0.1.2...v0.1.3
