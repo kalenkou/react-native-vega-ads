@@ -49,7 +49,8 @@ export function parseWebVtt(vtt: string): CaptionCue[] {
       continue;
     }
     const text: string[] = [];
-    while (i + 1 < lines.length && lines[i + 1]?.trim() !== '') {
+    // A cue's text ends at a blank line, or at a line with "-->" that starts the next cue.
+    while (i + 1 < lines.length && lines[i + 1]?.trim() !== '' && !lines[i + 1]?.includes('-->')) {
       text.push(stripTags(lines[++i] ?? '').trim());
     }
     const start = seconds(timing[1] ?? '');

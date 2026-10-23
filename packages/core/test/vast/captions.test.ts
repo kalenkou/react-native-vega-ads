@@ -35,6 +35,15 @@ describe('parseWebVtt', () => {
     expect(parseWebVtt(vtt)).toEqual([{ start: 0, end: 2, text: 'Slow coffee\nfor long evenings' }]);
   });
 
+  // The WebVTT parsing rules end a cue's text at a line with "-->", even without a blank line.
+  it('starts a new cue at a timing line that follows the text directly', () => {
+    const vtt = 'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nFirst\n00:00:02.000 --> 00:00:03.000\nSecond\n';
+    expect(parseWebVtt(vtt)).toEqual([
+      { start: 1, end: 2, text: 'First' },
+      { start: 2, end: 3, text: 'Second' },
+    ]);
+  });
+
   it('leaves no tag behind when tags are nested in each other', () => {
     const vtt = 'WEBVTT\n\n00:00.000 --> 00:02.000\n<<i>b>Slow<</i>/b> coffee\n';
     const [cue] = parseWebVtt(vtt);
