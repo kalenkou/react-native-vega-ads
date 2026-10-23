@@ -35,6 +35,23 @@ describe('parseWebVtt', () => {
     expect(parseWebVtt(vtt)).toEqual([{ start: 0, end: 2, text: 'Slow coffee\nfor long evenings' }]);
   });
 
+  it('leaves no tag behind when tags are nested in each other', () => {
+    const vtt = 'WEBVTT\n\n00:00.000 --> 00:02.000\n<<i>b>Slow<</i>/b> coffee\n';
+    const [cue] = parseWebVtt(vtt);
+    expect(cue?.text).not.toMatch(/<[^>]*>/);
+    expect(cue?.text).toContain('coffee');
+  });
+
+  it('keeps a "<" that opens no tag, and reads a long line of them in linear time', () => {
+    expect(parseWebVtt('WEBVTT\n\n00:00.000 --> 00:02.000\n3 < 4 cups\n')[0]?.text).toBe('3 < 4 cups');
+    expect(parseWebVtt('WEBVTT\n\n00:00.000 --> 00:02.000\n4 > 3 <i>cups</i>\n')[0]?.text).toBe('4 > 3 cups');
+    // An ad server's caption file is untrusted: 50k "<" without ">" took seconds with a regex.
+    const line = '<'.repeat(50_000);
+    const started = Date.now();
+    expect(parseWebVtt(`WEBVTT\n\n00:00.000 --> 00:02.000\n${line}\n`)[0]?.text).toBe(line);
+    expect(Date.now() - started).toBeLessThan(200);
+  });
+
   it('skips NOTE and STYLE blocks and cues it cannot read', () => {
     const vtt = [
       'WEBVTT - demo',

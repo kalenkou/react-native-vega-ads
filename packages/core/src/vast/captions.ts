@@ -15,6 +15,24 @@ function seconds(stamp: string): number {
 }
 
 /**
+ * The text of a cue line without its tags (`<v Name>`, `<i>`, `</b>`). One pass, so a long line from
+ * an untrusted file takes linear time: a "<" with no ">" after it is text, as is the rest of the line.
+ */
+function stripTags(line: string): string {
+  let text = '';
+  let from = 0;
+  for (let open = line.indexOf('<'); open !== -1; open = line.indexOf('<', from)) {
+    const close = line.indexOf('>', open);
+    if (close === -1) {
+      break;
+    }
+    text += line.slice(from, open);
+    from = close + 1;
+  }
+  return text + line.slice(from);
+}
+
+/**
  * The cues of a WebVTT file (VAST `<ClosedCaptionFiles>`, or whisper.cpp `-ovtt`). Cue settings,
  * NOTE and STYLE blocks are ignored, voice and style tags are dropped, and a cue whose timing
  * cannot be read is skipped. A file without the WEBVTT header gives no cues.
@@ -32,7 +50,7 @@ export function parseWebVtt(vtt: string): CaptionCue[] {
     }
     const text: string[] = [];
     while (i + 1 < lines.length && lines[i + 1]?.trim() !== '') {
-      text.push((lines[++i] ?? '').replace(/<[^>]*>/g, '').trim());
+      text.push(stripTags(lines[++i] ?? '').trim());
     }
     const start = seconds(timing[1] ?? '');
     const end = seconds(timing[2] ?? '');
